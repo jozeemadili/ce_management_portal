@@ -1,0 +1,1 @@
+cURL error 28: Connection timed out after 5002 milliseconds (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://172.16.3.198:30002/api/v2/hmcis/product/6

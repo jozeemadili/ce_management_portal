@@ -1,0 +1,163 @@
+<?php
+
+use App\Http\Controllers\API\Auth\CustomersController;
+use App\Http\Controllers\API\Loans\loanController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\API\Auth\PortalUsersController;
+use App\Http\Controllers\API\Claims\ClaimAssessmentsController;
+use App\Http\Controllers\API\Claims\ClaimDischargeVouchersController;
+use App\Http\Controllers\API\Claims\ClaimIntimationsController;
+use App\Http\Controllers\API\Claims\ClaimNotificationsController;
+use App\Http\Controllers\API\Claims\ClaimPaymentsController;
+use App\Http\Controllers\API\Claims\ClaimRejectionsController;
+use App\Http\Controllers\API\Companies\BranchesController;
+use App\Http\Controllers\API\Companies\CompaniesController;
+use App\Http\Controllers\API\Intermediaries\IntermediaryControllers;
+use App\Http\Controllers\API\Notifications\SMSController;
+use App\Http\Controllers\API\Plans\PlansController;
+use App\Http\Controllers\API\Policies\PoliciessController;
+use App\Http\Controllers\API\Pricings\PricingsController;
+use App\Http\Controllers\API\Products\ProductsController;
+use App\Http\Controllers\API\Products\RisksController;
+use App\Http\Controllers\API\Properties\VehiclesController;
+use App\Http\Controllers\API\Quotations\QuotationsController;
+use App\Http\Controllers\Payments\PaymentsController;
+use App\Models\Policy;
+
+@include_once('admin_web.php');
+// passwordHash
+Route::get('/test', [SMSController::class, 'passwordHash']);
+
+//Portal Users Auth
+Route::get('/', [PortalUsersController::class, 'index'])->name('/');
+Route::post('/portal/auth', [PortalUsersController::class, 'loginWeb']);
+
+Route::get('/portal/auth', [PortalUsersController::class, 'index'])->name('login');
+
+Route::post('/forget-password', function(){
+    return 'Upcoming Soon !';
+})->name('forget-password');
+
+Route::get('/how-to-use', [PortalUsersController::class, 'howToUse'])->name('how-to-use');
+
+Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
+{
+    Route::get('logout',[PortalUsersController::class, 'logout'])->name('logout');
+
+    Route::view('dashboard', 'admin.dashboard.home')->name('home');
+    Route::view('summary', 'admin.dashboard.general_summary')->name('general');
+
+    //Companies
+    Route::view('companies/reports', 'admin.companies.reports')->name('companies-reports'); 
+    Route::get('companies/registration',[CompaniesController::class, 'get'])->name('companies-registration');
+    Route::get('companies/profile/{id}',[CompaniesController::class, 'profile'])->name('companies-profile');
+    Route::post('companies/profile/update/{id}',[CompaniesController::class, 'profileUpdate'])->name('companies-profile-update');
+    Route::get('companies/intermediaries',[CompaniesController::class, 'getInsurerPartners'])->name('companies-intermediaries');
+    Route::get('companies/intermediaries/floats',[CompaniesController::class, 'getInsurerFloats'])->name('intermediary-floats');
+    Route::get('companies/branches',[CompaniesController::class, 'branches'])->name('companies-branches');
+    Route::post('companies/add',[CompaniesController::class, 'register'])->name('companies-add');
+
+
+    //Branches & Intermediary
+    Route::get('intermediary/registration', [IntermediaryControllers::class, 'get'])->name('intermediary-registration');
+    Route::post('intermediary/add',[IntermediaryControllers::class, 'register'])->name('intermediary-add');
+    Route::get('intermediary/profile/{id}',[IntermediaryControllers::class, 'profile'])->name('intermediary-profile');
+    //Route::get('intermediary/branches', [BranchesController::class, 'get'])->name('branches-registration');
+    Route::get('intermediary/branches', [loanController::class, 'get'])->name('branches-registration');
+   // Route::get('intermediary/branches', [BranchesController::class, 'get'])->name('branches-registration');
+    Route::post('intermediary/branches', [BranchesController::class, 'register'])->name('branches-add');
+
+    
+    Route::get('intermediary/reports', [IntermediaryControllers::class, 'get'])->name('intermediary-reports');
+
+    //user management
+    Route::get('products/registration',[ProductsController::class, 'get'])->name('products-registration');
+
+    //Products
+    Route::view('products/reports', 'admin.products.reports')->name('products-reports'); 
+    Route::get('products/registration',[ProductsController::class, 'get'])->name('products-registration');
+    Route::post('products/add',[ProductsController::class, 'register'])->name('products-add');
+    Route::get('products/get/condition/{id}',[ProductsController::class, 'getProductCondition'])->name('products-condtions');
+    Route::post('products/condition/add',[ProductsController::class, 'addCondition'])->name('condition-add');
+
+    //Risks
+    Route::view('products/risks/reports', 'admin.products.risks-report')->name('risks-reports'); 
+    Route::get('products/risks/registration',[RisksController::class, 'get'])->name('risks-registration');
+    Route::post('products/risks/add',[RisksController::class, 'register'])->name('risks-add');
+
+
+    //Plans
+    Route::view('plans/reports', 'admin.plans.reports')->name('plans-reports'); //TODO
+    Route::get('plans/registration', [PlansController::class, 'get'])->name('plans-registration');
+    Route::post('plans/add',[PlansController::class, 'register'])->name('plans-add');
+
+    //Pricings
+    Route::get('plans/pricings/registration', [PricingsController::class, 'get'])->name('pricings-registration');
+    Route::post('plans/pricings/add',[PricingsController::class, 'register'])->name('pricings-add');
+
+    //Customers
+    Route::view('customers/reports', 'admin.customers.reports')->name('customers-reports'); //TODO
+    Route::get('customers/registration', [CustomersController::class, 'get'])->name('customers-registration');
+    Route::post('customers/registration', [CustomersController::class, 'search'])->name('customers-search');
+    Route::get('customers/registration/profile/{id}',[CustomersController::class, 'profile'])->name('customer-profile');
+    Route::post('customers/add',[CustomersController::class, 'register'])->name('customers-add');
+
+    //mikopo
+    Route::get('properties/vehicles/registration', [VehiclesController::class, 'get'])->name('vehicles-registration');
+    Route::get('properties/staff/registration/profile/{id}',[loanController::class, 'profile'])->name('staff-profile');
+    Route::get('intermediary/branches', [loanController::class, 'get'])->name('branches-registration');
+    Route::post('properties/staff/update/profile', [loanController::class, 'updateLoanStatus'])->name('update-staff');
+    Route::get('security/users/profile/manage/{id}/{status}', [PortalUsersController::class, 'updateUserStatusInsuere'])->name('user-status-update');
+    Route::get('security/product/profile/manage/{id}/{status}', [PortalUsersController::class, 'updateProdyctStatus'])->name('product-status-update');
+    Route::get('security/product/condition/manage/{id}/{status}', [PortalUsersController::class, 'updateProdyctConditionStatus'])->name('product-condition-update');
+    // products/get/condition/
+
+    //Properties
+    Route::get('properties/vehicles/registration', [VehiclesController::class, 'get'])->name('vehicles-registration');
+    Route::post('properties/vehicles/registration', [VehiclesController::class, 'search'])->name('vehicles-search');
+    Route::get('properties/vehicles/registration/profile/{id}',[VehiclesController::class, 'profile'])->name('vehicle-profile');
+    Route::post('properties/vehicles/add',[VehiclesController::class, 'register'])->name('vehicles-add');
+    Route::view('properties/reports', 'admin.properties.reports')->name('properties-reports');
+
+    //Policies
+    Route::get('policies/quotations/verification', [QuotationsController::class, 'verification'])->name('policies-quotations-verification');
+    Route::post('policies/quotations/verify', [QuotationsController::class, 'verify'])->name('policies-quotations-verify');
+    Route::post('policies/quotations/modify', [QuotationsController::class, 'modify'])->name('policies-quotations-modify');
+    Route::get('policies/quotations/motor', [QuotationsController::class, 'get'])->name('policies-quotations-motor');
+    Route::get('policies/quotations/non-motor', [QuotationsController::class, 'get'])->name('policies-quotations-nonmotor');
+    Route::get('policies/quotations/profile/{id}',[QuotationsController::class, 'profile'])->name('quotation-profile');
+    Route::post('policies/registration',[PoliciessController::class, 'register'])->name('quotation-profile-add-policy');
+    Route::get('policies/quotations/download/{id}',[QuotationsController::class, 'download'])->name('quotation-download');
+    Route::view('policies/reports', 'admin.policies.reports')->name('policies-reports');
+
+    //Claims
+    Route::post('claims/registration',[ClaimNotificationsController::class, 'register'])->name('claim-motification-registration');
+    Route::post('claims/intimation/registration',[ClaimIntimationsController::class, 'register'])->name('claim-intimation-registration');
+    Route::post('claims/assessment/registration',[ClaimAssessmentsController::class, 'register'])->name('claim-assessment-registration');
+    Route::post('claims/discharge/registration',[ClaimDischargeVouchersController::class, 'register'])->name('claim-discharge-voucher-registration');
+    Route::post('claims/payment/registration',[ClaimPaymentsController::class, 'register'])->name('claim-payment-registration');
+    Route::post('claims/rejection/registration',[ClaimRejectionsController::class, 'register'])->name('claim-rejection-registration');
+    Route::get('claims/profile/{id}',[ClaimNotificationsController::class, 'profile'])->name('claim-profile');
+    Route::get('claims/registration', [ClaimNotificationsController::class, 'get'])->name('claims-registration');
+    Route::view('claims/reports', 'admin.claims.reports')->name('claims-reports');//todo
+
+    //Payments
+    Route::get('payments/registration', [PaymentsController::class, 'get'])->name('payments-registration');
+    Route::view('payments/reports', 'admin.payments.reports')->name('payments-reports');
+
+
+    //Security
+    Route::get('security/users', [PortalUsersController::class, 'get'])->name('portal-users');
+
+    Route::post('security/users', [PortalUsersController::class, 'search'])->name('portal-users-search');
+
+    Route::get('security/users/profile', [PortalUsersController::class, 'profile'])->name('security-user-profile');
+
+    Route::post('security/users/profile/change_password', [PortalUsersController::class, 'change_password'])->name('security-user-change_password');
+    Route::post('security/users/add', [PortalUsersController::class, 'register'])->name('portal-users-add');
+    Route::view('security/configurations', 'admin.security.configurations')->name('security-system-configurations');
+    Route::view('security/configurations', 'admin.security.configurations')->name('security-system-configurations');
+    Route::view('security/audit', 'admin.security.audit')->name('security-system-audit-trail');
+    Route::get('security/utumish/branches', [BranchesController::class, 'getBranch'])->name('branches-list');
+    
+});

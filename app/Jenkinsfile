@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('OutsideApp') {
+            steps {
+                sh 'ls -lrts'
+            }
+        }
+
+        stage('SendSimpleMail') {
+            steps {
+                mail to: 'jmadili@azaniabank.co.tz',
+                     from: 'ebanking@azaniabank.co.tz',
+                     subject: 'Proceed Notification',
+                     body: 'Please new xx xperiodirrcaly with the next steps in Jenkins pipeline.'
+            }
+        }
+
+        stage('WithinnAPP') {
+            steps {
+                script {
+                    sh '''
+                        cd app
+                        ls -lrts
+                    '''
+                }
+                input('Are you sure you want to Proceed?')
+
+                mail to: 'dmatemba@azaniabank.co.tz',
+                     from: 'ebanking@azaniabank.co.tz',
+                     subject: 'Action Required: Proceed',
+                     body: 'User confirmed new to proceed with the Jenkins pipeline.'
+            }
+        }
+
+        stage('ContentsofJenkins') {
+            steps {
+                sh 'cat app/Jenkinsfile'
+            }
+        }
+    }
+}

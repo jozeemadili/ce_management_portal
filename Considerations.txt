@@ -1,0 +1,264 @@
+Considerations :
+-------------------
+Ammended/Added Files / Own Files :
+admin.authentication.login (Took a copy of login_two)
+admin.dashboard.home (Took a copy of default)
+how-to-use
+
+
+
+--others
+remembering user 
+https://laravel.com/docs/7.x/authentication
+
+
+Class "App\Http\Controllers\API\Products\Route" not found
+
+
+remember last page | referer
+
+Profile for every datails -> starting with risk 
+
+logo
+
+option to re-generate pricing automatically from the template belonged to IMT
+
+new quotation prompt after customer registration / or after vehicle registration
+
+form action removing versioning, using route names instead
+
+
+using modern layout, and theming 
+
+new quotation to be in livewire
+policy profile, Quotation,claims or more details modal -> shall be in livewire so we can have button to refresh details like tira response without reloading the page
+
+Addons / Discounts shall come letter
+
+Customer Profile
+
+Auto select Vehicle Type based on vehicle details
+
+
+Receipt after payments to have paid and unpaid amounts
+
+User types concentration
+
+CHECK FOR QUOTATION DUPLICATIONS IN SUBMITING, DISPLAY REFERENCE NUMBER AFTER SUCCESS BOOKING 
+UPDATE INVOICE BE RECEIPT AND ABLE TO PRINT, ALSO DISPLAY PAID AND UNPAID AMOUNT ...
+SEND TO TIRA INCASE AMOUNT PAID IN FULL
+
+
+"subject_matter_reference":"HSB001",
+
+testing failed quotations
+
+making overlay on loading ...
+
+notifications (sms, email)
+nonmotor
+
+Less than 10 Clicks:
+----------------------
+1. New Quotation
+2. Fill few info concerning customer + vehicle + Amount , and sometimes choose vehicle type 
+3. Choose Risk
+4. Choose payment type + amounts to be paid 
+5. Submit Application
+
+
+*** HAVE TO CHECK ALL RISK with 0 PREMIUM
+
+PUT RATE in pricing so they can see how much is it
+
+confirming on minimum_amounts
+
+checbox and radio in non motor confirmation do not work
+
+finetune payments
+editing sttaus of quotations
+removing /v1/ and using current routes
+EASY SEARCHING OF QUOTATION 
+ADDING LOSS NATURES
+
+Saturday 11 Feb, 23 : 
+----------------------
+1. Download receipt -d
+2. Cover verification -d
+
+Sunday  12 Feb, 23
+-------------------
+1. Nonmotor risks migrations -d
+2. Claims + Policy (Send Policy automatically after quotation being accepted) , send claim notifications to tira automatically -d
+
+Monday  13 Feb, 23
+------------------
+1. Payments -p
+
+Tuesday  14 Feb, 23
+-------------------
+1. Security + settings (users, audit trail, etc) -p
+2. Each user depending on their roles hall see what they are authorized to -d
+
+Timetable after that will be replanned ...
+
+Wednesday  15 Feb, 23
+---------------------
+1. Logo & Other Look and feel - d
+2. Disable risk, product registration for non imt ... -d
+3. Send Policy automatically after quotation being accepted -d
+4. Polish on motor vehicle -c
+
+Thursday  16 Feb, 23
+--------------------
+1. Searching, Editing risks - NP , onbehalf (Polish cont, Payments, Security/Users)
+
+Friday  17 & 18 Feb, 23
+------------------
+1. Dashboard
+
+Sunday  19,20 Feb, 23
+--------------------
+1. Notifications & otps
+
+
+Monday  21 Feb, 23
+--------------------
+1. Endorsements (Shall only be possible for the accepted Quotations), and editing quotation by considering before and after being accepted
+
+Monday  22 Feb, 23
+--------------------
+1. Testing
+
+Monday  22 Feb, 23
+--------------------
+1. Policy (Send Policy automatically after quotation being accepted)
+
+
+- *** Editing, claims(dates) , etc ...
+- ** claim profile buttons visibility
+- ** net premium earned in claim payment, must be auto calculated
+- loss date must be greater than covernote start date
+- look again on claim btns, especially on payments and rejections (only visibility)
+- give possible loss natures
+** resending claims when failed
+
+
+
+GRAPHS 
+- Sales Overview/Volume -> Months vs Sum of Premiums 
+- Total Earning -> Today/This Month/This Year
+- Products Performance -> Risks, Months, Volumes 
+- Number of Customers 
+- Number of Vehicles Registered 
+- Number of Active Covers 
+- Number of Expired covers
+- Number of Pending Covers 
+- Numbe rof pending payments 
+
+----->
+Commercial :
+Tanker
+Trailers
+General
+Own goods
+
+
+
+***
+1.users -pending on user profile ...
+2.endorsments -paying for endorsments
+
+
+**** on payment update , it happens that is full paid why not
+
+Users currently Allowed :-
+System Admin
+Insurer Admin
+Insurer Staff
+Agent Admin
+
+General Summary ;-
+----
+1. quotations 
+2. payments 
+3. claims 
+4. customers 
+-
+5. products 
+6. risks 
+ 
+
+ SELECT status, count(*) as qnty, sum(total_premium_including_tax) as total FROM quotations WHERE MONTH(created_at) = MONTH(now()) and YEAR(created_at) = YEAR(now()) GROUP BY status;
+ SELECT status, count(*) as qnty, sum(total_premium_including_tax) as total FROM quotations WHERE DATE(created_at)  = DATE(now()) and MONTH(created_at) = MONTH(now()) and YEAR(created_at) = YEAR(now()) GROUP BY status;
+
+
+openssl issue 
+https://stackoverflow.com/questions/73832854/php-openssl-pkcs12-read-error0308010cdigital-envelope-routinesunsupported
+
+You can enable legacy option for Openssl 3:
+
+Find and open the file at /etc/ssl/openssl.cnf
+
+At the [default_sect] section change it to the following:
+
+[default_sect]
+activate = 1
+[legacy_sect]
+activate = 1
+Then find the [provider_sect] and change it to the following:
+
+[provider_sect]
+default = default_sect
+legacy = legacy_sect
+After this save the file and restart your PHP application and it should work fine.
+
+
+https://techvblogs.com/blog/deploy-laravel-project-nginx-ubuntu
+
+creating instances :
+https://us-east-2.console.aws.amazon.com/vpc/home?region=us-east-2#Home:
+https://us-east-2.console.aws.amazon.com/ec2/home?region=us-east-2#Instances:
+
+
+
+https://github.com/AfricasTalkingLtd/africastalking-php
+composer require africastalking/africastalking
+
+https://techvblogs.com/blog/deploy-laravel-project-nginx-ubuntu
+
+
+
+
+sms 
+
+aws ec2 create-vpn-connection --type ipsec.1 --customer-gateway-id cgw-0e5b8370a25fb4e82 --vpn-gateway-id vgw-0000dc137394fc717 --options=tira_vpn_custom.json
+
+aws ec2 modify-vpn-connection --vpn-connection-id vpn-01d97ceffb550965f --type ipsec.1 --customer-gateway-id cgw-0e5b8370a25fb4e82 --vpn-gateway-id vgw-0000dc137394fc717 --region af-south-1 --options file:///Users/ab0247w/PROJECTS/LARAVEL_PROJECTS/v2_policypro/tira_vpn_custom.json
+
+aws ec2 modify-vpn-connection --vpn-connection-id vpn-01d97ceffb550965f --customer-gateway-id cgw-0e5b8370a25fb4e82 --vpn-gateway-id vgw-0000dc137394fc717 --region af-south-1 --options file:///Users/ab0247w/PROJECTS/LARAVEL_PROJECTS/v2_policypro/tira_vpn_custom.json
+
+
+aws ec2 modify-vpn-tunnel-options --region af-south-1 --vpn-connection-id vpn-01d97ceffb550965f --vpn-tunnel-outside-ip-address 13.246.55.184 --tunnel-options "Phase2DHGroupNumbers={24}, Phase1LifetimeSeconds=86400"
+
+aws ec2 modify-vpn-tunnel-options --region af-south-1 --vpn-connection-id vpn-01d97ceffb550965f --vpn-tunnel-outside-ip-address 13.246.55.184 --tunnel-options "Phase2DHGroupNumbers=[]"
+aws ec2 modify-vpn-tunnel-options --region af-south-1 --vpn-connection-id vpn-01d97ceffb550965f --vpn-tunnel-outside-ip-address 13.246.55.184 --tunnel-options "Phase1LifetimeSeconds=28000"
+
+aws ec2 modify-vpn-tunnel-options \
+    --vpn-connection-id vpn-0123456789abcdef \
+    --tunnel-options "OutsideIpAddress=203.0.113.1","Phase1EncryptionAlgorithms=[\"AES256\"]","Phase1IntegrityAlgorithms=[\"SHA256\"]","Phase1DHGroupNumbers=[14]","Phase1LifetimeSeconds=28800","Phase2EncryptionAlgorithms=[\"AES256\"]","Phase2IntegrityAlgorithms=[\"SHA256\"]","Phase2DHGroupNumbers=[15]","Phase2LifetimeSeconds=3600"
+aws configure
+
+
+
+
+to check ;-
+float balance after transaction
+working with approval for float
+ssl 
+change password
+recommended in risks assignation
+
+intermediary users ...
+
+check users ....insurer staff dashboard, insurer admin ... generally what they supposed to see 

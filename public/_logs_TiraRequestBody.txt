@@ -1,0 +1,13 @@
+<TiraMsg><CoverNoteVerificationReq>
+                <VerificationHdr>
+                <RequestId>20231206102145</RequestId>
+                <CompanyCode>OAC008</CompanyCode>
+                <SystemCode>TP_INFOMATS_001</SystemCode>
+                </VerificationHdr>
+                <VerificationDtl>
+                <CoverNoteReferenceNumber></CoverNoteReferenceNumber>
+                <StickerNumber></StickerNumber>
+                <MotorRegistrationNumber>77777</MotorRegistrationNumber>
+                <MotorChassisNumber></MotorChassisNumber>
+                </VerificationDtl>
+            </CoverNoteVerificationReq><MsgSignature>j0RGB5xrcZifsIYpOoiw18nowjZoDAV+v1fVvFRBE+/KGbTdy32eWJHV9OQKwW9FXSyAfPrSm5jPxq7OjkPeqdqslEU594S7+w+oZYuxPmebk++Kie0/6a7SLZKjn+UaDKkZ4bBQs9gJtvzQq+ijkHItnt7GBb+rsvo7Pzg9DiNc6zkfYbsGvE5LxDLkcFiaBssR1Hhei1tvTBerkoqxOjjoeaMgvr779Ztf7a/tCoqtmhRuQoAvGW33UJZLcIKhS5yd2STrEWTgYrtMqKtUnIkdDPmODKdcEmGsqxTOkRpOhHs5EiEInhsnT7Yrvm5v20SOqIE4xVPjvMdTkIds1w==</MsgSignature></TiraMsg>

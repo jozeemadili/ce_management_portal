@@ -1,0 +1,26 @@
+{
+	"statusCode": 200,
+	"message": "JIC-1005 - Policy Created Successfully - P/301/1002/2022/008823",
+	"acknowledgementId": "280EP4ZNZ3",
+	"requestId": "20221010170831_04057059",
+	"transactionData": {
+		"ReceiptNo": null,
+		"AssuredCode": "T10187275",
+		"CustomerCode": "T10187275",
+		"PolicyNo": "P/301/1002/2022/008823",
+		"TaxInvoiceNumber": "DNP1002022100948",
+		"TaxInvoiceDate": "2022-10-10T14:08:01.000Z",
+		"EsdData": "30A6BF91422",
+		"ZNumber": "20221010",
+		"DebitNoteNo": "6827",
+		"BrokerCode": "405",
+		"RiskDetails": [
+			{
+				"RegistrationNumber": "T233DFV",
+				"RiskNoteNumber": "7059",
+				"TiraStickerNumber": "22001-28356-97017",
+				"TiraCoverNoteReferenceNumber": "10622-28319-42217"
+			}
+		]
+	}
+}

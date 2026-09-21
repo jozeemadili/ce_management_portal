@@ -1,0 +1,2 @@
+Client error: `POST http://172.16.3.198:30002/api/v2/hmcis/product/6` resulted in a `400 Bad Request` response:
+{"message":"Product with id 6 not found"}

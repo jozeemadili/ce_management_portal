@@ -1,0 +1,1 @@
+cURL error 56: Recv failure: Connection reset by peer (see https://curl.haxx.se/libcurl/c/libcurl-errors.html) for http://41.59.86.178:8091/ecovernote/api/covernote/verification/min/v1/request

@@ -1,0 +1,4 @@
+No Pending Quotation Found with Reference Number : JUB20230424161335
+
+CALLBACK
+{"MotorCoverNoteRefRes":{"ResponseId":"202304241915346267929","RequestId":"JUB20230424161335","CoverNoteReferenceNumber":{},"StickerNumber":{},"ResponseStatusCode":"TIRA026","ResponseStatusDesc":"Invalid or inactive insurance transaction product"},"MsgSignature":"ftCu5hGvpwqxKUFL5W1ezxgT4D32E4bTXnp8ncsZ+avjAerSNq06JhAOXnAcSoY10xfQIRe4YFLGfTsxbQZn3ShEA5ZhoY5y9FA5iYh+aCPmWJSWUGffqMQzMhFtxM5S9beCIJLnnrjkBw\/wRRHqk\/un4grWKsBnrDPfDzjMgyv3ZQVqZtO2VixzyWljBhhZL7iI7PbFw0y49hkRcq9M8dyEgm9VnMWlSu9BokubtA6m1nKwiL5VJA3qp3k7wEnfxt9xiU38+rpyr+HWL0lMNJOGvQk8uo4Xt\/qvAYoG0s4VDufO2eFHqdwFusn2woC11D0sWbJUKE2O7OtrB2LTbg=="}

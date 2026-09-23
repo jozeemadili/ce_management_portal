@@ -1,0 +1,27 @@
+meta {
+  name: My Pledges
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/pledges
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~status: pledged
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Paginated list of the logged-in user's own pledges, plus any pledges they
+  recorded on behalf of someone else (`made_for_self: false` marks those).
+  Optional `status` query filter: pledged | partially_fulfilled | fulfilled
+  | cancelled (disabled by default in this request - enable the param to
+  use it).
+}

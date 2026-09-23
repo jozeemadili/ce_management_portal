@@ -1,0 +1,36 @@
+meta {
+  name: Register (Invite New Visitor)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "first_name": "Bruno",
+    "last_name": "Tester",
+    "phone": "0700111222"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("registrationId", res.body.id);
+  }
+}
+
+docs {
+  Registers a brand-new visitor (not an existing member) for the program -
+  resolved via Member::findOrCreateNewSoul, matched again by phone next
+  time instead of duplicated. church_id is optional (defaults to your own
+  church).
+}

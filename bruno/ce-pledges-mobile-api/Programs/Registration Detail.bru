@@ -1,0 +1,22 @@
+meta {
+  name: Registration Detail
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/programs/registrations/{{registrationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Full detail for one registration - program, member, checked_in /
+  checked_in_at, and scan_url (the same QR-landing URL printed on the PDF -
+  share this via the app's native share sheet). 403s unless you made this
+  registration or it's your own.
+}

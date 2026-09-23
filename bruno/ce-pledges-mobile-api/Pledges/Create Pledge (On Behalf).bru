@@ -1,0 +1,37 @@
+meta {
+  name: Create Pledge (On Behalf)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/pledges
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "campaign_id": 14,
+    "amount": 25000,
+    "frequency": "one_time",
+    "notes": "Pledged on behalf of a member",
+    "member_id": 2
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("pledgeId", res.body.id);
+  }
+}
+
+docs {
+  Same as "Create Pledge (Self)" but with member_id set - run "Search
+  Members" first to find a valid id. The API 403s if that member isn't in
+  the acting member's own church or its direct sub-churches.
+}

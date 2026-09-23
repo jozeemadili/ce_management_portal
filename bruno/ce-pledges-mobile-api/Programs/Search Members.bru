@@ -1,0 +1,25 @@
+meta {
+  name: Search Members
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/programs/members/search?q={{searchQuery}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  q: {{searchQuery}}
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Member lookup for "register someone else" - scoped to the acting
+  member's own church + its direct sub-churches, same bounded scope as
+  Pledges' Search Members.
+}

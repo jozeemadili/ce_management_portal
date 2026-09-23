@@ -1,0 +1,26 @@
+meta {
+  name: Search Members
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/pledges/members/search?q={{searchQuery}}
+  body: none
+  auth: bearer
+}
+
+params:query {
+  q: {{searchQuery}}
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Member lookup for "pledge on behalf of someone else" - searches by
+  name/phone/email, scoped to the acting member's own church + its direct
+  sub-churches. Each result includes existing_pledges so the client can flag
+  "already pledged to this campaign" before submitting.
+}

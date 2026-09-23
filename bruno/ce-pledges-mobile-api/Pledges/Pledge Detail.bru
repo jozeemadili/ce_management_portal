@@ -1,0 +1,24 @@
+meta {
+  name: Pledge Detail
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/pledges/{{pledgeId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Full detail for one pledge, including its contribution/fulfillment
+  history. 403s unless the pledge belongs to the caller's own member record
+  or was recorded by the caller on someone else's behalf.
+
+  Uses the `pledgeId` variable - auto-filled after either "Create Pledge"
+  request, or set it manually to any pledge id you own.
+}

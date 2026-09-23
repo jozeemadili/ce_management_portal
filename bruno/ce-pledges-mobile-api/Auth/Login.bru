@@ -1,0 +1,39 @@
+meta {
+  name: Login
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/login
+  body: json
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+body:json {
+  {
+    "email": "cordinator@gmail.com",
+    "password": "Test@1234"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.token) {
+    bru.setVar("token", res.body.token);
+  }
+}
+
+docs {
+  Public endpoint. Authenticates on email + password (same rules as the web
+  login: password checked with bcrypt, account must have status = Active),
+  and issues a Sanctum bearer token.
+
+  On success, the post-response script automatically saves the token into
+  the `token` environment variable, so every other request in this
+  collection (which sends `Authorization: Bearer {{token}}`) works
+  immediately afterwards without manual copy/paste.
+}

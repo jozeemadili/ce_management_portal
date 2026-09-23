@@ -1,0 +1,22 @@
+meta {
+  name: My Registrations
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/programs/registrations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Paginated list of the logged-in user's own registrations, plus any they
+  registered on behalf of someone else. Each item's made_for_self flag
+  tells you which is which - the client can split this one list into "My
+  Registrations" vs "People I've Invited" tabs.
+}

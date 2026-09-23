@@ -1,0 +1,22 @@
+meta {
+  name: Download PDF
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/programs/registrations/{{registrationId}}/pdf
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns the registration as a raw PDF (Content-Type: application/pdf,
+  Content-Disposition: attachment) - the same QR-coded card printed at a
+  registration desk. Use Bruno's response preview / Save Response to view
+  or save it, it isn't JSON.
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Download PDF
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/pledges/{{pledgeId}}/pdf
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns the pledge as a raw PDF (Content-Type: application/pdf,
+  Content-Disposition: attachment). In Bruno, use "Save Response" /
+  the response preview pane to view or save the file - it isn't JSON, so it
+  won't render in the normal response body view.
+}

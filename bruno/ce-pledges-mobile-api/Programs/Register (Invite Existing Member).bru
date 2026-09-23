@@ -1,0 +1,33 @@
+meta {
+  name: Register (Invite Existing Member)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "member_id": 2
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("registrationId", res.body.id);
+  }
+}
+
+docs {
+  Registers an existing member (run Search Members first) for the program
+  on your behalf - "invite someone else". 403s if that member isn't in
+  your own church or its direct sub-churches.
+}

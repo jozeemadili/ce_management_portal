@@ -1,0 +1,39 @@
+meta {
+  name: Create Pledge (Self)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/pledges
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "campaign_id": 14,
+    "amount": 50000,
+    "frequency": "one_time",
+    "notes": "Bruno test pledge"
+  }
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("pledgeId", res.body.id);
+  }
+}
+
+docs {
+  Creates a pledge for the logged-in user's own member record. `frequency`
+  must be one of: one_time, weekly, monthly, custom. `member_id` is omitted
+  here - see "Create Pledge (On Behalf)" for pledging for someone else.
+
+  On success, saves the new pledge's id into the `pledgeId` variable so the
+  My Pledges / Pledge Detail / Download PDF requests below point at it.
+}

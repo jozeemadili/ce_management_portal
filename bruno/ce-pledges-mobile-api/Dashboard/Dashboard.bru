@@ -1,0 +1,22 @@
+meta {
+  name: Dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/dashboard
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Home dashboard payload: `upcoming_programs` (up to 8 upcoming special
+  programs visible to the member) and `pledge_summary` (count,
+  total_pledged, total_fulfilled, outstanding, recent - last 5 pledges).
+  Both are null/empty-safe if the user has no linked member record.
+}

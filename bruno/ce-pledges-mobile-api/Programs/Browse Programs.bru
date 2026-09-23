@@ -1,0 +1,22 @@
+meta {
+  name: Browse Programs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/programs
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Special, active, not-yet-ended programs visible to the member (global +
+  own church/department/cell scope). Each item includes
+  already_registered, computed from the member's own registered
+  registrations.
+}

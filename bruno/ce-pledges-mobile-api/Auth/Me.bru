@@ -1,0 +1,21 @@
+meta {
+  name: Me
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Returns the current authenticated user, plus their linked member record
+  (id, name, phone, church) if one exists. A null `member` means pledging
+  endpoints will 403 - the account has no linked member profile.
+}

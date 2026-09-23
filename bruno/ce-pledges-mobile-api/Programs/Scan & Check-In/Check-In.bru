@@ -1,0 +1,23 @@
+meta {
+  name: Check-In
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/programs/scan/{{registrationId}}/check-in
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Confirms check-in after Scan returned ok:true - creates the
+  ProgramAttendance row for today's occurrence (check_in_method: qr).
+  Returns 201 with checked_in_at on success, or 422 with the same ok:false
+  shape as Scan if it's no longer eligible (e.g. someone else already
+  checked this registration in between your Scan and Check-In calls).
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Browse Campaigns
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/pledges/campaigns
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Active pledge campaigns visible to the member (global campaigns, or
+  campaigns scoped to the member's own church). Each item includes computed
+  total_pledged and progress_percent.
+}

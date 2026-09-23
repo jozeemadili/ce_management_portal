@@ -1,0 +1,23 @@
+meta {
+  name: Scan
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/programs/scan/{{registrationId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+docs {
+  Hit right after a camera scans a registration's QR code (the printed/PDF
+  QR encodes the web scan URL - extract the trailing numeric id from it and
+  call this). Never errors on an invalid state - returns ok:false with a
+  human-readable reason instead (program cancelled/draft, registration
+  cancelled, unpaid on a paid program, or already checked in today).
+}

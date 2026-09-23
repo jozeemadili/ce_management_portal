@@ -9,6 +9,7 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Company;
 use App\Models\RolePermission;
 use App\Models\Permission;
@@ -20,7 +21,7 @@ use App\Models\Permission;
  */
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasApiTokens, Notifiable;
 
 	protected $table = 'users';
 

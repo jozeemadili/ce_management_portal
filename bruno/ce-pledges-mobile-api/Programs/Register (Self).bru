@@ -1,0 +1,34 @@
+meta {
+  name: Register (Self)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/programs/{{programId}}/register
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {}
+}
+
+script:post-response {
+  if (res.body && res.body.id) {
+    bru.setVar("registrationId", res.body.id);
+  }
+}
+
+docs {
+  Registers the acting member's own profile for the program (no body
+  needed - omit member_id/first_name to default to self). 422s if already
+  registered, if the program isn't special/active.
+
+  On success, saves the new registration's id into `registrationId` so
+  Registration Detail / Download PDF / Scan / Check-In below point at it.
+}

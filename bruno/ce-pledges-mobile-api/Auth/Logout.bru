@@ -1,0 +1,27 @@
+meta {
+  name: Logout
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/logout
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("token", "");
+  }
+}
+
+docs {
+  Revokes the current Sanctum token (deletes it server-side). Clears the
+  `token` environment variable on success so a stale token isn't reused by
+  the next request.
+}

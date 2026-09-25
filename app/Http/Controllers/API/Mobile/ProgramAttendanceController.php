@@ -64,17 +64,24 @@ class ProgramAttendanceController extends Controller
                 'reference' => $registration->registration_reference,
                 'registration_status' => $registration->registration_status,
                 'payment_status' => $registration->payment_status,
+                'registered_at' => optional($registration->registered_at)->toDateTimeString(),
             ],
             'program' => $program ? [
                 'id' => $program->id,
                 'name' => $program->name,
                 'location' => $program->location,
+                'start_date' => optional($program->start_date)->toDateString(),
             ] : null,
             'member' => $member ? [
                 'id' => $member->id,
                 'name' => trim($member->first_name . ' ' . $member->last_name),
                 'church' => optional($member->church)->name,
             ] : null,
+            // Same "Checked in {date}" note the web scan page shows under the
+            // check-in button (the registration's attendance record).
+            'checked_in_at' => $registration->relationLoaded('attendance') && $registration->attendance
+                ? optional($registration->attendance->checked_in_at)->toDateTimeString()
+                : null,
         ];
     }
 
@@ -87,7 +94,7 @@ class ProgramAttendanceController extends Controller
      */
     public function scan(Request $request, ProgramRegistration $registration)
     {
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program', 'member.church', 'attendance']);
 
         [$ok, $message] = $this->validateScan($registration);
 
@@ -96,7 +103,7 @@ class ProgramAttendanceController extends Controller
 
     public function checkIn(Request $request, ProgramRegistration $registration)
     {
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program', 'member.church', 'attendance']);
 
         [$ok, $message, $occurrence] = $this->validateScan($registration);
 

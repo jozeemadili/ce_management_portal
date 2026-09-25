@@ -39,6 +39,7 @@ class ProgramRegistrationController extends Controller
     private function registrationPayload(ProgramRegistration $registration, ?Member $viewer = null, bool $detailed = false): array
     {
         $program = $registration->program;
+        $member = $registration->relationLoaded('member') ? $registration->member : null;
 
         $payload = [
             'id' => $registration->id,
@@ -48,16 +49,25 @@ class ProgramRegistrationController extends Controller
             'banner_url' => optional($program)->banner_path ? asset('storage/' . $program->banner_path) : null,
             'location' => optional($program)->location,
             'start_date' => optional(optional($program)->start_date)->toDateString(),
+            'end_date' => optional(optional($program)->end_date)->toDateString(),
             'start_time' => optional($program)->start_time,
+            'end_time' => optional($program)->end_time,
+            'access_type' => optional($program)->access_type,
+            'registration_fee' => (float) optional($program)->registration_fee,
+            'currency' => optional($program)->currency,
             'registration_status' => $registration->registration_status,
             'payment_status' => $registration->payment_status,
             'registered_at' => optional($registration->registered_at)->toDateTimeString(),
             'made_for_self' => $viewer ? $registration->member_id === $viewer->id : null,
-            'member' => $registration->relationLoaded('member') && $registration->member ? [
-                'id' => $registration->member->id,
-                'name' => trim($registration->member->first_name . ' ' . $registration->member->last_name),
+            'member' => $member ? [
+                'id' => $member->id,
+                'name' => trim($member->first_name . ' ' . $member->last_name),
+                'church' => $member->relationLoaded('church') ? optional($member->church)->name : null,
             ] : null,
             'scan_url' => route('program-scan.show', $registration->id),
+            // Same link the web confirmation/detail pages copy as the
+            // "invitation link" - the portal's registration detail page.
+            'share_url' => route('my-programs.show', $registration->id),
         ];
 
         if ($detailed) {
@@ -70,10 +80,21 @@ class ProgramRegistrationController extends Controller
     }
 
     /**
-     * Member lookup for "register someone else" - scoped to the acting
-     * member's own church + sub-churches, unlike the web's staff-facing
-     * MyProgramRegistrationController::searchMembers() which takes an
-     * arbitrary church_id.
+     * Churches for the "Register Someone Else" church picker - every church,
+     * same list the web registration desk modal offers.
+     */
+    public function churches()
+    {
+        return response()->json(
+            Church::orderBy('name')->get(['id', 'name'])->values()
+        );
+    }
+
+    /**
+     * Member lookup for "register someone else". With church_id, searches
+     * that church only - same as the web registration desk
+     * (MyProgramRegistrationController::searchMembers()). Without it, falls
+     * back to the acting member's own church + sub-churches.
      */
     public function searchMembers(Request $request)
     {
@@ -82,11 +103,15 @@ class ProgramRegistrationController extends Controller
 
         abort_if($search === '', 422, 'Provide a search term.');
 
-        $churchIds = $this->scopedChurchIds($member);
+        $query = Member::with('church')->where('member_type', 'member');
 
-        $results = Member::with('church')
-            ->where('member_type', 'member')
-            ->whereIn('church_id', $churchIds)
+        if ($request->filled('church_id')) {
+            $query->where('church_id', $request->church_id);
+        } else {
+            $query->whereIn('church_id', $this->scopedChurchIds($member));
+        }
+
+        $results = $query
             ->where(function ($q) use ($search) {
                 $q->where('first_name', 'like', "%{$search}%")
                   ->orWhere('last_name', 'like', "%{$search}%")
@@ -106,9 +131,10 @@ class ProgramRegistrationController extends Controller
 
     /**
      * Registers the acting member's own profile by default. Pass member_id
-     * (an existing member, scope-checked against the acting member's own
-     * church) or first_name/last_name/phone/church_id (a brand-new visitor,
-     * via findOrCreateNewSoul) to register/invite someone else instead.
+     * (an existing member of any church, picked via the church + member
+     * search - same as the web registration desk) or
+     * first_name/last_name/phone/church_id (a brand-new visitor, via
+     * findOrCreateNewSoul) to register/invite someone else instead.
      */
     public function store(Request $request, Program $program)
     {
@@ -119,12 +145,6 @@ class ProgramRegistrationController extends Controller
 
         if ($request->filled('member_id')) {
             $member = Member::where('member_type', 'member')->findOrFail($request->member_id);
-
-            abort_unless(
-                in_array($member->church_id, $this->scopedChurchIds($actingMember)),
-                403,
-                'You may only register members of your own church.'
-            );
         } elseif ($request->filled('first_name')) {
             $data = $request->validate([
                 'first_name' => 'required|string|max:255',
@@ -155,7 +175,7 @@ class ProgramRegistrationController extends Controller
 
         ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray());
 
-        $registration->load(['program', 'member']);
+        $registration->load(['program', 'member.church']);
 
         return response()->json($this->registrationPayload($registration, $actingMember), 201);
     }
@@ -169,7 +189,7 @@ class ProgramRegistrationController extends Controller
     {
         $member = $this->currentMember($request);
 
-        $registrations = ProgramRegistration::with(['program', 'member'])
+        $registrations = ProgramRegistration::with(['program', 'member.church'])
             ->where(function ($q) use ($member, $request) {
                 $q->where('member_id', $member->id)
                   ->orWhere('registered_by', $request->user()->id);

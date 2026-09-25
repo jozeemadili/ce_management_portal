@@ -48,6 +48,7 @@ class ProgramController extends Controller
             'start_date' => optional($program->start_date)->toDateString(),
             'end_date' => optional($program->end_date)->toDateString(),
             'start_time' => $program->start_time,
+            'end_time' => $program->end_time,
             'access_type' => $program->access_type,
             'registration_fee' => (float) $program->registration_fee,
             'currency' => $program->currency,

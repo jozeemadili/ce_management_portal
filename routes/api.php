@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
         // Literal routes registered before the {program}/{registration}
         // wildcard routes below, same ordering caution routes/web.php calls
         // out for its programs/browse vs programs/{program}.
+        Route::get('programs/churches', [ProgramRegistrationController::class, 'churches']);
         Route::get('programs/members/search', [ProgramRegistrationController::class, 'searchMembers']);
         Route::get('programs/registrations', [ProgramRegistrationController::class, 'index']);
         Route::get('programs/registrations/{registration}', [ProgramRegistrationController::class, 'show']);

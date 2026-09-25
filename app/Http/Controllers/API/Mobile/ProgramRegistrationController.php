@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Mobile;
+namespace App\Http\Controllers\API\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Models\Church;
@@ -163,7 +163,7 @@ class ProgramRegistrationController extends Controller
     /**
      * The logged-in user's own registrations, plus any they registered on
      * behalf of someone else (their own is a subset; "made_for_self" tells
-     * the client which is which - mirrors Api\Mobile\PledgeController::index()).
+     * the client which is which - mirrors API\Mobile\PledgeController::index()).
      */
     public function index(Request $request)
     {

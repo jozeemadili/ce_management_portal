@@ -2,13 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\Tests\OpenAIs\DalleControllers;
-use App\Http\Controllers\Api\Mobile\AuthController;
-use App\Http\Controllers\Api\Mobile\DashboardController;
-use App\Http\Controllers\Api\Mobile\PledgeCampaignController;
-use App\Http\Controllers\Api\Mobile\PledgeController;
-use App\Http\Controllers\Api\Mobile\ProgramAttendanceController;
-use App\Http\Controllers\Api\Mobile\ProgramController;
-use App\Http\Controllers\Api\Mobile\ProgramRegistrationController;
+use App\Http\Controllers\API\Mobile\AuthController;
+use App\Http\Controllers\API\Mobile\DashboardController;
+use App\Http\Controllers\API\Mobile\PledgeCampaignController;
+use App\Http\Controllers\API\Mobile\PledgeController;
+use App\Http\Controllers\API\Mobile\ProgramAttendanceController;
+use App\Http\Controllers\API\Mobile\ProgramController;
+use App\Http\Controllers\API\Mobile\ProgramRegistrationController;
 
 
 

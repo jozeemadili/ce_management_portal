@@ -69,6 +69,9 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
 
     Route::get('member/management', [MemberManagementController::class, 'index'])->name('member.management');
     Route::get('member/export', [MemberManagementController::class, 'export'])->name('members-export');
+    Route::get('member/import/template', [MemberManagementController::class, 'importTemplate'])->name('members.import.template');
+    Route::post('member/import/preview', [MemberManagementController::class, 'importPreview'])->name('members.import.preview');
+    Route::post('member/import', [MemberManagementController::class, 'import'])->name('members.import');
     Route::put('/members/{member}', [MemberManagementController::class, 'update'])->name('members.update');
 
 

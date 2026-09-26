@@ -5,6 +5,12 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+// Never print PHP notices into responses: on newer PHP versions, vendor
+// packages raise deprecation notices before Laravel's own error handling is
+// set up, and a printed notice corrupts JSON (mobile API, AJAX) and PDF output.
+// Laravel still reports and logs real errors itself.
+ini_set('display_errors', '0');
+
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance

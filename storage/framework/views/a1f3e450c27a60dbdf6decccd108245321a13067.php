@@ -1,9 +1,7 @@
-@extends('layouts.admin.master')
+<?php $__env->startSection('title', 'Member Management'); ?>
 
-@section('title', 'Member Management')
-
-@push('css')
-<link rel="stylesheet" type="text/css" href="{{ asset('assets/css/select2.css') }}">
+<?php $__env->startPush('css'); ?>
+<link rel="stylesheet" type="text/css" href="<?php echo e(asset('assets/css/select2.css')); ?>">
 <style>
     .select2-container .select2-selection--single {
         height: 42px !important;
@@ -104,18 +102,18 @@
     .nav-tabs .nav-link { font-weight: 600; font-size: .85rem; }
     .modal-section-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: #9aa2b1; font-weight: 700; margin: 4px 0 10px; }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
-@component('components.breadcrumb')
-    @slot('breadcrumb_title')
+<?php $__env->startComponent('components.breadcrumb'); ?>
+    <?php $__env->slot('breadcrumb_title'); ?>
         <h3>Member Management</h3>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
-    @slot('breadcrumb_action_buttons')
+    <?php $__env->slot('breadcrumb_action_buttons'); ?>
         <li>
-            <a class="btn btn-outline-success" href="{{ route('members-export', request()->query()) }}">
+            <a class="btn btn-outline-success" href="<?php echo e(route('members-export', request()->query())); ?>">
                 Export Excel <i class="icofont icofont-file-excel"></i>
             </a>
         </li>
@@ -129,40 +127,42 @@
                 New Member <i class="icofont icofont-plus-circle"></i>
             </button>
         </li>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
     <li class="breadcrumb-item">Member</li>
     <li class="breadcrumb-item active">Management</li>
-@endcomponent
+<?php echo $__env->renderComponent(); ?>
 
 <div class="container-fluid">
 
-{{-- ERRORS --}}
-@if ($errors->any())
-    @foreach ($errors->all() as $error)
+
+<?php if($errors->any()): ?>
+    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <div class="alert alert-danger alert-dismissible fade show">
-            {{ $error }}
+            <?php echo e($error); ?>
+
             <button class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    @endforeach
-@endif
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php endif; ?>
 
-{{-- SUCCESS --}}
-@if(session('success'))
+
+<?php if(session('success')): ?>
     <div class="alert alert-success alert-dismissible fade show">
-        {{ session('success') }}
+        <?php echo e(session('success')); ?>
+
         <button class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-@endif
+<?php endif; ?>
 
-{{-- ================= STAT CARDS ================= --}}
+
 <div class="row mb-3">
     <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
         <div class="card member-stat-card">
             <div class="stat-body">
                 <div class="member-stat-icon bg-total"><i class="icofont icofont-people"></i></div>
                 <div>
-                    <p class="member-stat-value">{{ $stats['total'] }}</p>
+                    <p class="member-stat-value"><?php echo e($stats['total']); ?></p>
                     <p class="member-stat-label">Total Members</p>
                 </div>
             </div>
@@ -173,7 +173,7 @@
             <div class="stat-body">
                 <div class="member-stat-icon bg-foundation"><i class="icofont icofont-graduate-alt"></i></div>
                 <div>
-                    <p class="member-stat-value">{{ $stats['foundation'] }}</p>
+                    <p class="member-stat-value"><?php echo e($stats['foundation']); ?></p>
                     <p class="member-stat-label">Foundation Classes</p>
                 </div>
             </div>
@@ -184,7 +184,7 @@
             <div class="stat-body">
                 <div class="member-stat-icon bg-baptized"><i class="icofont icofont-water-drop"></i></div>
                 <div>
-                    <p class="member-stat-value">{{ $stats['baptized'] }}</p>
+                    <p class="member-stat-value"><?php echo e($stats['baptized']); ?></p>
                     <p class="member-stat-label">Baptized</p>
                 </div>
             </div>
@@ -195,7 +195,7 @@
             <div class="stat-body">
                 <div class="member-stat-icon bg-married"><i class="icofont icofont-heart-alt"></i></div>
                 <div>
-                    <p class="member-stat-value">{{ $stats['married'] }}</p>
+                    <p class="member-stat-value"><?php echo e($stats['married']); ?></p>
                     <p class="member-stat-label">Married</p>
                 </div>
             </div>
@@ -208,42 +208,42 @@
 <div class="card member-card">
 <div class="card-body">
 
-{{-- ================= FILTER BAR ================= --}}
-<form method="GET" action="{{ route('member.management') }}" class="member-filter-bar">
+
+<form method="GET" action="<?php echo e(route('member.management')); ?>" class="member-filter-bar">
 <div class="row g-2 align-items-end">
     <div class="col-md-4">
         <label class="form-label mb-1">Search</label>
-        <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Search by name, phone or email">
+        <input type="text" name="q" value="<?php echo e(request('q')); ?>" class="form-control" placeholder="Search by name, phone or email">
     </div>
     <div class="col-md-3">
         <label class="form-label mb-1">Church</label>
         <select name="church_id" class="form-control">
             <option value="">All Churches</option>
-            @foreach($churches as $church)
-                <option value="{{ $church->id }}" @selected(request('church_id') == $church->id)>{{ strtoupper($church->name) }}</option>
-            @endforeach
+            <?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $church): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($church->id); ?>" <?php if(request('church_id') == $church->id): echo 'selected'; endif; ?>><?php echo e(strtoupper($church->name)); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </select>
     </div>
     <div class="col-md-3">
         <label class="form-label mb-1">Designation</label>
         <select name="designation_id" class="form-control">
             <option value="">All Designations</option>
-            @foreach($designations as $des)
-                <option value="{{ $des->id }}" @selected(request('designation_id') == $des->id)>{{ ucwords($des->name) }}</option>
-            @endforeach
+            <?php $__currentLoopData = $designations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $des): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($des->id); ?>" <?php if(request('designation_id') == $des->id): echo 'selected'; endif; ?>><?php echo e(ucwords($des->name)); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </select>
     </div>
     <div class="col-md-2 d-flex gap-2">
         <button class="btn btn-primary w-100" type="submit"><i class="icofont icofont-search"></i> Filter</button>
-        @if(request()->anyFilled(['q','church_id','designation_id']))
-        <a href="{{ route('member.management') }}" class="btn btn-outline-secondary" title="Clear filters"><i class="icofont icofont-refresh"></i></a>
-        @endif
+        <?php if(request()->anyFilled(['q','church_id','designation_id'])): ?>
+        <a href="<?php echo e(route('member.management')); ?>" class="btn btn-outline-secondary" title="Clear filters"><i class="icofont icofont-refresh"></i></a>
+        <?php endif; ?>
     </div>
 </div>
 </form>
 
-{{-- MEMBERS TABLE --}}
-@if($Members->count())
+
+<?php if($Members->count()): ?>
 <div class="table-responsive">
     <table class="table member-table align-middle">
         <thead>
@@ -258,40 +258,40 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($Members as $Member)
+            <?php $__currentLoopData = $Members; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $Member): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <tr>
-                    <td>{{ $loop->iteration + ($Members->currentPage() - 1) * $Members->perPage() }}</td>
+                    <td><?php echo e($loop->iteration + ($Members->currentPage() - 1) * $Members->perPage()); ?></td>
 
                     <td>
                         <div class="member-name-cell">
-                            <div class="member-avatar">{{ strtoupper(substr($Member->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($Member->last_name ?? '', 0, 1)) }}</div>
-                            <span class="fw-semibold">{{ strtoupper(trim($Member->first_name . ' ' . $Member->last_name)) }}</span>
+                            <div class="member-avatar"><?php echo e(strtoupper(substr($Member->first_name ?? '?', 0, 1))); ?><?php echo e(strtoupper(substr($Member->last_name ?? '', 0, 1))); ?></div>
+                            <span class="fw-semibold"><?php echo e(strtoupper(trim($Member->first_name . ' ' . $Member->last_name))); ?></span>
                         </div>
                     </td>
 
                     <td>
                         <div class="member-contact">
-                            @if($Member->phone)
-                                <div><i class="icofont icofont-phone"></i> {{ $Member->phone }}</div>
-                            @endif
-                            @if($Member->email)
-                                <div><i class="icofont icofont-email"></i> {{ $Member->email }}</div>
-                            @endif
-                            @if(!$Member->phone && !$Member->email)
+                            <?php if($Member->phone): ?>
+                                <div><i class="icofont icofont-phone"></i> <?php echo e($Member->phone); ?></div>
+                            <?php endif; ?>
+                            <?php if($Member->email): ?>
+                                <div><i class="icofont icofont-email"></i> <?php echo e($Member->email); ?></div>
+                            <?php endif; ?>
+                            <?php if(!$Member->phone && !$Member->email): ?>
                                 <span class="badge-na">N/A</span>
-                            @endif
+                            <?php endif; ?>
                         </div>
                     </td>
 
                     <td>
-                        @forelse($Member->member_roles as $role)
-                            <span class="badge-designation-pill">{{ ucwords($role->member_designation->name ?? '') }}</span>
-                        @empty
+                        <?php $__empty_1 = true; $__currentLoopData = $Member->member_roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <span class="badge-designation-pill"><?php echo e(ucwords($role->member_designation->name ?? '')); ?></span>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <span class="badge-na">N/A</span>
-                        @endforelse
+                        <?php endif; ?>
                     </td>
 
-                    <td>{{ $Member->church->name ?? 'N/A' }}</td>
+                    <td><?php echo e($Member->church->name ?? 'N/A'); ?></td>
 
                     <td>
                         <span class="badge-status-active">ACTIVE</span>
@@ -299,29 +299,30 @@
 
                     <td class="text-end">
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#viewMemberModal{{ $Member->id }}" title="View">
+                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#viewMemberModal<?php echo e($Member->id); ?>" title="View">
                                 <i class="icofont icofont-eye"></i>
                             </button>
-                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#editMemberModal{{ $Member->id }}" title="Edit">
+                            <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#editMemberModal<?php echo e($Member->id); ?>" title="Edit">
                                 <i class="icofont icofont-edit"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </tbody>
     </table>
 
     <div class="d-flex justify-content-end">
-        {{ $Members->links() }}
+        <?php echo e($Members->links()); ?>
+
     </div>
 </div>
-@else
+<?php else: ?>
 <div class="member-empty">
     <i class="icofont icofont-people"></i>
-    <p class="mb-0">No members found @if(request()->anyFilled(['q','church_id','designation_id'])) for the selected filters @endif.</p>
+    <p class="mb-0">No members found <?php if(request()->anyFilled(['q','church_id','designation_id'])): ?> for the selected filters <?php endif; ?>.</p>
 </div>
-@endif
+<?php endif; ?>
 
 </div>
 </div>
@@ -330,7 +331,7 @@
 
 </div>
 
-{{-- ================= NEW MEMBER MODAL ================= --}}
+
 <div class="modal fade" id="newMemberModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -341,7 +342,21 @@
             </div>
 
             <div class="modal-body">
-                @livewire('members.create-member')
+                <?php
+if (! isset($_instance)) {
+    $html = \Livewire\Livewire::mount('members.create-member')->html();
+} elseif ($_instance->childHasBeenRendered('pGoeVQK')) {
+    $componentId = $_instance->getRenderedChildComponentId('pGoeVQK');
+    $componentTag = $_instance->getRenderedChildComponentTagName('pGoeVQK');
+    $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
+    $_instance->preserveRenderedChild('pGoeVQK');
+} else {
+    $response = \Livewire\Livewire::mount('members.create-member');
+    $html = $response->html();
+    $_instance->logRenderedChild('pGoeVQK', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+}
+echo $html;
+?>
             </div>
 
             <div class="modal-footer">
@@ -354,7 +369,7 @@
     </div>
 </div>
 
-{{-- ================= BULK UPLOAD MODAL ================= --}}
+
 <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
@@ -364,20 +379,20 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
 
-            @if($uploadChurch)
-            {{-- Step 1: choose a file --}}
-            <form id="bulkUploadForm" enctype="multipart/form-data" data-preview-url="{{ route('members.import.preview') }}">
-                @csrf
+            <?php if($uploadChurch): ?>
+            
+            <form id="bulkUploadForm" enctype="multipart/form-data" data-preview-url="<?php echo e(route('members.import.preview')); ?>">
+                <?php echo csrf_field(); ?>
                 <div class="modal-body">
                     <div class="alert alert-info">
                         <i class="icofont icofont-church"></i>
                         Every member in the file will be added to your church:
-                        <strong>{{ strtoupper($uploadChurch->name) }}</strong>.
+                        <strong><?php echo e(strtoupper($uploadChurch->name)); ?></strong>.
                     </div>
 
                     <ol class="ps-3 mb-3">
                         <li class="mb-2">
-                            <a href="{{ route('members.import.template') }}">
+                            <a href="<?php echo e(route('members.import.template')); ?>">
                                 <i class="icofont icofont-download"></i> Download the Excel template
                             </a>
                         </li>
@@ -402,9 +417,9 @@
                 </div>
             </form>
 
-            {{-- Step 2: review what will be imported --}}
-            <form id="bulkImportForm" method="POST" action="{{ route('members.import') }}" class="d-none">
-                @csrf
+            
+            <form id="bulkImportForm" method="POST" action="<?php echo e(route('members.import')); ?>" class="d-none">
+                <?php echo csrf_field(); ?>
                 <input type="hidden" name="token" id="bulkImportToken">
                 <div class="modal-body">
                     <div class="alert alert-success mb-3" id="bulkImportSummary"></div>
@@ -432,28 +447,29 @@
                     <button type="submit" class="btn btn-primary" id="bulkImportSubmitBtn"></button>
                 </div>
             </form>
-            @else
+            <?php else: ?>
             <div class="modal-body">
                 <div class="alert alert-warning mb-0">
                     Your account is not linked to a church, so members cannot be uploaded from it.
                     Bulk upload adds members to the uploader's own church.
                 </div>
             </div>
-            @endif
+            <?php endif; ?>
 
         </div>
     </div>
 </div>
 
-{{-- ================= VIEW MEMBER MODAL ================= --}}
-@foreach($Members as $Member)
-<div class="modal fade" id="viewMemberModal{{ $Member->id }}" tabindex="-1" aria-hidden="true">
+
+<?php $__currentLoopData = $Members; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $Member): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<div class="modal fade" id="viewMemberModal<?php echo e($Member->id); ?>" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
 
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title">
-                    <i class="icofont icofont-user-alt-3"></i> {{ $Member->first_name }} {{ $Member->last_name }}
+                    <i class="icofont icofont-user-alt-3"></i> <?php echo e($Member->first_name); ?> <?php echo e($Member->last_name); ?>
+
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
@@ -463,27 +479,32 @@
 
                     <div class="col-md-6">
                         <strong>Full Name:</strong><br>
-                        {{ $Member->first_name }} {{ $Member->last_name }}
+                        <?php echo e($Member->first_name); ?> <?php echo e($Member->last_name); ?>
+
                     </div>
 
                     <div class="col-md-6">
                         <strong>Email:</strong><br>
-                        {{ $Member->email ?? 'N/A' }}
+                        <?php echo e($Member->email ?? 'N/A'); ?>
+
                     </div>
 
                     <div class="col-md-6">
                         <strong>Phone:</strong><br>
-                        {{ $Member->phone ?? 'N/A' }}
+                        <?php echo e($Member->phone ?? 'N/A'); ?>
+
                     </div>
 
                     <div class="col-md-6">
                         <strong>Church:</strong><br>
-                        {{ $Member->church->name ?? 'N/A' }}
+                        <?php echo e($Member->church->name ?? 'N/A'); ?>
+
                     </div>
 
                     <div class="col-md-6">
                         <strong>Church Location:</strong><br>
-                        {{ $Member->church->physical_location ?? 'N/A' }}
+                        <?php echo e($Member->church->physical_location ?? 'N/A'); ?>
+
                     </div>
 
                     <div class="col-md-6">
@@ -493,71 +514,78 @@
 
                     <div class="col-md-12">
                         <strong>Designations:</strong><br>
-                        @forelse($Member->member_roles as $role)
-                            <span class="badge-designation-pill">{{ ucwords($role->member_designation->name ?? '') }}</span>
-                        @empty
+                        <?php $__empty_1 = true; $__currentLoopData = $Member->member_roles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $role): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <span class="badge-designation-pill"><?php echo e(ucwords($role->member_designation->name ?? '')); ?></span>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <span class="badge-na">No designation assigned</span>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
 
                     <div class="col-md-12">
                         <strong>Departments:</strong><br>
-                        @forelse($Member->departments as $department)
-                            <span class="badge-designation-pill">{{ $department->name }}</span>
-                        @empty
+                        <?php $__empty_1 = true; $__currentLoopData = $Member->departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $department): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <span class="badge-designation-pill"><?php echo e($department->name); ?></span>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <span class="badge-na">Not assigned</span>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
 
                     <div class="col-md-12">
                         <strong>Cell Groups:</strong><br>
-                        @forelse($Member->cell_groups as $cell)
-                            <span class="badge-designation-pill">{{ $cell->name }}</span>
-                        @empty
+                        <?php $__empty_1 = true; $__currentLoopData = $Member->cell_groups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $cell): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <span class="badge-designation-pill"><?php echo e($cell->name); ?></span>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <span class="badge-na">Not assigned</span>
-                        @endforelse
+                        <?php endif; ?>
                     </div>
 
                     <div class="col-md-6">
                         <strong>Joined On:</strong><br>
-                        {{ $Member->created_at->format('d M Y') }}
+                        <?php echo e($Member->created_at->format('d M Y')); ?>
+
                     </div>
 
                     <div class="row g-3">
                         <div class="col-md-6">
                             <strong>Foundation Classes:</strong><br>
-                            <span class="badge bg-{{ $Member->foundation_clases === 'yes' ? 'success' : 'secondary' }}">
-                                {{ strtoupper($Member->foundation_clases ?? 'N/A') }}
+                            <span class="badge bg-<?php echo e($Member->foundation_clases === 'yes' ? 'success' : 'secondary'); ?>">
+                                <?php echo e(strtoupper($Member->foundation_clases ?? 'N/A')); ?>
+
                             </span>
                         </div>
 
                         <div class="col-md-6">
                             <strong>Foundation Class Date:</strong><br>
-                            {{ $Member->foundation_clases_date ? $Member->foundation_clases_date->format('d M Y') : 'N/A' }}
+                            <?php echo e($Member->foundation_clases_date ? $Member->foundation_clases_date->format('d M Y') : 'N/A'); ?>
+
                         </div>
 
                         <div class="col-md-6">
                             <strong>Baptism Status:</strong><br>
-                            <span class="badge bg-{{ $Member->baptism_status === 'yes' ? 'success' : 'secondary' }}">
-                                {{ strtoupper($Member->baptism_status ?? 'N/A') }}
+                            <span class="badge bg-<?php echo e($Member->baptism_status === 'yes' ? 'success' : 'secondary'); ?>">
+                                <?php echo e(strtoupper($Member->baptism_status ?? 'N/A')); ?>
+
                             </span>
                         </div>
 
                         <div class="col-md-6">
                             <strong>Baptism Date:</strong><br>
-                            {{ $Member->baptism_date ? $Member->baptism_date->format('d M Y') : 'N/A' }}
+                            <?php echo e($Member->baptism_date ? $Member->baptism_date->format('d M Y') : 'N/A'); ?>
+
                         </div>
 
                         <div class="col-md-6">
                             <strong>Marriage Status:</strong><br>
-                            <span class="badge bg-{{ $Member->marriage_status === 'married' ? 'success' : 'secondary' }}">
-                                {{ strtoupper($Member->marriage_status ?? 'N/A') }}
+                            <span class="badge bg-<?php echo e($Member->marriage_status === 'married' ? 'success' : 'secondary'); ?>">
+                                <?php echo e(strtoupper($Member->marriage_status ?? 'N/A')); ?>
+
                             </span>
                         </div>
 
                         <div class="col-md-6">
                             <strong>Marriage Date:</strong><br>
-                            {{ $Member->marriage_dates ? $Member->marriage_dates->format('d M Y') : 'N/A' }}
+                            <?php echo e($Member->marriage_dates ? $Member->marriage_dates->format('d M Y') : 'N/A'); ?>
+
                         </div>
 
                     </div>
@@ -574,86 +602,87 @@
         </div>
     </div>
 </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-{{-- ================= EDIT MEMBER MODAL ================= --}}
-@foreach($Members as $Member)
-<div class="modal fade" id="editMemberModal{{ $Member->id }}" tabindex="-1" aria-hidden="true">
+
+<?php $__currentLoopData = $Members; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $Member): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<div class="modal fade" id="editMemberModal<?php echo e($Member->id); ?>" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
 
-            <form method="POST" action="{{ route('members.update', $Member->id) }}">
-                @csrf
-                @method('PUT')
+            <form method="POST" action="<?php echo e(route('members.update', $Member->id)); ?>">
+                <?php echo csrf_field(); ?>
+                <?php echo method_field('PUT'); ?>
 
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">
-                        <i class="icofont icofont-edit"></i> Edit Member — {{ $Member->first_name }} {{ $Member->last_name }}
+                        <i class="icofont icofont-edit"></i> Edit Member — <?php echo e($Member->first_name); ?> <?php echo e($Member->last_name); ?>
+
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body">
 
-                    {{-- TABS --}}
+                    
                     <ul class="nav nav-tabs" role="tablist">
                         <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile{{ $Member->id }}">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile<?php echo e($Member->id); ?>">
                                 Profile
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#roles{{ $Member->id }}">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#roles<?php echo e($Member->id); ?>">
                                 Roles
                             </button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#groups{{ $Member->id }}">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#groups<?php echo e($Member->id); ?>">
                                 Groups
                             </button>
                         </li>
                     </ul>
 
-                    {{-- TAB CONTENT --}}
+                    
                     <div class="tab-content mt-3">
 
-                        {{-- ================= PROFILE TAB ================= --}}
-                        <div class="tab-pane fade show active" id="profile{{ $Member->id }}">
+                        
+                        <div class="tab-pane fade show active" id="profile<?php echo e($Member->id); ?>">
                             <div class="row g-3">
 
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>
                                     <input type="text" name="first_name" class="form-control"
-                                           value="{{ $Member->first_name }}" required>
+                                           value="<?php echo e($Member->first_name); ?>" required>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Last Name</label>
                                     <input type="text" name="last_name" class="form-control"
-                                           value="{{ $Member->last_name }}" required>
+                                           value="<?php echo e($Member->last_name); ?>" required>
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Email</label>
                                     <input type="email" name="email" class="form-control"
-                                           value="{{ $Member->email }}">
+                                           value="<?php echo e($Member->email); ?>">
                                 </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">Phone</label>
                                     <input type="text" name="phone" class="form-control"
-                                           value="{{ $Member->phone }}">
+                                           value="<?php echo e($Member->phone); ?>">
                                 </div>
 
                                 <div class="col-md-12">
                                     <label class="form-label">Church</label>
                                     <select name="church_id" class="form-select member-church-select">
-                                        @foreach($churches as $church)
-                                            <option value="{{ $church->id }}"
-                                                {{ $Member->church_id == $church->id ? 'selected' : '' }}>
-                                                {{ strtoupper($church->name) }}@if(optional($church->current_head)->member) ({{ $church->current_head->member->first_name }} {{ $church->current_head->member->last_name }}) @endif
+                                        <?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $church): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($church->id); ?>"
+                                                <?php echo e($Member->church_id == $church->id ? 'selected' : ''); ?>>
+                                                <?php echo e(strtoupper($church->name)); ?><?php if(optional($church->current_head)->member): ?> (<?php echo e($church->current_head->member->first_name); ?> <?php echo e($church->current_head->member->last_name); ?>) <?php endif; ?>
                                             </option>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
                                 <div class="row g-3">
@@ -665,8 +694,8 @@
                                                    type="radio"
                                                    name="foundation_clases"
                                                    value="yes"
-                                                   data-target="foundationDate{{ $Member->id }}"
-                                                   {{ $Member->foundation_clases === 'yes' ? 'checked' : '' }}>
+                                                   data-target="foundationDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->foundation_clases === 'yes' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">Yes</label>
                                         </div>
 
@@ -675,19 +704,19 @@
                                                    type="radio"
                                                    name="foundation_clases"
                                                    value="no"
-                                                   data-target="foundationDate{{ $Member->id }}"
-                                                   {{ $Member->foundation_clases === 'no' ? 'checked' : '' }}>
+                                                   data-target="foundationDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->foundation_clases === 'no' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">No</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6"
-                                         id="foundationDate{{ $Member->id }}"
-                                         style="{{ $Member->foundation_clases === 'yes' ? '' : 'display:none;' }}">
+                                         id="foundationDate<?php echo e($Member->id); ?>"
+                                         style="<?php echo e($Member->foundation_clases === 'yes' ? '' : 'display:none;'); ?>">
                                         <label class="form-label">Foundation Class Date</label>
                                         <input type="date" class="form-control"
                                                name="foundation_clases_date"
-                                               value="{{ optional($Member->foundation_clases_date)->format('Y-m-d') }}">
+                                               value="<?php echo e(optional($Member->foundation_clases_date)->format('Y-m-d')); ?>">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Baptism Status</label><br>
@@ -697,8 +726,8 @@
                                                    type="radio"
                                                    name="baptism_status"
                                                    value="yes"
-                                                   data-target="baptismDate{{ $Member->id }}"
-                                                   {{ $Member->baptism_status === 'yes' ? 'checked' : '' }}>
+                                                   data-target="baptismDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->baptism_status === 'yes' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">Yes</label>
                                         </div>
 
@@ -707,19 +736,19 @@
                                                    type="radio"
                                                    name="baptism_status"
                                                    value="no"
-                                                   data-target="baptismDate{{ $Member->id }}"
-                                                   {{ $Member->baptism_status === 'no' ? 'checked' : '' }}>
+                                                   data-target="baptismDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->baptism_status === 'no' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">No</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6"
-                                         id="baptismDate{{ $Member->id }}"
-                                         style="{{ $Member->baptism_status === 'yes' ? '' : 'display:none;' }}">
+                                         id="baptismDate<?php echo e($Member->id); ?>"
+                                         style="<?php echo e($Member->baptism_status === 'yes' ? '' : 'display:none;'); ?>">
                                         <label class="form-label">Baptism Date</label>
                                         <input type="date" class="form-control"
                                                name="baptism_date"
-                                               value="{{ optional($Member->baptism_date)->format('Y-m-d') }}">
+                                               value="<?php echo e(optional($Member->baptism_date)->format('Y-m-d')); ?>">
                                     </div>
 
                                     <div class="col-md-6">
@@ -730,8 +759,8 @@
                                                    type="radio"
                                                    name="marriage_status"
                                                    value="married"
-                                                   data-target="marriageDate{{ $Member->id }}"
-                                                   {{ $Member->marriage_status === 'married' ? 'checked' : '' }}>
+                                                   data-target="marriageDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->marriage_status === 'married' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">Married</label>
                                         </div>
 
@@ -740,19 +769,19 @@
                                                    type="radio"
                                                    name="marriage_status"
                                                    value="single"
-                                                   data-target="marriageDate{{ $Member->id }}"
-                                                   {{ $Member->marriage_status === 'single' ? 'checked' : '' }}>
+                                                   data-target="marriageDate<?php echo e($Member->id); ?>"
+                                                   <?php echo e($Member->marriage_status === 'single' ? 'checked' : ''); ?>>
                                             <label class="form-check-label">Single</label>
                                         </div>
                                     </div>
 
                                     <div class="col-md-6"
-                                         id="marriageDate{{ $Member->id }}"
-                                         style="{{ $Member->marriage_status === 'married' ? '' : 'display:none;' }}">
+                                         id="marriageDate<?php echo e($Member->id); ?>"
+                                         style="<?php echo e($Member->marriage_status === 'married' ? '' : 'display:none;'); ?>">
                                         <label class="form-label">Marriage Date</label>
                                         <input type="date" class="form-control"
                                                name="marriage_dates"
-                                               value="{{ optional($Member->marriage_dates)->format('Y-m-d') }}">
+                                               value="<?php echo e(optional($Member->marriage_dates)->format('Y-m-d')); ?>">
                                     </div>
 
                                 </div>
@@ -760,85 +789,89 @@
                             </div>
                         </div>
 
-                        {{-- ================= ROLES TAB ================= --}}
-                        <div class="tab-pane fade" id="roles{{ $Member->id }}">
+                        
+                        <div class="tab-pane fade" id="roles<?php echo e($Member->id); ?>">
                             <div class="row g-3">
 
-                                @foreach($designations as $designation)
+                                <?php $__currentLoopData = $designations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $designation): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <div class="col-md-4">
                                         <div class="form-check">
                                             <input class="form-check-input"
                                                    type="checkbox"
                                                    name="designations[]"
-                                                   value="{{ $designation->id }}"
-                                                   {{ $Member->member_roles->contains('designation_id', $designation->id) ? 'checked' : '' }}>
+                                                   value="<?php echo e($designation->id); ?>"
+                                                   <?php echo e($Member->member_roles->contains('designation_id', $designation->id) ? 'checked' : ''); ?>>
                                             <label class="form-check-label">
-                                                {{ ucwords($designation->name) }}
+                                                <?php echo e(ucwords($designation->name)); ?>
+
                                             </label>
                                         </div>
                                     </div>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
                             </div>
                         </div>
 
-                        {{-- ================= GROUPS TAB ================= --}}
-                        <div class="tab-pane fade" id="groups{{ $Member->id }}">
+                        
+                        <div class="tab-pane fade" id="groups<?php echo e($Member->id); ?>">
                             <div class="row g-3">
 
                                 <div class="col-md-12">
                                     <label class="form-label">Cell Groups</label>
 
-                                    @php
+                                    <?php
                                         $churchCells = $cellGroups->where('church_id', $Member->church_id);
                                         $memberCells = $Member->cell_groups;
-                                    @endphp
+                                    ?>
 
-                                    {{-- Church has NO cell groups --}}
-                                    @if($churchCells->isEmpty())
+                                    
+                                    <?php if($churchCells->isEmpty()): ?>
                                         <div class="alert alert-warning py-2 mb-0">
                                             <i class="icofont icofont-warning"></i>
                                             This church has no cell groups.
                                         </div>
 
-                                    {{-- Church has cells but member not assigned --}}
-                                    @elseif($memberCells->isEmpty())
+                                    
+                                    <?php elseif($memberCells->isEmpty()): ?>
                                         <div class="alert alert-info py-2 mb-2">
                                             <i class="icofont icofont-info-circle"></i>
                                             This member does not belong to any cell group yet. Please Select to Assing
                                         </div>
 
                                         <select name="cell_groups[]" class="form-select" multiple>
-                                            @foreach($churchCells as $group)
-                                                <option value="{{ $group->id }}">
-                                                    {{ $group->name }}
+                                            <?php $__currentLoopData = $churchCells; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($group->id); ?>">
+                                                    <?php echo e($group->name); ?>
+
                                                 </option>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </select>
 
-                                    {{-- Normal case --}}
-                                    @else
+                                    
+                                    <?php else: ?>
                                         <select name="cell_groups[]" class="form-select" multiple>
-                                            @foreach($churchCells as $group)
-                                                <option value="{{ $group->id }}"
-                                                    {{ $memberCells->contains($group->id) ? 'selected' : '' }}>
-                                                    {{ $group->name }}
+                                            <?php $__currentLoopData = $churchCells; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($group->id); ?>"
+                                                    <?php echo e($memberCells->contains($group->id) ? 'selected' : ''); ?>>
+                                                    <?php echo e($group->name); ?>
+
                                                 </option>
-                                            @endforeach
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                         </select>
-                                    @endif
+                                    <?php endif; ?>
                                 </div>
 
 
                                 <div class="col-md-12">
                                     <label class="form-label">Departments</label>
                                     <select name="departments[]" class="form-select" multiple>
-                                        @foreach($departments as $department)
-                                            <option value="{{ $department->id }}"
-                                                {{ $Member->departments->contains($department->id) ? 'selected' : '' }}>
-                                                {{ $department->name }}
+                                        <?php $__currentLoopData = $departments; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $department): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($department->id); ?>"
+                                                <?php echo e($Member->departments->contains($department->id) ? 'selected' : ''); ?>>
+                                                <?php echo e($department->name); ?>
+
                                             </option>
-                                        @endforeach
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
 
@@ -862,12 +895,12 @@
         </div>
     </div>
 </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('assets/js/select2/select2.full.min.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('assets/js/select2/select2.full.min.js')); ?>"></script>
 <script>
     document.addEventListener('change', function (e) {
         if (e.target.matches('input[type="radio"][data-target]')) {
@@ -1020,4 +1053,6 @@
         });
     })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin.master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/members/churchmebers.blade.php ENDPATH**/ ?>

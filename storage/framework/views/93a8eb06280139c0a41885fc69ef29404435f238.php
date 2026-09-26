@@ -3,6 +3,7 @@
 <script src="<?php echo e(asset('assets/js/icons/feather-icon/feather.min.js')); ?>"></script>
 <script src="<?php echo e(asset('assets/js/icons/feather-icon/feather-icon.js')); ?>"></script>
 <!-- Sidebar jquery-->
+<script src="<?php echo e(asset('assets/js/sidebar-menu.js')); ?>"></script>
 <script src="<?php echo e(asset('assets/js/config.js')); ?>"></script>
 <!-- Bootstrap js-->
 <script src="<?php echo e(asset('assets/js/bootstrap/popper.min.js')); ?>"></script>
@@ -12,5 +13,6 @@
 <!-- Plugins JS Ends-->
 <!-- Theme js-->
 <script src="<?php echo e(asset('assets/js/script.js')); ?>"></script>
-<!-- Plugin used-->
-<?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/admin/authentication/partials/js.blade.php ENDPATH**/ ?>
+
+
+<!-- Plugin used--><?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/layouts/admin/partials/js.blade.php ENDPATH**/ ?>

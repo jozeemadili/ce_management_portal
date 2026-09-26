@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers\API\Church;
 
+use App\Exports\MemberImportTemplateExport;
 use App\Exports\MembersExport;
 use App\Http\Controllers\Controller;
+use App\Imports\MembersImport;
+use App\Services\MemberBulkImporter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\{
@@ -108,6 +113,7 @@ class MemberManagementController extends Controller
             'cellGroups'   => $cellGroups,
             'departments'  => $departments,
             'stats'        => $stats,
+            'uploadChurch' => $this->uploaderChurch(),
         ]);
     }
 
@@ -153,5 +159,118 @@ class MemberManagementController extends Controller
         $member->departments()->sync($request->departments ?? []);
 
         return back()->with('success', 'Member updated successfully');
+    }
+
+    /* =================================================================
+     | BULK UPLOAD
+     | Every member in an uploaded sheet joins the uploader's own church.
+     | Step 1 (preview) stores the file and reports what would happen;
+     | step 2 (import) re-checks the stored file and saves it.
+     |=================================================================*/
+
+    /**
+     * The logged-in user's own church - where bulk-uploaded members go.
+     */
+    private function uploaderChurch(): ?Church
+    {
+        $member = Auth::user()->member;
+
+        return $member ? Church::find($member->church_id) : null;
+    }
+
+    private function importPath(string $token): string
+    {
+        return 'member-imports/' . Auth::id() . '/' . $token;
+    }
+
+    private function readImportRows(string $path): array
+    {
+        $sheets = Excel::toArray(new MembersImport, $path, 'local');
+
+        return $sheets[0] ?? [];
+    }
+
+    public function importTemplate()
+    {
+        return Excel::download(new MemberImportTemplateExport, 'member-upload-template.xlsx');
+    }
+
+    public function importPreview(Request $request, MemberBulkImporter $importer)
+    {
+        $church = $this->uploaderChurch();
+        abort_unless($church, 422, 'Your account is not linked to a church, so members cannot be uploaded from it.');
+
+        $request->validate([
+            'file' => 'required|file|max:5120|mimes:xlsx,xls,csv,txt',
+        ], [
+            'file.mimes' => 'Upload an Excel file (.xlsx or .xls) or a CSV file.',
+        ]);
+
+        $extension = strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx');
+        $token = Str::uuid() . '.' . (in_array($extension, ['xlsx', 'xls', 'csv']) ? $extension : 'xlsx');
+        $path = $this->importPath($token);
+
+        // One pending upload per user: a new check replaces any earlier file
+        // that was checked but never imported.
+        Storage::disk('local')->delete(Storage::disk('local')->files(dirname($path)));
+        Storage::disk('local')->putFileAs(dirname($path), $request->file('file'), $token);
+
+        try {
+            $rows = $this->readImportRows($path);
+        } catch (\Throwable $e) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'This file could not be read. Download the template and fill it in.');
+        }
+
+        $firstRow = $rows[0] ?? [];
+        if (!array_key_exists('first_name', $firstRow) || !array_key_exists('phone', $firstRow)) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'The file is missing the template columns (First Name, Last Name, Phone, ...). Download the template and fill it in.');
+        }
+
+        $result = $importer->analyse($rows);
+
+        if ($result['total'] > MemberBulkImporter::MAX_ROWS) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'A file can hold at most ' . MemberBulkImporter::MAX_ROWS . ' members. Split it into smaller files.');
+        }
+
+        return response()->json([
+            'token' => $token,
+            'church' => $church->name,
+            'total_rows' => $result['total'],
+            'valid_count' => count($result['valid']),
+            'skipped' => $result['skipped'],
+        ]);
+    }
+
+    public function import(Request $request, MemberBulkImporter $importer)
+    {
+        $church = $this->uploaderChurch();
+        if (!$church) {
+            return back()->withErrors('Your account is not linked to a church, so members cannot be uploaded from it.');
+        }
+
+        $data = $request->validate([
+            'token' => ['required', 'regex:/^[0-9a-f-]{36}\.(xlsx|xls|csv)$/'],
+        ]);
+        $path = $this->importPath($data['token']);
+
+        if (!Storage::disk('local')->exists($path)) {
+            return back()->withErrors('The uploaded file has expired. Please upload it again.');
+        }
+
+        // Re-checked here rather than trusting the preview: someone may have
+        // registered one of these members in between.
+        $result = $importer->analyse($this->readImportRows($path));
+        $imported = $importer->import($result['valid'], $church, Auth::id());
+        Storage::disk('local')->delete($path);
+
+        $message = "{$imported} member" . ($imported === 1 ? '' : 's') . " added to {$church->name}.";
+        if ($skipped = count($result['skipped'])) {
+            $message .= " {$skipped} row" . ($skipped === 1 ? ' was' : 's were') . ' skipped.';
+        }
+
+        return redirect()->route('member.management')->with('success', $message);
     }
 }

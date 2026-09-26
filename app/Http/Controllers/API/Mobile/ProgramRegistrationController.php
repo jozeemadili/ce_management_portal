@@ -57,6 +57,17 @@ class ProgramRegistrationController extends Controller
             'currency' => optional($program)->currency,
             'registration_status' => $registration->registration_status,
             'payment_status' => $registration->payment_status,
+            'payment_label' => $registration->paymentLabel(),
+            'amount_due' => (float) $registration->amount_due,
+            'amount_paid' => $registration->totalPaid(),
+            'balance' => $registration->balance(),
+            'price_group' => optional($registration->pricedDesignation)->name,
+            'sessions' => $program ? $program->sessions->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'start_time' => substr($s->start_time, 0, 5),
+                'end_time' => substr($s->end_time, 0, 5),
+            ])->values() : [],
             'registered_at' => optional($registration->registered_at)->toDateTimeString(),
             'made_for_self' => $viewer ? $registration->member_id === $viewer->id : null,
             'member' => $member ? [
@@ -175,7 +186,7 @@ class ProgramRegistrationController extends Controller
 
         ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray());
 
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program.sessions', 'member.church', 'payments', 'pricedDesignation']);
 
         return response()->json($this->registrationPayload($registration, $actingMember), 201);
     }
@@ -189,7 +200,7 @@ class ProgramRegistrationController extends Controller
     {
         $member = $this->currentMember($request);
 
-        $registrations = ProgramRegistration::with(['program', 'member.church'])
+        $registrations = ProgramRegistration::with(['program.sessions', 'member.church', 'payments', 'pricedDesignation'])
             ->where(function ($q) use ($member, $request) {
                 $q->where('member_id', $member->id)
                   ->orWhere('registered_by', $request->user()->id);
@@ -215,7 +226,7 @@ class ProgramRegistrationController extends Controller
             'You may only view registrations you made or your own.'
         );
 
-        $registration->load(['program', 'attendance', 'member.church']);
+        $registration->load(['program.sessions', 'attendance', 'member.church', 'payments', 'pricedDesignation']);
 
         return response()->json($this->registrationPayload($registration, $member, true));
     }
@@ -239,7 +250,7 @@ class ProgramRegistrationController extends Controller
             'You may only download registrations you made or your own.'
         );
 
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program.sessions', 'member.church', 'payments', 'pricedDesignation']);
 
         $scanUrl = route('program-scan.show', $registration->id);
         $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(160)->generate($scanUrl);

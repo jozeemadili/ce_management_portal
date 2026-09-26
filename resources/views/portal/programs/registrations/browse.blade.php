@@ -68,18 +68,23 @@
                         @endif
                     </span>
                 </div>
-                @if($program->start_time || $program->end_time)
+                @if($program->sessions->isNotEmpty())
                 <div class="program-card-meta mt-1">
-                    <span><i class="icofont icofont-clock-time"></i> Daily
-                        @if($program->start_time){{ \Illuminate\Support\Carbon::parse($program->start_time)->format('H:i') }}@endif
-                        @if($program->start_time && $program->end_time) &ndash; @endif
-                        @if($program->end_time){{ \Illuminate\Support\Carbon::parse($program->end_time)->format('H:i') }}@endif
+                    <span><i class="icofont icofont-clock-time"></i> Daily:
+                        {{ $program->sessions->map(fn ($x) => $x->name . ' ' . $x->timeRange())->implode(', ') }}
                     </span>
                 </div>
                 @endif
                 <span class="badge-pill badge-access-{{ $program->access_type }} mt-2 d-inline-block">
-                    {{ $program->isFree() ? 'FREE' : $program->currency . ' ' . number_format($program->registration_fee) }}
+                    {{ $program->accessLabel() }}
                 </span>
+                @if(!$program->isFree() && $currentMember)
+                    @php $myPrice = $program->priceFor($currentMember); @endphp
+                    <div class="small mt-1">
+                        Your price: <strong>{{ $myPrice['amount'] > 0 ? $program->currency . ' ' . number_format($myPrice['amount']) : 'FREE' }}</strong>
+                        @if($myPrice['designation']) <span class="text-muted">({{ ucwords($myPrice['designation']->name) }})</span>@endif
+                    </div>
+                @endif
 
                 @if($alreadyRegistered)
                 <p class="text-success small mb-1 mt-2"><i class="icofont icofont-check-circled"></i> You're already registered</p>

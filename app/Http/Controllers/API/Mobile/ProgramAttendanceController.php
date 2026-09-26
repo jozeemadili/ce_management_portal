@@ -3,67 +3,44 @@
 namespace App\Http\Controllers\API\Mobile;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProgramAttendance;
-use App\Models\ProgramAuditLog;
 use App\Models\ProgramRegistration;
+use App\Models\ProgramSession;
+use App\Services\ProgramCheckIn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProgramAttendanceController extends Controller
 {
-    /**
-     * Same no-throw validation chain as the web
-     * ProgramQrController::validateScan() - duplicated here rather than
-     * shared, matching how this module already repeats small
-     * controller-local helpers instead of introducing a cross-web/API
-     * abstraction. Returns [ok, message, occurrence|null].
-     */
-    private function validateScan(ProgramRegistration $registration): array
+    private function sessionPayload(?ProgramSession $session): ?array
     {
-        $program = $registration->program;
-
-        if (!$program || $program->status === 'cancelled') {
-            return [false, 'This program has been cancelled. Check-in is not available.', null];
-        }
-
-        if ($program->status === 'draft') {
-            return [false, 'This program is not yet active.', null];
-        }
-
-        if ($registration->registration_status !== 'registered') {
-            return [false, 'This registration has been cancelled and is no longer valid.', null];
-        }
-
-        if (!$program->isFree() && $registration->payment_status !== 'paid') {
-            return [false, 'Payment is required before check-in. Payment status: ' . ucfirst($registration->payment_status) . '.', null];
-        }
-
-        $occurrence = $program->occurrenceForDate(now()->toDateString());
-
-        $alreadyCheckedIn = ProgramAttendance::where('occurrence_id', $occurrence->id)
-            ->where('registration_id', $registration->id)
-            ->exists();
-
-        if ($alreadyCheckedIn) {
-            return [false, 'This registration has already been checked in for today.', $occurrence];
-        }
-
-        return [true, 'Ready to check in.', $occurrence];
+        return $session ? [
+            'id' => $session->id,
+            'name' => $session->name,
+            'start_time' => substr($session->start_time, 0, 5),
+            'end_time' => substr($session->end_time, 0, 5),
+        ] : null;
     }
 
-    private function scanPayload(ProgramRegistration $registration, bool $ok, string $message): array
+    private function scanPayload(ProgramRegistration $registration, bool $ok, string $message, ?ProgramSession $session): array
     {
         $program = $registration->program;
         $member = $registration->member;
+        $lastCheckIn = $registration->attendance;
 
         return [
             'ok' => $ok,
             'message' => $message,
+            'session' => $this->sessionPayload($session),
             'registration' => [
                 'id' => $registration->id,
                 'reference' => $registration->registration_reference,
                 'registration_status' => $registration->registration_status,
                 'payment_status' => $registration->payment_status,
+                'payment_label' => $registration->paymentLabel(),
+                'amount_due' => (float) $registration->amount_due,
+                'amount_paid' => $registration->totalPaid(),
+                'balance' => $registration->balance(),
+                'price_group' => optional($registration->pricedDesignation)->name,
                 'registered_at' => optional($registration->registered_at)->toDateTimeString(),
             ],
             'program' => $program ? [
@@ -71,62 +48,51 @@ class ProgramAttendanceController extends Controller
                 'name' => $program->name,
                 'location' => $program->location,
                 'start_date' => optional($program->start_date)->toDateString(),
+                'currency' => $program->currency,
+                'sessions' => $program->sessions->map(fn ($s) => $this->sessionPayload($s))->values(),
             ] : null,
             'member' => $member ? [
                 'id' => $member->id,
                 'name' => trim($member->first_name . ' ' . $member->last_name),
                 'church' => optional($member->church)->name,
             ] : null,
-            // Same "Checked in {date}" note the web scan page shows under the
-            // check-in button (the registration's attendance record).
-            'checked_in_at' => $registration->relationLoaded('attendance') && $registration->attendance
-                ? optional($registration->attendance->checked_in_at)->toDateTimeString()
-                : null,
+            'checked_in_at' => $lastCheckIn ? optional($lastCheckIn->checked_in_at)->toDateTimeString() : null,
+            'checked_in_session' => $lastCheckIn ? optional($lastCheckIn->session)->name : null,
         ];
+    }
+
+    private function loadForScan(ProgramRegistration $registration): void
+    {
+        $registration->load(['program.sessions', 'member.church', 'attendance.session', 'payments', 'pricedDesignation']);
     }
 
     /**
      * Hit right after the app's camera scans a registration's QR code (the
      * printed/PDF QR encodes the web scan URL - the app extracts the
      * trailing numeric id from it and calls this with that id). Returns
-     * whether check-in is currently allowed, and why not if it's blocked -
-     * never a validation exception, matching the web scan page's behavior.
+     * whether check-in is allowed right now, for which session, and why not
+     * if it's blocked - never a validation exception. Rules live in
+     * App\Services\ProgramCheckIn, shared with the web scan page.
      */
-    public function scan(Request $request, ProgramRegistration $registration)
+    public function scan(Request $request, ProgramRegistration $registration, ProgramCheckIn $checkIn)
     {
-        $registration->load(['program', 'member.church', 'attendance']);
+        $this->loadForScan($registration);
 
-        [$ok, $message] = $this->validateScan($registration);
+        $check = $checkIn->evaluate($registration);
 
-        return response()->json($this->scanPayload($registration, $ok, $message));
+        return response()->json($this->scanPayload($registration, $check['ok'], $check['message'], $check['session']));
     }
 
-    public function checkIn(Request $request, ProgramRegistration $registration)
+    public function checkIn(Request $request, ProgramRegistration $registration, ProgramCheckIn $checkIn)
     {
-        $registration->load(['program', 'member.church', 'attendance']);
+        $this->loadForScan($registration);
 
-        [$ok, $message, $occurrence] = $this->validateScan($registration);
+        $result = $checkIn->checkIn($registration, Auth::id());
 
-        if (!$ok) {
-            return response()->json($this->scanPayload($registration, false, $message), 422);
-        }
+        $registration->unsetRelation('attendance');
+        $registration->load('attendance.session');
+        $payload = $this->scanPayload($registration, $result['ok'], $result['message'], $result['session']);
 
-        $attendance = ProgramAttendance::create([
-            'program_id' => $registration->program_id,
-            'occurrence_id' => $occurrence->id,
-            'member_id' => $registration->member_id,
-            'registration_id' => $registration->id,
-            'attendance_status' => 'present',
-            'check_in_method' => 'qr',
-            'checked_in_at' => now(),
-            'recorded_by' => Auth::id(),
-        ]);
-
-        ProgramAuditLog::record('attendance.checked_in_qr', $attendance, null, $attendance->toArray());
-
-        $payload = $this->scanPayload($registration, true, 'Checked in successfully.');
-        $payload['checked_in_at'] = $attendance->checked_in_at->toDateTimeString();
-
-        return response()->json($payload, 201);
+        return response()->json($payload, $result['ok'] ? 201 : 422);
     }
 }

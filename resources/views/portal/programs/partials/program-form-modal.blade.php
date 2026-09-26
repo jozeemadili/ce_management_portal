@@ -73,14 +73,20 @@
             <option value="cancelled">Cancelled</option>
         </select>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">Start Time</label>
-        <input type="time" name="start_time" id="{{ $mode }}_start_time" class="form-control">
+</div>
+
+{{-- Sessions: e.g. Morning 09:00-12:00, Noon 14:00-17:00 - repeated on every
+     day of the program; QR check-in is per session. Rows are added by the
+     page script (programSessions.add). --}}
+<div class="mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <label class="form-label mb-0">Sessions <small class="text-muted">(each day of the program)</small></label>
+        <button type="button" class="btn btn-sm btn-outline-primary" data-add-session="{{ $mode }}">
+            <i class="icofont icofont-plus"></i> Add Session
+        </button>
     </div>
-    <div class="col-md-4">
-        <label class="form-label">End Time</label>
-        <input type="time" name="end_time" id="{{ $mode }}_end_time" class="form-control">
-    </div>
+    <div id="{{ $mode }}_sessions" class="program-sessions"></div>
+    <small class="text-muted">QR check-in opens {{ \App\Models\ProgramSession::CHECK_IN_OPENS_BEFORE_MINUTES }} minutes before each session starts and closes when it ends.</small>
 </div>
 
 <div class="row mt-2" id="{{ $mode }}_recurring_wrap">
@@ -175,13 +181,33 @@
             <option value="paid">Paid</option>
         </select>
     </div>
-    <div class="col-md-4" id="{{ $mode }}_fee_wrap">
-        <label class="form-label">Registration Fee</label>
-        <input type="number" step="0.01" min="0" name="registration_fee" id="{{ $mode }}_fee" class="form-control">
-    </div>
     <div class="col-md-4" id="{{ $mode }}_currency_wrap2">
         <label class="form-label">Currency</label>
         <input type="text" name="currency" id="{{ $mode }}_currency" class="form-control" value="TZS">
+    </div>
+</div>
+
+<div class="mt-3" id="{{ $mode }}_fee_wrap">
+    <label class="form-label">Price per Group</label>
+    <p class="text-muted small mb-2">
+        Each person pays the price of their <strong>most senior</strong> group (top of this list first).
+        People with no group, such as first-time visitors, register free. Use 0 for a free group.
+    </p>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <tbody>
+            @foreach($designations as $designation)
+                <tr>
+                    <td style="width: 55%;"><label class="mb-0" for="{{ $mode }}_price_{{ $designation->id }}">{{ ucwords($designation->name) }}</label></td>
+                    <td>
+                        <input type="number" step="0.01" min="0" name="prices[{{ $designation->id }}]"
+                               id="{{ $mode }}_price_{{ $designation->id }}" class="form-control form-control-sm {{ $mode }}-price-input"
+                               data-designation="{{ $designation->id }}" placeholder="0">
+                    </td>
+                </tr>
+            @endforeach
+            </tbody>
+        </table>
     </div>
 </div>
 

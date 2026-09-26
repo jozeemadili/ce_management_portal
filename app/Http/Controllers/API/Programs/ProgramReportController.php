@@ -66,7 +66,7 @@ class ProgramReportController extends Controller
 
     private function scopedRegistrationsQuery(Request $request)
     {
-        $query = ProgramRegistration::with(['program', 'member.church', 'registeredBy'])
+        $query = ProgramRegistration::with(['program', 'member.church', 'registeredBy', 'payments', 'pricedDesignation'])
             ->whereIn('program_id', $this->scopedProgramIds());
         // Attendee type: first-time visitors (new souls) vs regular members.
         if (in_array($request->attendee_type, ['new_soul', 'member'], true)) {
@@ -117,7 +117,7 @@ class ProgramReportController extends Controller
 
     private function scopedAttendanceQuery(Request $request)
     {
-        $query = ProgramAttendance::with(['program', 'occurrence', 'member.church'])
+        $query = ProgramAttendance::with(['program', 'occurrence', 'session', 'member.church'])
             ->whereIn('program_id', $this->scopedProgramIds());
 
         if ($request->filled('program_id')) {
@@ -203,7 +203,7 @@ class ProgramReportController extends Controller
 
         abort_unless($occurrence, 404, 'No attendance has been recorded for this program yet.');
 
-        $attendances = ProgramAttendance::with(['member.church'])
+        $attendances = ProgramAttendance::with(['member.church', 'session'])
             ->where('occurrence_id', $occurrence->id)
             ->orderBy('attendance_status')
             ->get();

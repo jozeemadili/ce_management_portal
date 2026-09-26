@@ -70,19 +70,25 @@
                         <?php endif; ?>
                     </span>
                 </div>
-                <?php if($program->start_time || $program->end_time): ?>
+                <?php if($program->sessions->isNotEmpty()): ?>
                 <div class="program-card-meta mt-1">
-                    <span><i class="icofont icofont-clock-time"></i> Daily
-                        <?php if($program->start_time): ?><?php echo e(\Illuminate\Support\Carbon::parse($program->start_time)->format('H:i')); ?><?php endif; ?>
-                        <?php if($program->start_time && $program->end_time): ?> &ndash; <?php endif; ?>
-                        <?php if($program->end_time): ?><?php echo e(\Illuminate\Support\Carbon::parse($program->end_time)->format('H:i')); ?><?php endif; ?>
+                    <span><i class="icofont icofont-clock-time"></i> Daily:
+                        <?php echo e($program->sessions->map(fn ($x) => $x->name . ' ' . $x->timeRange())->implode(', ')); ?>
+
                     </span>
                 </div>
                 <?php endif; ?>
                 <span class="badge-pill badge-access-<?php echo e($program->access_type); ?> mt-2 d-inline-block">
-                    <?php echo e($program->isFree() ? 'FREE' : $program->currency . ' ' . number_format($program->registration_fee)); ?>
+                    <?php echo e($program->accessLabel()); ?>
 
                 </span>
+                <?php if(!$program->isFree() && $currentMember): ?>
+                    <?php $myPrice = $program->priceFor($currentMember); ?>
+                    <div class="small mt-1">
+                        Your price: <strong><?php echo e($myPrice['amount'] > 0 ? $program->currency . ' ' . number_format($myPrice['amount']) : 'FREE'); ?></strong>
+                        <?php if($myPrice['designation']): ?> <span class="text-muted">(<?php echo e(ucwords($myPrice['designation']->name)); ?>)</span><?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
                 <?php if($alreadyRegistered): ?>
                 <p class="text-success small mb-1 mt-2"><i class="icofont icofont-check-circled"></i> You're already registered</p>

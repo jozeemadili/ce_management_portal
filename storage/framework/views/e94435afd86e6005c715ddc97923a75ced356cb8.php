@@ -99,7 +99,12 @@
             <td><?php echo e(optional($reg->program)->name); ?></td>
             <td><?php echo e($reg->invitedByLabel()); ?></td>
             <td><span class="badge-pill badge-status-<?php echo e($reg->registration_status); ?>"><?php echo e(ucfirst($reg->registration_status)); ?></span></td>
-            <td><span class="badge-pill badge-payment-<?php echo e($reg->payment_status); ?>"><?php echo e(ucfirst($reg->payment_status)); ?></span></td>
+            <td>
+                <span class="badge-pill badge-payment-<?php echo e($reg->payment_status); ?>"><?php echo e($reg->paymentLabel()); ?></span>
+                <?php if((float) $reg->amount_due > 0): ?>
+                    <div class="text-muted small mt-1"><?php echo e(number_format($reg->totalPaid())); ?> / <?php echo e(number_format($reg->amount_due)); ?></div>
+                <?php endif; ?>
+            </td>
             <td><?php echo e(optional($reg->registered_at)->format('d M Y')); ?></td>
         </tr>
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

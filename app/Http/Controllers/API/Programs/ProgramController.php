@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Church;
 use App\Models\CellGroup;
 use App\Models\Department;
+use App\Models\MemberDesignation;
 use App\Models\Program;
 use App\Models\ProgramAuditLog;
 use App\Models\ProgramOccurrence;
@@ -15,6 +16,7 @@ use App\Models\ProgramRegistration;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ProgramController extends Controller
@@ -51,7 +53,7 @@ class ProgramController extends Controller
     {
         $churchIds = $this->scopedChurchIds();
 
-        $query = Program::with(['church', 'department', 'cellGroup', 'creator'])->withCount(['registrations', 'attendances']);
+        $query = Program::with(['church', 'department', 'cellGroup', 'creator', 'sessions', 'designationPrices'])->withCount(['registrations', 'attendances']);
 
         if (!is_null($churchIds)) {
             $query->where(function ($q) use ($churchIds) {
@@ -106,14 +108,16 @@ class ProgramController extends Controller
             'special' => $allPrograms->where('classification', 'special')->count(),
         ];
 
-        return view('portal.programs.index', compact('programs', 'churches', 'departments', 'cellGroups', 'stats'));
+        $designations = MemberDesignation::orderBy('id')->get();
+
+        return view('portal.programs.index', compact('programs', 'churches', 'departments', 'cellGroups', 'stats', 'designations'));
     }
 
     public function store(Request $request)
     {
         $this->authorizeProgram('PROGRAMS_CREATE');
 
-        $data = $this->validateProgram($request);
+        [$data, $sessions, $prices] = $this->validateProgram($request);
         $data['created_by'] = Auth::id();
 
         if ($request->hasFile('banner')) {
@@ -121,6 +125,8 @@ class ProgramController extends Controller
         }
 
         $program = Program::create($data);
+        $this->syncSessions($program, $sessions);
+        $this->syncPrices($program, $prices);
 
         // Special (one-off) programs get exactly one occurrence up front,
         // matching their start date - recurring programs generate occurrences
@@ -138,7 +144,7 @@ class ProgramController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_EDIT');
 
-        $data = $this->validateProgram($request);
+        [$data, $sessions, $prices] = $this->validateProgram($request);
         $old = $program->toArray();
 
         if ($request->hasFile('banner')) {
@@ -149,12 +155,17 @@ class ProgramController extends Controller
         }
 
         $program->update($data);
+        $this->syncSessions($program, $sessions);
+        $this->syncPrices($program, $prices);
 
         ProgramAuditLog::record('program.updated', $program, $old, $program->fresh()->toArray());
 
         return back()->with('success', 'Program updated successfully.');
     }
 
+    /**
+     * @return array{0: array, 1: array, 2: array} program attributes, sessions, designation prices
+     */
     private function validateProgram(Request $request): array
     {
         $data = $request->validate([
@@ -170,19 +181,60 @@ class ProgramController extends Controller
             'location' => 'nullable|string|max:255',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'start_time' => 'nullable',
-            'end_time' => 'nullable',
+            'sessions' => 'required|array|min:1',
+            'sessions.*.id' => 'nullable|integer',
+            'sessions.*.name' => 'required|string|max:100',
+            'sessions.*.start_time' => 'required|date_format:H:i',
+            'sessions.*.end_time' => 'required|date_format:H:i',
+            'prices' => 'nullable|array',
+            'prices.*' => 'nullable|numeric|min:0',
             'recurrence_frequency' => 'nullable|in:daily,weekly,monthly,custom',
             'recurrence_days' => 'nullable|array',
             'access_type' => 'required|in:free,paid',
-            'registration_fee' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|max:10',
             'status' => 'required|in:draft,active,completed,cancelled',
             'banner' => 'nullable|image|max:4096',
         ]);
 
         $data['currency'] = $data['currency'] ?? 'TZS';
-        $data['registration_fee'] = $data['access_type'] === 'paid' ? ($data['registration_fee'] ?? 0) : 0;
+
+        // Sessions: each ends after it starts, and none overlap.
+        $sessions = collect($data['sessions'])->values()->map(fn ($s, $i) => [
+            'id' => $s['id'] ?? null,
+            'name' => trim($s['name']),
+            'start_time' => $s['start_time'],
+            'end_time' => $s['end_time'],
+            'sort_order' => $i,
+        ])->sortBy('start_time')->values();
+
+        foreach ($sessions as $i => $session) {
+            if ($session['end_time'] <= $session['start_time']) {
+                throw ValidationException::withMessages(['sessions' => "\"{$session['name']}\" must end after it starts."]);
+            }
+            $previous = $sessions[$i - 1] ?? null;
+            if ($previous && $session['start_time'] < $previous['end_time']) {
+                throw ValidationException::withMessages(['sessions' => "\"{$session['name']}\" overlaps \"{$previous['name']}\"."]);
+            }
+        }
+
+        // Program start/end time mirror the first session's start and the
+        // last session's end, for screens that show a single time.
+        $data['start_time'] = $sessions->first()['start_time'];
+        $data['end_time'] = $sessions->max('end_time');
+
+        // Paid programs: a price for every member designation (0 allowed).
+        $prices = [];
+        if ($data['access_type'] === 'paid') {
+            foreach (MemberDesignation::orderBy('id')->get() as $designation) {
+                $amount = $data['prices'][$designation->id] ?? null;
+                if ($amount === null || $amount === '') {
+                    throw ValidationException::withMessages(['prices' => 'Enter a price for every group (use 0 for free) - missing: ' . ucwords($designation->name) . '.']);
+                }
+                $prices[$designation->id] = (float) $amount;
+            }
+        }
+        $data['registration_fee'] = $prices ? max($prices) : 0;
+        unset($data['sessions'], $data['prices']);
         $data['church_id'] = $data['scope'] === 'church' ? $data['church_id'] : null;
         $data['department_id'] = $data['scope'] === 'department' ? $data['department_id'] : null;
         $data['cell_group_id'] = $data['scope'] === 'cell' ? $data['cell_group_id'] : null;
@@ -196,7 +248,38 @@ class ProgramController extends Controller
 
         unset($data['banner']);
 
-        return $data;
+        return [$data, $sessions->all(), $prices];
+    }
+
+    /**
+     * Saves the form's sessions: updates the ones that already exist,
+     * adds new ones, removes the ones taken off the form (past check-ins
+     * keep their record; their session link is cleared).
+     */
+    private function syncSessions(Program $program, array $sessions): void
+    {
+        $keep = [];
+        foreach ($sessions as $session) {
+            $attributes = collect($session)->only(['name', 'start_time', 'end_time', 'sort_order'])->all();
+            $existing = $session['id'] ? $program->sessions()->whereKey($session['id'])->first() : null;
+
+            if ($existing) {
+                $existing->update($attributes);
+                $keep[] = $existing->id;
+            } else {
+                $keep[] = $program->sessions()->create($attributes)->id;
+            }
+        }
+
+        $program->sessions()->whereNotIn('id', $keep)->delete();
+    }
+
+    /** Saves a paid program's price per designation. */
+    private function syncPrices(Program $program, array $prices): void
+    {
+        foreach ($prices as $designationId => $amount) {
+            $program->designationPrices()->updateOrCreate(['designation_id' => $designationId], ['amount' => $amount]);
+        }
     }
 
     public function setStatus(Request $request, Program $program, string $status)
@@ -217,12 +300,13 @@ class ProgramController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_VIEW');
 
-        $registrations = $program->registrations()->with('member')->orderByDesc('created_at')->get();
+        $program->load(['sessions', 'designationPrices.designation']);
+        $registrations = $program->registrations()->with(['member', 'payments', 'pricedDesignation'])->orderByDesc('created_at')->get();
 
         $attendanceStats = [
             'registered' => $registrations->count(),
-            'attended' => $program->attendances()->where('attendance_status', 'present')->count()
-                + $program->attendances()->where('attendance_status', 'late')->count(),
+            // People, not check-ins: with sessions a person checks in more than once.
+            'attended' => $program->attendances()->whereIn('attendance_status', ['present', 'late'])->distinct('member_id')->count('member_id'),
             'absent' => $program->attendances()->where('attendance_status', 'absent')->count(),
             'new_souls' => $program->attendances()->whereHas('member', fn($q) => $q->where('member_type', 'new_soul'))->count(),
         ];
@@ -230,7 +314,9 @@ class ProgramController extends Controller
             ? round(($attendanceStats['attended'] / $attendanceStats['registered']) * 100, 2)
             : 0;
 
-        $revenue = $registrations->where('payment_status', 'paid')->sum('amount_paid');
+        $revenue = $registrations->sum(fn ($r) => $r->totalPaid());
+        $outstanding = $registrations->where('registration_status', 'registered')->sum(fn ($r) => $r->balance());
+        $paymentMethods = \App\Models\PledgePaymentMethod::where('is_active', true)->orderBy('name')->get();
 
         $occurrences = $program->occurrences()->orderByDesc('occurrence_date')->get();
 
@@ -242,7 +328,7 @@ class ProgramController extends Controller
             ->get();
 
         return view('portal.programs.show', compact(
-            'program', 'registrations', 'attendanceStats', 'revenue', 'occurrences', 'recentActivity'
+            'program', 'registrations', 'attendanceStats', 'revenue', 'outstanding', 'paymentMethods', 'occurrences', 'recentActivity'
         ));
     }
 

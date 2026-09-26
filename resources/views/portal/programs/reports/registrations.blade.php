@@ -100,7 +100,12 @@
             <td>{{ optional($reg->program)->name }}</td>
             <td>{{ $reg->invitedByLabel() }}</td>
             <td><span class="badge-pill badge-status-{{ $reg->registration_status }}">{{ ucfirst($reg->registration_status) }}</span></td>
-            <td><span class="badge-pill badge-payment-{{ $reg->payment_status }}">{{ ucfirst($reg->payment_status) }}</span></td>
+            <td>
+                <span class="badge-pill badge-payment-{{ $reg->payment_status }}">{{ $reg->paymentLabel() }}</span>
+                @if((float) $reg->amount_due > 0)
+                    <div class="text-muted small mt-1">{{ number_format($reg->totalPaid()) }} / {{ number_format($reg->amount_due) }}</div>
+                @endif
+            </td>
             <td>{{ optional($reg->registered_at)->format('d M Y') }}</td>
         </tr>
         @endforeach

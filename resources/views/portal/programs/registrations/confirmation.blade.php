@@ -50,14 +50,21 @@
                     <span class="text-muted">Date</span>
                     <strong>{{ optional($program->start_date)->format('d M Y') ?? '—' }}</strong>
                 </div>
-                <div class="d-flex justify-content-between py-2 text-start">
-                    <span class="text-muted">Access</span>
-                    <strong>
-                        @if($program->isFree())FREE
-                        @else {{ $program->currency }} {{ number_format($program->registration_fee, 2) }}
-                        @endif
-                    </strong>
+                @if($program->sessions->isNotEmpty())
+                <div class="d-flex justify-content-between py-2 border-bottom text-start">
+                    <span class="text-muted">Sessions (daily)</span>
+                    <strong class="text-end">{{ $program->sessionsLabel() }}</strong>
                 </div>
+                @endif
+                <div class="d-flex justify-content-between py-2 text-start">
+                    <span class="text-muted">Amount Due</span>
+                    <strong>{{ $registration->amountDueLabel() }}</strong>
+                </div>
+                @if((float) $registration->amount_due > 0)
+                <div class="alert alert-warning mt-3 mb-0 text-start small">
+                    <i class="icofont icofont-info-circle"></i> Payment of {{ $program->currency }} {{ number_format($registration->balance()) }} is needed before check-in.
+                </div>
+                @endif
 
                 <div class="d-flex gap-2 justify-content-center mt-4 flex-wrap">
                     <a href="{{ route('my-programs.show', $registration->id) }}" class="btn btn-primary">

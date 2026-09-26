@@ -28,7 +28,7 @@ class ProgramAttendanceExport implements FromCollection, WithHeadings, WithMappi
 
     public function headings(): array
     {
-        return ['#', 'Program', 'Date', 'Attendee', 'Type', 'Church', 'Status', 'Method'];
+        return ['#', 'Program', 'Date', 'Session', 'Checked In', 'Attendee', 'Type', 'Church', 'Status', 'Method'];
     }
 
     public function map($att): array
@@ -40,6 +40,8 @@ class ProgramAttendanceExport implements FromCollection, WithHeadings, WithMappi
             $row,
             optional($att->program)->name,
             optional(optional($att->occurrence)->occurrence_date)->format('d M Y'),
+            optional($att->session)->name ?? '—',
+            optional($att->checked_in_at)->format('H:i') ?? '—',
             $att->attendeeName(),
             $att->isNewSoul() ? 'Visitor' : 'Member',
             optional(optional($att->member)->church)->name ?? '—',
@@ -55,21 +57,21 @@ class ProgramAttendanceExport implements FromCollection, WithHeadings, WithMappi
 
     public function columnWidths(): array
     {
-        return ['A' => 5, 'B' => 26, 'C' => 14, 'D' => 24, 'E' => 10, 'F' => 22, 'G' => 12, 'H' => 12];
+        return ['A' => 5, 'B' => 26, 'C' => 14, 'D' => 18, 'E' => 11, 'F' => 24, 'G' => 10, 'H' => 22, 'I' => 12, 'J' => 12];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:H1')->applyFromArray([
+        $sheet->getStyle('A1:J1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E5AAC']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
 
-        $sheet->getStyle('A1:H1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->getStyle('A1:J1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         $highestRow = $sheet->getHighestRow();
-        $sheet->getStyle('A2:H' . $highestRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->getStyle('A2:J' . $highestRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
         $sheet->getStyle('A1:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(1)->setRowHeight(22);
 

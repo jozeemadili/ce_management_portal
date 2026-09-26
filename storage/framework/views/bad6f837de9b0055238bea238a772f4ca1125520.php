@@ -35,87 +35,90 @@
 </head>
 <body>
 
-    @if($banner)
+    <?php if($banner): ?>
     <div class="banner">
-        <img src="{{ $banner }}">
+        <img src="<?php echo e($banner); ?>">
     </div>
-    @endif
+    <?php endif; ?>
 
     <div class="header">
         <table>
             <tr>
-                @if($logo)
-                <td class="logo-cell"><img src="{{ $logo }}"></td>
-                @endif
+                <?php if($logo): ?>
+                <td class="logo-cell"><img src="<?php echo e($logo); ?>"></td>
+                <?php endif; ?>
                 <td>
                     <h1>Registration Confirmation</h1>
-                    <p>{{ optional($registration->program)->name }}</p>
+                    <p><?php echo e(optional($registration->program)->name); ?></p>
                 </td>
             </tr>
         </table>
     </div>
 
     <div class="ref-box">
-        <div class="ref">{{ $registration->registration_reference }}</div>
-        <div class="status">{{ ucfirst($registration->registration_status) }}</div>
+        <div class="ref"><?php echo e($registration->registration_reference); ?></div>
+        <div class="status"><?php echo e(ucfirst($registration->registration_status)); ?></div>
     </div>
 
     <table class="details">
         <tr>
             <td class="label">Attendee</td>
-            <td class="value">{{ optional($registration->member)->first_name }} {{ optional($registration->member)->last_name }}</td>
+            <td class="value"><?php echo e(optional($registration->member)->first_name); ?> <?php echo e(optional($registration->member)->last_name); ?></td>
         </tr>
         <tr>
             <td class="label">Church</td>
-            <td class="value">{{ optional(optional($registration->member)->church)->name ?? '—' }}</td>
+            <td class="value"><?php echo e(optional(optional($registration->member)->church)->name ?? '—'); ?></td>
         </tr>
         <tr>
             <td class="label">Program</td>
-            <td class="value">{{ optional($registration->program)->name }}</td>
+            <td class="value"><?php echo e(optional($registration->program)->name); ?></td>
         </tr>
         <tr>
             <td class="label">Location</td>
-            <td class="value">{{ optional($registration->program)->location ?? '—' }}</td>
+            <td class="value"><?php echo e(optional($registration->program)->location ?? '—'); ?></td>
         </tr>
         <tr>
             <td class="label">Start Date</td>
-            <td class="value">{{ optional(optional($registration->program)->start_date)->format('d M Y') ?? '—' }}</td>
+            <td class="value"><?php echo e(optional(optional($registration->program)->start_date)->format('d M Y') ?? '—'); ?></td>
         </tr>
         <tr>
             <td class="label">End Date</td>
-            <td class="value">{{ optional(optional($registration->program)->end_date)->format('d M Y') ?? optional(optional($registration->program)->start_date)->format('d M Y') ?? '—' }}</td>
+            <td class="value"><?php echo e(optional(optional($registration->program)->end_date)->format('d M Y') ?? optional(optional($registration->program)->start_date)->format('d M Y') ?? '—'); ?></td>
         </tr>
-        @if(optional($registration->program)->sessions && $registration->program->sessions->isNotEmpty())
+        <?php if(optional($registration->program)->sessions && $registration->program->sessions->isNotEmpty()): ?>
         <tr>
             <td class="label">Sessions (Daily)</td>
-            <td class="value">@foreach($registration->program->sessions as $session){{ $session->name }} {{ $session->timeRange() }}@if(!$loop->last)<br>@endif @endforeach</td>
+            <td class="value"><?php $__currentLoopData = $registration->program->sessions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $session): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php echo e($session->name); ?> <?php echo e($session->timeRange()); ?><?php if(!$loop->last): ?><br><?php endif; ?> <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?></td>
         </tr>
-        @endif
+        <?php endif; ?>
         <tr>
             <td class="label">Amount Due</td>
             <td class="value">
-                {{ $registration->amountDueLabel() }}
-                @if((float) $registration->amount_due > 0) &middot; {{ ucfirst($registration->payment_status === 'pending' && $registration->totalPaid() > 0 ? 'partially paid' : $registration->payment_status) }}@endif
+                <?php echo e($registration->amountDueLabel()); ?>
+
+                <?php if((float) $registration->amount_due > 0): ?> &middot; <?php echo e(ucfirst($registration->payment_status === 'pending' && $registration->totalPaid() > 0 ? 'partially paid' : $registration->payment_status)); ?><?php endif; ?>
             </td>
         </tr>
         <tr>
             <td class="label">Payment Status</td>
-            <td class="value">{{ ucfirst($registration->payment_status) }}</td>
+            <td class="value"><?php echo e(ucfirst($registration->payment_status)); ?></td>
         </tr>
         <tr>
             <td class="label">Registered On</td>
-            <td class="value">{{ optional($registration->registered_at)->format('d M Y') }}</td>
+            <td class="value"><?php echo e(optional($registration->registered_at)->format('d M Y')); ?></td>
         </tr>
     </table>
 
     <div class="qr-section">
-        <img src="{{ $qr }}" width="160" height="160">
+        <img src="<?php echo e($qr); ?>" width="160" height="160">
         <p>Scan this code at the venue to view your registration and check in.</p>
     </div>
 
     <div class="footer">
-        Generated {{ now()->format('d M Y, H:i') }}
+        Generated <?php echo e(now()->format('d M Y, H:i')); ?>
+
     </div>
 
 </body>
 </html>
+<?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/programs/pdf/registration.blade.php ENDPATH**/ ?>

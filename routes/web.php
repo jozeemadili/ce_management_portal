@@ -19,6 +19,7 @@ use App\Http\Controllers\API\Programs\ProgramController;
 use App\Http\Controllers\API\Programs\ProgramAttendanceController;
 use App\Http\Controllers\API\Programs\MyProgramRegistrationController;
 use App\Http\Controllers\API\Programs\ProgramQrController;
+use App\Http\Controllers\API\Programs\ProgramPaymentController;
 use App\Http\Controllers\API\Programs\NewSoulController;
 use App\Http\Controllers\API\Programs\ProgramDashboardController;
 use App\Http\Controllers\API\Programs\ProgramReportController;
@@ -168,6 +169,9 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
     //Programs & Attendance - QR scan / check-in landing page
     Route::get('programs/scan/{registration}', [ProgramQrController::class, 'show'])->name('program-scan.show');
     Route::post('programs/scan/{registration}/check-in', [ProgramQrController::class, 'checkIn'])->name('program-scan.check-in');
+
+    //Programs & Attendance - Registration payments (paid programs)
+    Route::post('programs/registrations/{registration}/payments', [ProgramPaymentController::class, 'store'])->name('program-payments.store');
 
     //Programs & Attendance - New Souls
     Route::get('new-souls', [NewSoulController::class, 'index'])->name('new-souls.index');

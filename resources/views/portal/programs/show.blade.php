@@ -39,6 +39,15 @@
 
 <div class="container-fluid">
 
+@if ($errors->any())
+    @foreach ($errors->all() as $error)
+        <div class="alert alert-danger alert-dismissible fade show">
+            {{ $error }}
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endforeach
+@endif
+
 @if(session('success'))
     <div class="alert alert-success alert-dismissible fade show">
         {{ session('success') }}
@@ -58,12 +67,13 @@
                         <i class="icofont icofont-location-pin"></i> {{ $program->location ?? '—' }}
                         @if($program->classification === 'special')
                             &middot; <i class="icofont icofont-calendar"></i> {{ optional($program->start_date)->format('d M Y') }}
+                            @if($program->end_date && !$program->end_date->equalTo($program->start_date)) &ndash; {{ $program->end_date->format('d M Y') }} @endif
                         @else
                             &middot; <i class="icofont icofont-refresh"></i> {{ ucfirst($program->recurrence_frequency ?? '') }}
                             @if($program->recurrence_days) ({{ collect($program->recurrence_days)->map(fn($d)=>ucfirst($d))->implode(', ') }}) @endif
                         @endif
                         @if($program->access_type === 'paid')
-                            &middot; {{ $program->currency }} {{ number_format($program->registration_fee) }}
+                            &middot; {{ $program->accessLabel() }}
                         @endif
                     </p>
                 </div>
@@ -117,7 +127,10 @@
         <div class="card prog-stat-card">
             <div class="stat-body">
                 <div class="prog-stat-icon bg-6"><i class="icofont icofont-money-bag"></i></div>
-                <div><p class="prog-stat-value">{{ $program->currency }} {{ number_format($revenue) }}</p><p class="prog-stat-label">Revenue</p></div>
+                <div>
+                    <p class="prog-stat-value">{{ $program->currency }} {{ number_format($revenue) }}</p>
+                    <p class="prog-stat-label">Collected @if($outstanding > 0)&middot; {{ number_format($outstanding) }} due @endif</p>
+                </div>
             </div>
         </div>
     </div>
@@ -146,7 +159,28 @@
                             <tr><td class="text-muted">Church</td><td>{{ optional($program->church)->name ?? ($program->scope === 'global' ? 'Global' : '—') }}</td></tr>
                             <tr><td class="text-muted">Department</td><td>{{ optional($program->department)->name ?? '—' }}</td></tr>
                             <tr><td class="text-muted">Cell Group</td><td>{{ optional($program->cellGroup)->name ?? '—' }}</td></tr>
-                            <tr><td class="text-muted">QR/Barcode Check-in</td><td>{{ $program->qrAvailable() ? 'Enabled' : 'Not enabled' }}</td></tr>
+                            <tr><td class="text-muted">QR/Barcode Check-in</td><td>{{ $program->qrAvailable() ? 'Enabled (per session)' : 'Not enabled' }}</td></tr>
+                            <tr>
+                                <td class="text-muted">Sessions (each day)</td>
+                                <td>
+                                    @forelse($program->sessions as $session)
+                                        <div><strong>{{ $session->name }}</strong> &middot; {{ $session->timeRange() }}</div>
+                                    @empty
+                                        —
+                                    @endforelse
+                                </td>
+                            </tr>
+                            @if($program->access_type === 'paid')
+                            <tr>
+                                <td class="text-muted">Price per Group</td>
+                                <td>
+                                    @foreach($program->designationPrices->sortBy('designation_id') as $price)
+                                        <div>{{ ucwords(optional($price->designation)->name) }}: <strong>{{ $program->currency }} {{ number_format($price->amount) }}</strong></div>
+                                    @endforeach
+                                    <small class="text-muted">Most senior group applies; no group (e.g. first-time visitors) = free.</small>
+                                </td>
+                            </tr>
+                            @endif
                         </table>
                     </div>
 
@@ -154,15 +188,32 @@
                         @if($registrations->count())
                         <div class="table-responsive">
                         <table class="table prog-table align-middle">
-                        <thead><tr><th>Reference</th><th>Member</th><th>Status</th><th>Payment</th><th>Registered</th></tr></thead>
+                        <thead><tr><th>Reference</th><th>Member</th><th>Status</th><th>Payment</th>@if($program->access_type === 'paid')<th class="text-end">Due</th><th class="text-end">Paid</th><th class="text-end">Balance</th>@endif<th>Registered</th>@if($program->access_type === 'paid')<th></th>@endif</tr></thead>
                         <tbody>
                         @foreach($registrations as $reg)
                         <tr>
                             <td class="fw-semibold">{{ $reg->registration_reference }}</td>
                             <td>{{ optional($reg->member)->first_name }} {{ optional($reg->member)->last_name }}</td>
                             <td><span class="badge-pill badge-status-{{ $reg->registration_status }}">{{ ucfirst($reg->registration_status) }}</span></td>
-                            <td><span class="badge-pill badge-payment-{{ $reg->payment_status }}">{{ ucfirst($reg->payment_status) }}</span></td>
+                            <td><span class="badge-pill badge-payment-{{ $reg->payment_status }}">{{ $reg->paymentLabel() }}</span></td>
+                            @if($program->access_type === 'paid')
+                            <td class="text-end">
+                                {{ number_format($reg->amount_due ?? 0) }}
+                                @if($reg->pricedDesignation)<div class="text-muted small">{{ ucwords($reg->pricedDesignation->name) }}</div>@endif
+                            </td>
+                            <td class="text-end">{{ number_format($reg->totalPaid()) }}</td>
+                            <td class="text-end fw-semibold">{{ number_format($reg->balance()) }}</td>
+                            @endif
                             <td>{{ optional($reg->registered_at)->format('d M Y') }}</td>
+                            @if($program->access_type === 'paid')
+                            <td class="text-end">
+                                @if(!$reg->isSettled() && $reg->registration_status === 'registered')
+                                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal{{ $reg->id }}">
+                                    <i class="icofont icofont-money"></i> Record Payment
+                                </button>
+                                @endif
+                            </td>
+                            @endif
                         </tr>
                         @endforeach
                         </tbody>
@@ -221,5 +272,73 @@
 </div>
 
 </div>
+
+{{-- Record Payment modals (paid programs) --}}
+@if($program->access_type === 'paid')
+@foreach($registrations as $reg)
+@if(!$reg->isSettled() && $reg->registration_status === 'registered')
+<div class="modal fade" id="paymentModal{{ $reg->id }}" tabindex="-1" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered">
+<div class="modal-content">
+<form method="POST" action="{{ route('program-payments.store', $reg->id) }}">
+    @csrf
+    <div class="modal-header bg-success text-white">
+        <h5 class="modal-title"><i class="icofont icofont-money"></i> Record Payment &middot; {{ $reg->registration_reference }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <p class="mb-3">
+            <strong>{{ optional($reg->member)->first_name }} {{ optional($reg->member)->last_name }}</strong>
+            @if($reg->pricedDesignation) &middot; {{ ucwords($reg->pricedDesignation->name) }} @endif
+            <br>
+            <span class="text-muted">Due {{ $program->currency }} {{ number_format($reg->amount_due) }}
+                &middot; paid {{ number_format($reg->totalPaid()) }}
+                &middot; balance <strong>{{ number_format($reg->balance()) }}</strong></span>
+        </p>
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="form-label" for="pay_amount_{{ $reg->id }}">Amount ({{ $program->currency }})</label>
+                <input type="number" step="0.01" min="1" max="{{ $reg->balance() }}" name="amount" id="pay_amount_{{ $reg->id }}" class="form-control" value="{{ $reg->balance() }}" required>
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="pay_date_{{ $reg->id }}">Payment Date</label>
+                <input type="date" name="payment_date" id="pay_date_{{ $reg->id }}" class="form-control" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" required>
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="pay_method_{{ $reg->id }}">Method</label>
+                <select name="payment_method" id="pay_method_{{ $reg->id }}" class="form-control">
+                    <option value="">-- Select --</option>
+                    @foreach($paymentMethods as $method)
+                        <option value="{{ $method->name }}">{{ $method->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="pay_ref_{{ $reg->id }}">Reference</label>
+                <input type="text" name="payment_reference" id="pay_ref_{{ $reg->id }}" class="form-control" placeholder="e.g. M-Pesa code">
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="pay_notes_{{ $reg->id }}">Notes</label>
+                <textarea name="notes" id="pay_notes_{{ $reg->id }}" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+        @if($reg->payments->count())
+        <p class="modal-section-label mt-3 mb-1">Earlier payments</p>
+        @foreach($reg->payments->sortByDesc('payment_date') as $pay)
+            <div class="small">{{ $pay->payment_date->format('d M Y') }} &middot; {{ $program->currency }} {{ number_format($pay->amount) }}{{ $pay->payment_method ? ' · ' . $pay->payment_method : '' }}{{ $pay->payment_reference ? ' · ' . $pay->payment_reference : '' }}</div>
+        @endforeach
+        @endif
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-success">Record Payment</button>
+    </div>
+</form>
+</div>
+</div>
+</div>
+@endif
+@endforeach
+@endif
 
 @endsection

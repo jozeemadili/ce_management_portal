@@ -93,20 +93,22 @@
                             <span class="text-muted">End Date</span>
                             <strong>{{ optional(optional($registration->program)->end_date)->format('d M Y') ?? optional(optional($registration->program)->start_date)->format('d M Y') ?? '—' }}</strong>
                         </div>
-                        @if(optional($registration->program)->start_time || optional($registration->program)->end_time)
+                        @if(optional($registration->program)->sessions && $registration->program->sessions->isNotEmpty())
                         <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span class="text-muted">Event Time (Daily)</span>
-                            <strong>@if(optional($registration->program)->start_time){{ \Illuminate\Support\Carbon::parse($registration->program->start_time)->format('H:i') }}@endif @if(optional($registration->program)->start_time && optional($registration->program)->end_time)&ndash;@endif @if(optional($registration->program)->end_time){{ \Illuminate\Support\Carbon::parse($registration->program->end_time)->format('H:i') }}@endif</strong>
+                            <span class="text-muted">Sessions (daily)</span>
+                            <strong class="text-end">@foreach($registration->program->sessions as $session){{ $session->name }} {{ $session->timeRange() }}@if(!$loop->last)<br>@endif @endforeach</strong>
                         </div>
                         @endif
                         <div class="d-flex justify-content-between py-2 border-bottom">
-                            <span class="text-muted">Access</span>
-                            <strong>
-                                @if(optional($registration->program)->isFree())FREE
-                                @else {{ optional($registration->program)->currency }} {{ number_format(optional($registration->program)->registration_fee, 2) }}
-                                @endif
-                            </strong>
+                            <span class="text-muted">Amount Due</span>
+                            <strong>{{ $registration->amountDueLabel() }}</strong>
                         </div>
+                        @if((float) $registration->amount_due > 0)
+                        <div class="d-flex justify-content-between py-2 border-bottom">
+                            <span class="text-muted">Paid / Balance</span>
+                            <strong>{{ number_format($registration->totalPaid()) }} / {{ number_format($registration->balance()) }}</strong>
+                        </div>
+                        @endif
                         <div class="d-flex justify-content-between py-2">
                             <span class="text-muted">Registered On</span>
                             <strong>{{ optional($registration->registered_at)->format('d M Y') }}</strong>

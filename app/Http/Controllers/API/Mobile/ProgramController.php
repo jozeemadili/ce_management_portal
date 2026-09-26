@@ -29,7 +29,7 @@ class ProgramController extends Controller
             $programsQuery->visibleToMember($member);
         }
 
-        $programs = $programsQuery->orderBy('start_date')->get();
+        $programs = $programsQuery->with(['sessions', 'designationPrices'])->orderBy('start_date')->get();
 
         $myRegisteredIds = $member
             ? ProgramRegistration::where('member_id', $member->id)
@@ -52,6 +52,17 @@ class ProgramController extends Controller
             'access_type' => $program->access_type,
             'registration_fee' => (float) $program->registration_fee,
             'currency' => $program->currency,
+            'price_min' => $program->priceRange()[0],
+            'price_max' => $program->priceRange()[1],
+            // What the logged-in member would pay (most senior group; none = free).
+            'my_price' => $member ? $program->priceFor($member)['amount'] : null,
+            'my_price_group' => $member ? optional($program->priceFor($member)['designation'])->name : null,
+            'sessions' => $program->sessions->map(fn ($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'start_time' => substr($s->start_time, 0, 5),
+                'end_time' => substr($s->end_time, 0, 5),
+            ])->values(),
             'already_registered' => in_array($program->id, $myRegisteredIds),
         ])->values());
     }

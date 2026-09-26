@@ -40,12 +40,12 @@
     <div class="header">
         <table>
             <tr>
-                @if($logo)
-                <td class="logo-cell"><img src="{{ $logo }}"></td>
-                @endif
+                <?php if($logo): ?>
+                <td class="logo-cell"><img src="<?php echo e($logo); ?>"></td>
+                <?php endif; ?>
                 <td>
                     <h1>Attendance Report</h1>
-                    <p>{{ $program->name }}</p>
+                    <p><?php echo e($program->name); ?></p>
                 </td>
             </tr>
         </table>
@@ -54,30 +54,30 @@
     <table class="details">
         <tr>
             <td class="label">Date</td>
-            <td class="value">{{ $occurrence->occurrence_date->format('d M Y') }}</td>
+            <td class="value"><?php echo e($occurrence->occurrence_date->format('d M Y')); ?></td>
             <td class="label">Location</td>
-            <td class="value">{{ $program->location ?? '—' }}</td>
+            <td class="value"><?php echo e($program->location ?? '—'); ?></td>
         </tr>
         <tr>
             <td class="label">Category</td>
-            <td class="value">{{ ucfirst(str_replace('_',' ',$program->category)) }}</td>
+            <td class="value"><?php echo e(ucfirst(str_replace('_',' ',$program->category))); ?></td>
             <td class="label">Classification</td>
-            <td class="value">{{ ucfirst($program->classification) }}</td>
+            <td class="value"><?php echo e(ucfirst($program->classification)); ?></td>
         </tr>
         <tr>
             <td class="label">Organizer</td>
-            <td class="value">{{ $program->organizer ?? '—' }}</td>
+            <td class="value"><?php echo e($program->organizer ?? '—'); ?></td>
             <td class="label">Time</td>
-            <td class="value">{{ $occurrence->start_time ?? '—' }} - {{ $occurrence->end_time ?? '—' }}</td>
+            <td class="value"><?php echo e($occurrence->start_time ?? '—'); ?> - <?php echo e($occurrence->end_time ?? '—'); ?></td>
         </tr>
     </table>
 
     <div class="summary-row">
-        <div class="summary-box"><div class="num">{{ $summary['total'] }}</div><div class="lbl">Total</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['present'] }}</div><div class="lbl">Present</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['absent'] }}</div><div class="lbl">Absent</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['late'] }}</div><div class="lbl">Late</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['excused'] }}</div><div class="lbl">Excused</div></div>
+        <div class="summary-box"><div class="num"><?php echo e($summary['total']); ?></div><div class="lbl">Total</div></div>
+        <div class="summary-box"><div class="num"><?php echo e($summary['present']); ?></div><div class="lbl">Present</div></div>
+        <div class="summary-box"><div class="num"><?php echo e($summary['absent']); ?></div><div class="lbl">Absent</div></div>
+        <div class="summary-box"><div class="num"><?php echo e($summary['late']); ?></div><div class="lbl">Late</div></div>
+        <div class="summary-box"><div class="num"><?php echo e($summary['excused']); ?></div><div class="lbl">Excused</div></div>
     </div>
 
     <table class="attendees">
@@ -93,25 +93,27 @@
             </tr>
         </thead>
         <tbody>
-        @forelse($attendances as $i => $att)
+        <?php $__empty_1 = true; $__currentLoopData = $attendances; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $i => $att): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
             <tr>
-                <td>{{ $i + 1 }}</td>
-                <td>{{ $att->attendeeName() }}</td>
-                <td>{{ optional($att->session)->name ?? '—' }}@if($att->checked_in_at) ({{ $att->checked_in_at->format('H:i') }})@endif</td>
-                <td>{{ $att->isNewSoul() ? 'Visitor' : 'Member' }}</td>
-                <td>{{ optional(optional($att->member)->church)->name ?? '—' }}</td>
-                <td>{{ ucfirst($att->attendance_status) }}</td>
-                <td>{{ $att->check_in_method === 'qr' ? 'QR Scan' : 'Manual' }}</td>
+                <td><?php echo e($i + 1); ?></td>
+                <td><?php echo e($att->attendeeName()); ?></td>
+                <td><?php echo e(optional($att->session)->name ?? '—'); ?><?php if($att->checked_in_at): ?> (<?php echo e($att->checked_in_at->format('H:i')); ?>)<?php endif; ?></td>
+                <td><?php echo e($att->isNewSoul() ? 'Visitor' : 'Member'); ?></td>
+                <td><?php echo e(optional(optional($att->member)->church)->name ?? '—'); ?></td>
+                <td><?php echo e(ucfirst($att->attendance_status)); ?></td>
+                <td><?php echo e($att->check_in_method === 'qr' ? 'QR Scan' : 'Manual'); ?></td>
             </tr>
-        @empty
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <tr><td colspan="7">No attendees recorded for this date.</td></tr>
-        @endforelse
+        <?php endif; ?>
         </tbody>
     </table>
 
     <div class="footer">
-        Generated {{ now()->format('d M Y, H:i') }}
+        Generated <?php echo e(now()->format('d M Y, H:i')); ?>
+
     </div>
 
 </body>
 </html>
+<?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/programs/pdf/attendance-report.blade.php ENDPATH**/ ?>

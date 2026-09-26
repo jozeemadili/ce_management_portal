@@ -31,6 +31,7 @@ class ProgramAttendance extends Model
     protected $casts = [
         'program_id' => 'int',
         'occurrence_id' => 'int',
+        'session_id' => 'int',
         'member_id' => 'int',
         'registration_id' => 'int',
         'recorded_by' => 'int',
@@ -38,13 +39,18 @@ class ProgramAttendance extends Model
     ];
 
     protected $fillable = [
-        'program_id', 'occurrence_id', 'member_id', 'registration_id',
+        'program_id', 'occurrence_id', 'session_id', 'member_id', 'registration_id',
         'attendance_status', 'check_in_method', 'checked_in_at', 'recorded_by', 'notes',
     ];
 
     public function program()
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function session()
+    {
+        return $this->belongsTo(ProgramSession::class, 'session_id');
     }
 
     public function occurrence()

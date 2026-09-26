@@ -52,7 +52,7 @@
                 <p class="text-muted mb-3"><i class="icofont icofont-building-alt"></i> {{ optional(optional($registration->member)->church)->name ?? '—' }}</p>
 
                 <span class="badge-pill badge-status-{{ $registration->registration_status }} mb-3 d-inline-block">{{ ucfirst($registration->registration_status) }}</span>
-                <span class="badge-pill badge-payment-{{ $registration->payment_status }} mb-3 d-inline-block">{{ ucfirst($registration->payment_status) }}</span>
+                <span class="badge-pill badge-payment-{{ $registration->payment_status }} mb-3 d-inline-block">{{ $registration->paymentLabel() }}</span>
 
                 <div class="d-flex justify-content-between py-2 border-bottom">
                     <span class="text-muted">Reference</span>
@@ -66,6 +66,27 @@
                     <span class="text-muted">Date</span>
                     <strong>{{ optional(optional($registration->program)->start_date)->format('d M Y') ?? '—' }}</strong>
                 </div>
+                @if($session)
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Session now</span>
+                    <strong>{{ $session->name }} ({{ $session->timeRange() }})</strong>
+                </div>
+                @elseif($registration->program && $registration->program->sessions->isNotEmpty())
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Sessions</span>
+                    <strong class="text-end">{{ $registration->program->sessionsLabel() }}</strong>
+                </div>
+                @endif
+                @if((float) $registration->amount_due > 0)
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Amount Due{{ $registration->pricedDesignation ? ' (' . ucwords($registration->pricedDesignation->name) . ')' : '' }}</span>
+                    <strong>{{ $registration->program->currency }} {{ number_format($registration->amount_due) }}</strong>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted">Paid / Balance</span>
+                    <strong>{{ number_format($registration->totalPaid()) }} / {{ number_format($registration->balance()) }}</strong>
+                </div>
+                @endif
                 <div class="d-flex justify-content-between py-2">
                     <span class="text-muted">Registered On</span>
                     <strong>{{ optional($registration->registered_at)->format('d M Y') }}</strong>
@@ -86,9 +107,41 @@
                 </div>
                 @endif
 
+                @if(!$registration->isSettled() && $registration->registration_status === 'registered')
+                {{-- Take payment at the door, then check in. --}}
+                <form method="POST" action="{{ route('program-payments.store', $registration->id) }}" class="mt-3 border rounded p-3">
+                    @csrf
+                    <p class="modal-section-label mb-2">Record Payment</p>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">Amount</label>
+                            <input type="number" step="0.01" min="1" name="amount" class="form-control" value="{{ $registration->balance() ?: '' }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Date</label>
+                            <input type="date" name="payment_date" class="form-control" value="{{ now()->toDateString() }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Method</label>
+                            <select name="payment_method" class="form-control">
+                                <option value="">-- Select --</option>
+                                @foreach($paymentMethods as $method)
+                                    <option value="{{ $method->name }}">{{ $method->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Reference</label>
+                            <input type="text" name="payment_reference" class="form-control" placeholder="e.g. M-Pesa code">
+                        </div>
+                    </div>
+                    <button class="btn btn-success w-100 mt-3"><i class="icofont icofont-money"></i> Record Payment</button>
+                </form>
+                @endif
+
                 @if($registration->attendance)
                 <div class="alert alert-success mt-3 mb-0">
-                    <i class="icofont icofont-check-circled"></i> Checked in {{ optional($registration->attendance->checked_in_at)->format('d M Y, H:i') }}
+                    <i class="icofont icofont-check-circled"></i> Last check-in {{ optional($registration->attendance->checked_in_at)->format('d M Y, H:i') }}@if($registration->attendance->session) &middot; {{ $registration->attendance->session->name }}@endif
                 </div>
                 @endif
             </div>

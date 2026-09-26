@@ -45,7 +45,7 @@ class MyProgramRegistrationController extends Controller
             $programsQuery->visibleToMember($currentMember);
         }
 
-        $programs = $programsQuery->orderBy('start_date')->get();
+        $programs = $programsQuery->with(['sessions', 'designationPrices'])->orderBy('start_date')->get();
 
         $myRegisteredIds = $currentMember
             ? ProgramRegistration::where('member_id', $currentMember->id)->where('registration_status', 'registered')->pluck('program_id')
@@ -98,7 +98,7 @@ class MyProgramRegistrationController extends Controller
 
         ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray());
 
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program.sessions', 'member.church', 'pricedDesignation', 'payments']);
 
         return view('portal.programs.registrations.confirmation', compact('registration', 'program'));
     }
@@ -161,7 +161,7 @@ class MyProgramRegistrationController extends Controller
             'You may only view registrations you made or your own.'
         );
 
-        $registration->load(['program', 'attendance', 'member.church']);
+        $registration->load(['program.sessions', 'attendance', 'member.church', 'pricedDesignation', 'payments']);
 
         $scanUrl = route('program-scan.show', $registration->id);
         $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(180)->generate($scanUrl);
@@ -186,7 +186,7 @@ class MyProgramRegistrationController extends Controller
         // logged in, including front-desk staff registering a walk-in who
         // isn't their own member record, so ownership can't be the gate
         // here. Every route in this module already requires auth.
-        $registration->load(['program', 'member.church']);
+        $registration->load(['program.sessions', 'member.church', 'pricedDesignation', 'payments']);
 
         $scanUrl = route('program-scan.show', $registration->id);
         $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(160)->generate($scanUrl);

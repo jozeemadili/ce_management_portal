@@ -95,6 +95,86 @@ class Program extends Model
         return $this->hasMany(ProgramAttendance::class);
     }
 
+    /** Morning / Noon / ... sessions, repeated on every day of the program. */
+    public function sessions()
+    {
+        return $this->hasMany(ProgramSession::class)->orderBy('sort_order')->orderBy('start_time');
+    }
+
+    /** Paid programs: the price for each member designation (group). */
+    public function designationPrices()
+    {
+        return $this->hasMany(ProgramDesignationPrice::class);
+    }
+
+    /**
+     * What $member pays: the price set for their MOST SENIOR designation -
+     * the lowest id in member_designations (zonal pastor = 1 ... staff = 8).
+     * Free programs, and people with no designation (e.g. first-time
+     * visitors), pay nothing.
+     *
+     * @return array{amount: float, designation: ?MemberDesignation}
+     */
+    public function priceFor(Member $member): array
+    {
+        if ($this->isFree()) {
+            return ['amount' => 0.0, 'designation' => null];
+        }
+
+        $designationId = $member->member_roles()->min('designation_id');
+        if (!$designationId) {
+            return ['amount' => 0.0, 'designation' => null];
+        }
+
+        $price = $this->designationPrices()->where('designation_id', $designationId)->value('amount');
+
+        return [
+            'amount' => (float) ($price ?? 0),
+            'designation' => MemberDesignation::find($designationId),
+        ];
+    }
+
+    /** [lowest, highest] designation price of a paid program. */
+    public function priceRange(): array
+    {
+        $prices = $this->relationLoaded('designationPrices')
+            ? $this->designationPrices->pluck('amount')
+            : $this->designationPrices()->pluck('amount');
+
+        return [(float) ($prices->min() ?? 0), (float) ($prices->max() ?? 0)];
+    }
+
+    /** "FREE", "TZS 20,000" or "TZS 20,000 – 100,000" (paid, by group). */
+    public function accessLabel(): string
+    {
+        if ($this->isFree()) {
+            return 'FREE';
+        }
+
+        [$min, $max] = $this->priceRange();
+
+        return $min === $max
+            ? $this->currency . ' ' . number_format($max)
+            : $this->currency . ' ' . number_format($min) . ' – ' . number_format($max);
+    }
+
+    /** Sessions as the Edit Program form fills them in (times as HH:MM). */
+    public function sessionsForForm(): array
+    {
+        return $this->sessions->map(fn ($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'start_time' => substr($s->start_time, 0, 5),
+            'end_time' => substr($s->end_time, 0, 5),
+        ])->values()->all();
+    }
+
+    /** "Morning Session 09:00 – 12:00 · Noon Session 14:00 – 17:00" */
+    public function sessionsLabel(): string
+    {
+        return $this->sessions->map(fn ($s) => $s->name . ' ' . $s->timeRange())->implode(' · ');
+    }
+
     public function isFree(): bool
     {
         return $this->access_type === 'free';

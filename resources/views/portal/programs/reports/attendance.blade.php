@@ -71,12 +71,16 @@
         @if($attendances->count())
         <div class="table-responsive">
         <table class="table prog-table align-middle">
-        <thead><tr><th>Program</th><th>Date</th><th>Attendee</th><th>Type</th><th>Church</th><th>Status</th><th>Method</th></tr></thead>
+        <thead><tr><th>Program</th><th>Date</th><th>Session</th><th>Attendee</th><th>Type</th><th>Church</th><th>Status</th><th>Method</th></tr></thead>
         <tbody>
         @foreach($attendances as $att)
         <tr>
             <td>{{ optional($att->program)->name }}</td>
             <td>{{ optional(optional($att->occurrence)->occurrence_date)->format('d M Y') }}</td>
+            <td>
+                {{ optional($att->session)->name ?? '—' }}
+                @if($att->checked_in_at)<div class="text-muted small">{{ $att->checked_in_at->format('H:i') }}</div>@endif
+            </td>
             <td class="fw-semibold">{{ $att->attendeeName() }}</td>
             <td>{{ $att->isNewSoul() ? 'Visitor' : 'Member' }}</td>
             <td>{{ optional(optional($att->member)->church)->name ?? '—' }}</td>

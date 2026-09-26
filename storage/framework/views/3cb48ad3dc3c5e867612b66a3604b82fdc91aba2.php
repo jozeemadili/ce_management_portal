@@ -1,21 +1,19 @@
-@extends('layouts.admin.master')
+<?php $__env->startSection('title', 'Programs'); ?>
 
-@section('title', 'Programs')
+<?php $__env->startPush('css'); ?>
+<?php echo $__env->make('portal.programs.partials.styles', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+<?php $__env->stopPush(); ?>
 
-@push('css')
-@include('portal.programs.partials.styles')
-@endpush
+<?php $__env->startSection('content'); ?>
 
-@section('content')
-
-@component('components.breadcrumb')
-    @slot('breadcrumb_title')
+<?php $__env->startComponent('components.breadcrumb'); ?>
+    <?php $__env->slot('breadcrumb_title'); ?>
         <h3>Programs</h3>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
-    @slot('breadcrumb_action_buttons')
+    <?php $__env->slot('breadcrumb_action_buttons'); ?>
         <li>
-            <a class="btn btn-outline-success" href="{{ route('programs.export', request()->query()) }}">
+            <a class="btn btn-outline-success" href="<?php echo e(route('programs.export', request()->query())); ?>">
                 Export Excel <i class="icofont icofont-file-excel"></i>
             </a>
         </li>
@@ -24,36 +22,38 @@
                 New Program <i class="icofont icofont-plus-circle"></i>
             </button>
         </li>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
     <li class="breadcrumb-item">Programs &amp; Attendance</li>
     <li class="breadcrumb-item active">Programs</li>
-@endcomponent
+<?php echo $__env->renderComponent(); ?>
 
 <div class="container-fluid">
 
-@if ($errors->any())
-    @foreach ($errors->all() as $error)
+<?php if($errors->any()): ?>
+    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <div class="alert alert-danger alert-dismissible fade show">
-            {{ $error }}
+            <?php echo e($error); ?>
+
             <button class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    @endforeach
-@endif
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php endif; ?>
 
-@if(session('success'))
+<?php if(session('success')): ?>
     <div class="alert alert-success alert-dismissible fade show">
-        {{ session('success') }}
+        <?php echo e(session('success')); ?>
+
         <button class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-@endif
+<?php endif; ?>
 
 <div class="row mb-3">
     <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
         <div class="card prog-stat-card">
             <div class="stat-body">
                 <div class="prog-stat-icon bg-1"><i class="icofont icofont-calendar"></i></div>
-                <div><p class="prog-stat-value">{{ $stats['total'] }}</p><p class="prog-stat-label">Total Programs</p></div>
+                <div><p class="prog-stat-value"><?php echo e($stats['total']); ?></p><p class="prog-stat-label">Total Programs</p></div>
             </div>
         </div>
     </div>
@@ -61,7 +61,7 @@
         <div class="card prog-stat-card">
             <div class="stat-body">
                 <div class="prog-stat-icon bg-2"><i class="icofont icofont-check-circled"></i></div>
-                <div><p class="prog-stat-value">{{ $stats['active'] }}</p><p class="prog-stat-label">Active</p></div>
+                <div><p class="prog-stat-value"><?php echo e($stats['active']); ?></p><p class="prog-stat-label">Active</p></div>
             </div>
         </div>
     </div>
@@ -69,7 +69,7 @@
         <div class="card prog-stat-card">
             <div class="stat-body">
                 <div class="prog-stat-icon bg-6"><i class="icofont icofont-refresh"></i></div>
-                <div><p class="prog-stat-value">{{ $stats['recurring'] }}</p><p class="prog-stat-label">Recurring</p></div>
+                <div><p class="prog-stat-value"><?php echo e($stats['recurring']); ?></p><p class="prog-stat-label">Recurring</p></div>
             </div>
         </div>
     </div>
@@ -77,7 +77,7 @@
         <div class="card prog-stat-card">
             <div class="stat-body">
                 <div class="prog-stat-icon bg-3"><i class="icofont icofont-ticket"></i></div>
-                <div><p class="prog-stat-value">{{ $stats['special'] }}</p><p class="prog-stat-label">Special Events</p></div>
+                <div><p class="prog-stat-value"><?php echo e($stats['special']); ?></p><p class="prog-stat-label">Special Events</p></div>
             </div>
         </div>
     </div>
@@ -88,115 +88,115 @@
 <div class="card prog-card">
 <div class="card-body">
 
-<form method="GET" action="{{ route('programs.index') }}" class="prog-filter-bar">
+<form method="GET" action="<?php echo e(route('programs.index')); ?>" class="prog-filter-bar">
 <div class="row g-2 align-items-end">
     <div class="col-md-3">
         <label class="form-label mb-1">Search</label>
-        <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Program name">
+        <input type="text" name="q" value="<?php echo e(request('q')); ?>" class="form-control" placeholder="Program name">
     </div>
     <div class="col-md-3">
         <label class="form-label mb-1">Classification</label>
         <select name="classification" class="form-control">
             <option value="">All</option>
-            <option value="recurring" @selected(request('classification')=='recurring')>Recurring</option>
-            <option value="special" @selected(request('classification')=='special')>Special</option>
+            <option value="recurring" <?php if(request('classification')=='recurring'): echo 'selected'; endif; ?>>Recurring</option>
+            <option value="special" <?php if(request('classification')=='special'): echo 'selected'; endif; ?>>Special</option>
         </select>
     </div>
     <div class="col-md-2">
         <label class="form-label mb-1">Status</label>
         <select name="status" class="form-control">
             <option value="">All</option>
-            @foreach(['draft','active','completed','cancelled'] as $s)
-                <option value="{{ $s }}" @selected(request('status')==$s)>{{ ucfirst($s) }}</option>
-            @endforeach
+            <?php $__currentLoopData = ['draft','active','completed','cancelled']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $s): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($s); ?>" <?php if(request('status')==$s): echo 'selected'; endif; ?>><?php echo e(ucfirst($s)); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </select>
     </div>
     <div class="col-md-2">
         <label class="form-label mb-1">Access</label>
         <select name="access_type" class="form-control">
             <option value="">All</option>
-            <option value="free" @selected(request('access_type')=='free')>Free</option>
-            <option value="paid" @selected(request('access_type')=='paid')>Paid</option>
+            <option value="free" <?php if(request('access_type')=='free'): echo 'selected'; endif; ?>>Free</option>
+            <option value="paid" <?php if(request('access_type')=='paid'): echo 'selected'; endif; ?>>Paid</option>
         </select>
     </div>
     <div class="col-md-2 d-flex gap-2">
         <button class="btn btn-primary w-100" type="submit"><i class="icofont icofont-search"></i></button>
-        @if(request()->anyFilled(['q','classification','status','access_type']))
-        <a href="{{ route('programs.index') }}" class="btn btn-outline-secondary"><i class="icofont icofont-refresh"></i></a>
-        @endif
+        <?php if(request()->anyFilled(['q','classification','status','access_type'])): ?>
+        <a href="<?php echo e(route('programs.index')); ?>" class="btn btn-outline-secondary"><i class="icofont icofont-refresh"></i></a>
+        <?php endif; ?>
     </div>
 </div>
 </form>
 
-@if($programs->count())
+<?php if($programs->count()): ?>
 <div class="row">
-@foreach($programs as $program)
+<?php $__currentLoopData = $programs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $program): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 <div class="col-lg-4 col-md-6 mb-4">
     <div class="card program-card">
-        <div class="program-card-banner" @if($program->banner_path) style="background-image:url('{{ asset('storage/'.$program->banner_path) }}');background-size:cover;background-position:center;" @endif>
-            @unless($program->banner_path)
-                <i class="icofont icofont-{{ $program->classification === 'recurring' ? 'refresh' : 'ticket' }}"></i>
-            @endunless
+        <div class="program-card-banner" <?php if($program->banner_path): ?> style="background-image:url('<?php echo e(asset('storage/'.$program->banner_path)); ?>');background-size:cover;background-position:center;" <?php endif; ?>>
+            <?php if (! ($program->banner_path)): ?>
+                <i class="icofont icofont-<?php echo e($program->classification === 'recurring' ? 'refresh' : 'ticket'); ?>"></i>
+            <?php endif; ?>
         </div>
         <div class="program-card-body">
             <div class="d-flex justify-content-between align-items-start">
-                <h5 class="program-card-title">{{ $program->name }}</h5>
-                <span class="badge-pill badge-access-{{ $program->access_type }}">{{ $program->access_type === 'free' ? 'FREE' : 'PAID' }}</span>
+                <h5 class="program-card-title"><?php echo e($program->name); ?></h5>
+                <span class="badge-pill badge-access-<?php echo e($program->access_type); ?>"><?php echo e($program->access_type === 'free' ? 'FREE' : 'PAID'); ?></span>
             </div>
             <div class="d-flex gap-2">
-                <span class="badge-pill badge-class-{{ $program->classification }}">{{ ucfirst($program->classification) }}</span>
-                <span class="badge-pill badge-status-{{ $program->status }}">{{ ucfirst($program->status) }}</span>
+                <span class="badge-pill badge-class-<?php echo e($program->classification); ?>"><?php echo e(ucfirst($program->classification)); ?></span>
+                <span class="badge-pill badge-status-<?php echo e($program->status); ?>"><?php echo e(ucfirst($program->status)); ?></span>
             </div>
-            <p class="program-card-desc">{{ \Illuminate\Support\Str::limit($program->description ?? '', 80) ?: 'No description provided.' }}</p>
+            <p class="program-card-desc"><?php echo e(\Illuminate\Support\Str::limit($program->description ?? '', 80) ?: 'No description provided.'); ?></p>
 
             <div class="program-card-meta">
-                <span><i class="icofont icofont-location-pin"></i> {{ $program->location ?? '—' }}</span>
-                <span><i class="icofont icofont-people"></i> {{ $program->registrations_count ?? 0 }} reg.</span>
+                <span><i class="icofont icofont-location-pin"></i> <?php echo e($program->location ?? '—'); ?></span>
+                <span><i class="icofont icofont-people"></i> <?php echo e($program->registrations_count ?? 0); ?> reg.</span>
             </div>
-            @if($program->classification === 'recurring')
+            <?php if($program->classification === 'recurring'): ?>
             <div class="program-card-meta">
-                <span><i class="icofont icofont-refresh"></i> {{ ucfirst($program->recurrence_frequency ?? '—') }}@if($program->recurrence_days) &middot; {{ collect($program->recurrence_days)->map(fn($d)=>ucfirst($d))->implode(', ') }} @endif</span>
+                <span><i class="icofont icofont-refresh"></i> <?php echo e(ucfirst($program->recurrence_frequency ?? '—')); ?><?php if($program->recurrence_days): ?> &middot; <?php echo e(collect($program->recurrence_days)->map(fn($d)=>ucfirst($d))->implode(', ')); ?> <?php endif; ?></span>
             </div>
-            @else
+            <?php else: ?>
             <div class="program-card-meta">
-                <span><i class="icofont icofont-calendar"></i> {{ optional($program->start_date)->format('d M Y') }}</span>
+                <span><i class="icofont icofont-calendar"></i> <?php echo e(optional($program->start_date)->format('d M Y')); ?></span>
             </div>
             <div class="program-card-meta">
-                <span><i class="icofont icofont-clock-time"></i> {{ $program->sessions->count() }} {{ \Illuminate\Support\Str::plural('session', $program->sessions->count()) }}@if($program->sessions->isNotEmpty()): {{ $program->sessions->map(fn ($x) => $x->timeRange())->implode(', ') }}@endif</span>
-                @if($program->access_type === 'paid')
-                <span>{{ $program->accessLabel() }}</span>
-                @endif
+                <span><i class="icofont icofont-clock-time"></i> <?php echo e($program->sessions->count()); ?> <?php echo e(\Illuminate\Support\Str::plural('session', $program->sessions->count())); ?><?php if($program->sessions->isNotEmpty()): ?>: <?php echo e($program->sessions->map(fn ($x) => $x->timeRange())->implode(', ')); ?><?php endif; ?></span>
+                <?php if($program->access_type === 'paid'): ?>
+                <span><?php echo e($program->accessLabel()); ?></span>
+                <?php endif; ?>
             </div>
-            @endif
+            <?php endif; ?>
 
             <div class="d-flex gap-2 mt-2">
-                <a href="{{ route('programs.show', $program->id) }}" class="btn btn-primary btn-sm flex-fill">
+                <a href="<?php echo e(route('programs.show', $program->id)); ?>" class="btn btn-primary btn-sm flex-fill">
                     <i class="icofont icofont-eye"></i> View
                 </a>
                 <button class="btn btn-outline-secondary btn-sm edit-program-btn"
                     data-bs-toggle="modal" data-bs-target="#editProgramModal"
-                    data-id="{{ $program->id }}"
-                    data-name="{{ $program->name }}"
-                    data-description="{{ $program->description }}"
-                    data-category="{{ $program->category }}"
-                    data-classification="{{ $program->classification }}"
-                    data-scope="{{ $program->scope }}"
-                    data-church="{{ $program->church_id }}"
-                    data-department="{{ $program->department_id }}"
-                    data-cell="{{ $program->cell_group_id }}"
-                    data-organizer="{{ $program->organizer }}"
-                    data-location="{{ $program->location }}"
-                    data-start-date="{{ optional($program->start_date)->format('Y-m-d') }}"
-                    data-end-date="{{ optional($program->end_date)->format('Y-m-d') }}"
-                    data-sessions="{{ json_encode($program->sessionsForForm()) }}"
-                    data-prices="{{ json_encode($program->designationPrices->pluck('amount', 'designation_id')) }}"
-                    data-frequency="{{ $program->recurrence_frequency }}"
-                    data-days='@json($program->recurrence_days ?? [])'
-                    data-access="{{ $program->access_type }}"
-                    data-currency="{{ $program->currency }}"
-                    data-status="{{ $program->status }}"
-                    data-qr="{{ $program->qr_enabled ? 1 : 0 }}"
-                    data-banner="{{ $program->banner_path ? asset('storage/'.$program->banner_path) : '' }}"
+                    data-id="<?php echo e($program->id); ?>"
+                    data-name="<?php echo e($program->name); ?>"
+                    data-description="<?php echo e($program->description); ?>"
+                    data-category="<?php echo e($program->category); ?>"
+                    data-classification="<?php echo e($program->classification); ?>"
+                    data-scope="<?php echo e($program->scope); ?>"
+                    data-church="<?php echo e($program->church_id); ?>"
+                    data-department="<?php echo e($program->department_id); ?>"
+                    data-cell="<?php echo e($program->cell_group_id); ?>"
+                    data-organizer="<?php echo e($program->organizer); ?>"
+                    data-location="<?php echo e($program->location); ?>"
+                    data-start-date="<?php echo e(optional($program->start_date)->format('Y-m-d')); ?>"
+                    data-end-date="<?php echo e(optional($program->end_date)->format('Y-m-d')); ?>"
+                    data-sessions="<?php echo e(json_encode($program->sessionsForForm())); ?>"
+                    data-prices="<?php echo e(json_encode($program->designationPrices->pluck('amount', 'designation_id'))); ?>"
+                    data-frequency="<?php echo e($program->recurrence_frequency); ?>"
+                    data-days='<?php echo json_encode($program->recurrence_days ?? [], 15, 512) ?>'
+                    data-access="<?php echo e($program->access_type); ?>"
+                    data-currency="<?php echo e($program->currency); ?>"
+                    data-status="<?php echo e($program->status); ?>"
+                    data-qr="<?php echo e($program->qr_enabled ? 1 : 0); ?>"
+                    data-banner="<?php echo e($program->banner_path ? asset('storage/'.$program->banner_path) : ''); ?>"
                     title="Edit">
                     <i class="icofont icofont-edit"></i>
                 </button>
@@ -204,16 +204,17 @@
         </div>
     </div>
 </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </div>
 
-{{ $programs->links() }}
-@else
+<?php echo e($programs->links()); ?>
+
+<?php else: ?>
 <div class="prog-empty">
     <i class="icofont icofont-calendar"></i>
-    <p class="mb-0">No programs found @if(request()->anyFilled(['q','classification','status','access_type'])) for the selected filters @endif.</p>
+    <p class="mb-0">No programs found <?php if(request()->anyFilled(['q','classification','status','access_type'])): ?> for the selected filters <?php endif; ?>.</p>
 </div>
-@endif
+<?php endif; ?>
 
 </div>
 </div>
@@ -222,12 +223,12 @@
 
 </div>
 
-@include('portal.programs.partials.program-form-modal', ['modalId' => 'newProgramModal', 'formAction' => route('programs.store'), 'mode' => 'new'])
-@include('portal.programs.partials.program-form-modal', ['modalId' => 'editProgramModal', 'formAction' => '', 'mode' => 'edit'])
+<?php echo $__env->make('portal.programs.partials.program-form-modal', ['modalId' => 'newProgramModal', 'formAction' => route('programs.store'), 'mode' => 'new'], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+<?php echo $__env->make('portal.programs.partials.program-form-modal', ['modalId' => 'editProgramModal', 'formAction' => '', 'mode' => 'edit'], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
+<?php $__env->startPush('scripts'); ?>
 <script>
 /* Sessions editor for the Create/Edit Program forms. */
 const programSessions = (function () {
@@ -344,4 +345,6 @@ document.querySelectorAll('.edit-program-btn').forEach(btn => {
     });
 });
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin.master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/programs/index.blade.php ENDPATH**/ ?>

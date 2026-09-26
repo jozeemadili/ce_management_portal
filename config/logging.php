@@ -54,6 +54,15 @@ return [
             'days' => 14,
         ],
 
+        // php artisan deploy - one file per day (deployment-YYYY-MM-DD.log),
+        // older than 30 days removed automatically. Never logs secrets.
+        'deployment' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/deployment.log'),
+            'level' => 'info',
+            'days' => 30,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

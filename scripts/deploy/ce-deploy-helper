@@ -1,0 +1,95 @@
+#!/bin/bash
+#
+# ce-deploy-helper - the ONLY program the deploy user may run with sudo.
+#
+# Installed root-owned (root:root 0755) at /usr/local/sbin/ce-deploy-helper by
+# scripts/deploy/install-deploy-helper.sh, which fills in the @@...@@ values
+# below. Every path and service name is fixed here at install time: nothing
+# the caller passes can change what gets chowned, synced or restarted.
+#
+# Actions (each allowed by an exact-match sudoers rule):
+#   check                  print the baked-in settings (read-only)
+#   fix-permissions        storage/ + bootstrap/cache writable by the web server
+#   restart-php            systemctl restart <php-fpm service>
+#   restart-nginx          nginx -t, then systemctl restart <nginx service>
+#   sync [--dry-run]       rsync Git copy -> LIVE (only if installed with sync)
+#
+set -euo pipefail
+umask 022
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+LIVE_PATH="@@LIVE_PATH@@"
+GIT_PATH="@@GIT_PATH@@"
+DEPLOY_USER="@@DEPLOY_USER@@"
+WEB_GROUP="@@WEB_GROUP@@"
+PHP_FPM_SERVICE="@@PHP_FPM_SERVICE@@"
+NGINX_SERVICE="@@NGINX_SERVICE@@"
+ALLOW_SYNC="@@ALLOW_SYNC@@"
+
+die() { echo "ce-deploy-helper: $*" >&2; exit 1; }
+
+[ -f "$LIVE_PATH/artisan" ] || die "LIVE is not a Laravel app: $LIVE_PATH"
+
+case "${1:-}" in
+  check)
+    echo "live=$LIVE_PATH"
+    echo "git=$GIT_PATH"
+    echo "deploy_user=$DEPLOY_USER"
+    echo "web_group=$WEB_GROUP"
+    echo "php_fpm=$PHP_FPM_SERVICE"
+    echo "nginx=$NGINX_SERVICE"
+    echo "sync=$ALLOW_SYNC"
+    ;;
+
+  fix-permissions)
+    for dir in "$LIVE_PATH/storage" "$LIVE_PATH/bootstrap/cache"; do
+      [ -d "$dir" ] || die "missing directory: $dir"
+      # -h + -P: change symlinks themselves, never follow them out of LIVE.
+      chown -hRP "$DEPLOY_USER:$WEB_GROUP" "$dir"
+      # Directories: rwx for owner+group, setgid so new files keep the web
+      # group. Files: rw for owner+group. Never world-writable (no 777).
+      find "$dir" -type d -exec chmod 2775 {} +
+      find "$dir" -type f -exec chmod 0664 {} +
+    done
+    echo "permissions ok"
+    ;;
+
+  restart-php)
+    systemctl restart "$PHP_FPM_SERVICE"
+    systemctl is-active --quiet "$PHP_FPM_SERVICE" || die "$PHP_FPM_SERVICE is not active after restart"
+    echo "$PHP_FPM_SERVICE restarted"
+    ;;
+
+  restart-nginx)
+    # Never take the site down with a broken config.
+    nginx -t -q || die "nginx configuration test failed - not restarting"
+    systemctl restart "$NGINX_SERVICE"
+    systemctl is-active --quiet "$NGINX_SERVICE" || die "$NGINX_SERVICE is not active after restart"
+    echo "$NGINX_SERVICE restarted"
+    ;;
+
+  sync)
+    [ "$ALLOW_SYNC" = "yes" ] || die "sync through sudo was not enabled at install time"
+    [ -d "$GIT_PATH/.git" ] || die "not a Git repository: $GIT_PATH"
+    [ "$(readlink -f "$GIT_PATH")" != "$(readlink -f "$LIVE_PATH")" ] || die "Git copy and LIVE are the same directory"
+    dry=()
+    case "${2:-}" in
+      "") ;;
+      --dry-run) dry=(--dry-run) ;;
+      *) die "sync only accepts --dry-run" ;;
+    esac
+    rsync -av --delete ${dry[@]+"${dry[@]}"} \
+      --exclude='.env' \
+      --exclude='.git/' \
+      --exclude='storage/' \
+      --exclude='public/storage' \
+      --exclude='bootstrap/cache/' \
+      "$GIT_PATH/" "$LIVE_PATH/"
+    ;;
+
+  *)
+    echo "usage: ce-deploy-helper {check|fix-permissions|restart-php|restart-nginx|sync [--dry-run]}" >&2
+    exit 64
+    ;;
+esac

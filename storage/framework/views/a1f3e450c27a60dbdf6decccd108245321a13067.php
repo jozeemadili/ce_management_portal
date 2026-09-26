@@ -345,15 +345,15 @@
                 <?php
 if (! isset($_instance)) {
     $html = \Livewire\Livewire::mount('members.create-member')->html();
-} elseif ($_instance->childHasBeenRendered('pGoeVQK')) {
-    $componentId = $_instance->getRenderedChildComponentId('pGoeVQK');
-    $componentTag = $_instance->getRenderedChildComponentTagName('pGoeVQK');
+} elseif ($_instance->childHasBeenRendered('ow5yJkx')) {
+    $componentId = $_instance->getRenderedChildComponentId('ow5yJkx');
+    $componentTag = $_instance->getRenderedChildComponentTagName('ow5yJkx');
     $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
-    $_instance->preserveRenderedChild('pGoeVQK');
+    $_instance->preserveRenderedChild('ow5yJkx');
 } else {
     $response = \Livewire\Livewire::mount('members.create-member');
     $html = $response->html();
-    $_instance->logRenderedChild('pGoeVQK', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+    $_instance->logRenderedChild('ow5yJkx', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
 }
 echo $html;
 ?>

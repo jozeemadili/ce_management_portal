@@ -4,6 +4,10 @@
 
 @push('css')
 @include('portal.programs.partials.styles')
+<style>
+    .badge-type-new_soul { background: #fff4e0; color: #8a5300; }
+    .badge-type-member { background: #e6effd; color: #1f4a94; }
+</style>
 @endpush
 
 @section('content')
@@ -35,6 +39,14 @@
                     @foreach($programs as $p)
                         <option value="{{ $p->id }}" @selected(request('program_id')==$p->id)>{{ $p->name }}</option>
                     @endforeach
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Attendee Type</label>
+                <select name="attendee_type" class="form-control">
+                    <option value="">-- All --</option>
+                    <option value="new_soul" @selected(request('attendee_type')==='new_soul')>First-time visitors</option>
+                    <option value="member" @selected(request('attendee_type')==='member')>Members</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -74,14 +86,19 @@
         @if($registrations->count())
         <div class="table-responsive">
         <table class="table prog-table align-middle">
-        <thead><tr><th>Reference</th><th>Member</th><th>Church</th><th>Program</th><th>Status</th><th>Payment</th><th>Registered</th></tr></thead>
+        <thead><tr><th>Reference</th><th>Attendee</th><th>Type</th><th>Church</th><th>Program</th><th>Invited By</th><th>Status</th><th>Payment</th><th>Registered</th></tr></thead>
         <tbody>
         @foreach($registrations as $reg)
         <tr>
             <td class="fw-semibold">{{ $reg->registration_reference }}</td>
-            <td>{{ optional($reg->member)->first_name }} {{ optional($reg->member)->last_name }}</td>
+            <td>
+                {{ optional($reg->member)->first_name }} {{ optional($reg->member)->last_name }}
+                @if(optional($reg->member)->phone)<div class="text-muted small">{{ $reg->member->phone }}</div>@endif
+            </td>
+            <td><span class="badge-pill badge-type-{{ optional($reg->member)->member_type === 'new_soul' ? 'new_soul' : 'member' }}">{{ $reg->attendeeTypeLabel() }}</span></td>
             <td>{{ optional(optional($reg->member)->church)->name ?? '—' }}</td>
             <td>{{ optional($reg->program)->name }}</td>
+            <td>{{ $reg->invitedByLabel() }}</td>
             <td><span class="badge-pill badge-status-{{ $reg->registration_status }}">{{ ucfirst($reg->registration_status) }}</span></td>
             <td><span class="badge-pill badge-payment-{{ $reg->payment_status }}">{{ ucfirst($reg->payment_status) }}</span></td>
             <td>{{ optional($reg->registered_at)->format('d M Y') }}</td>

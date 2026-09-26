@@ -147,10 +147,13 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
     // "browse"/"my" as a {program} route-model-binding parameter and 404s.
     Route::get('programs/browse', [MyProgramRegistrationController::class, 'browse'])->name('my-programs.browse');
     Route::get('programs/browse/search-members', [MyProgramRegistrationController::class, 'searchMembers'])->name('my-programs.search-members');
+    Route::get('programs/browse/visitor-template', [MyProgramRegistrationController::class, 'visitorTemplate'])->name('my-programs.visitor-template');
     Route::get('programs/my', [MyProgramRegistrationController::class, 'index'])->name('my-programs.index');
     Route::get('programs/my/{registration}', [MyProgramRegistrationController::class, 'show'])->name('my-programs.show');
     Route::get('programs/my/{registration}/pdf', [MyProgramRegistrationController::class, 'downloadPdf'])->name('my-programs.pdf');
     Route::post('programs/{program}/register', [MyProgramRegistrationController::class, 'store'])->name('my-programs.register');
+    Route::post('programs/{program}/register/visitors/preview', [MyProgramRegistrationController::class, 'previewVisitors'])->name('my-programs.visitors.preview');
+    Route::post('programs/{program}/register/visitors', [MyProgramRegistrationController::class, 'registerVisitors'])->name('my-programs.visitors.register');
 
     Route::post('programs', [ProgramController::class, 'store'])->name('programs.store');
     Route::post('programs/{program}/update', [ProgramController::class, 'update'])->name('programs.update');

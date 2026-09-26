@@ -55,6 +55,35 @@ class ProgramRegistration extends Model
     }
 
     /**
+     * "First-time visitor" (a new soul) or "Member" (the regular
+     * congregation) - for reports.
+     */
+    public function attendeeTypeLabel(): string
+    {
+        return optional($this->member)->member_type === 'new_soul' ? 'First-time visitor' : 'Member';
+    }
+
+    /**
+     * Who brought this person in, for reports: the user who registered them
+     * ("Self" when they registered themselves), else the free-text Invited
+     * By recorded on the person (e.g. from the attendance visitor form).
+     */
+    public function invitedByLabel(): string
+    {
+        $registrar = $this->registeredBy;
+
+        if ($registrar) {
+            if ($this->member && $this->member->user_id === $registrar->id) {
+                return 'Self';
+            }
+
+            return trim($registrar->first_name . ' ' . $registrar->last_name) ?: ($registrar->email ?? '—');
+        }
+
+        return optional($this->member)->invited_by ?: '—';
+    }
+
+    /**
      * Register a member for a program, stamping a REG-000123 reference and
      * the correct starting payment status (free programs need no payment
      * step at all).

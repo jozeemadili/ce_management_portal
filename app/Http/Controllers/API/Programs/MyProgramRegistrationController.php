@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\API\Programs;
 
+use App\Exports\ProgramVisitorTemplateExport;
 use App\Http\Controllers\Controller;
+use App\Imports\MembersImport;
 use App\Models\Church;
 use App\Models\Member;
 use App\Models\Program;
 use App\Models\ProgramAuditLog;
 use App\Models\ProgramRegistration;
+use App\Services\ProgramVisitorBulkRegistrar;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 
 class MyProgramRegistrationController extends Controller
 {
@@ -203,5 +209,121 @@ class MyProgramRegistrationController extends Controller
         $pdf = Pdf::loadView('portal.programs.pdf.registration', compact('registration', 'qr', 'logo', 'banner'));
 
         return $pdf->download($registration->registration_reference . '.pdf');
+    }
+
+    /* =================================================================
+     | EXCEL UPLOAD OF FIRST-TIME VISITORS ("Register Someone Else")
+     | Step 1 (preview) stores the file and reports what would happen;
+     | step 2 re-checks the stored file and registers everyone for the
+     | program. New people become new souls of the church chosen in the
+     | registration modal.
+     |=================================================================*/
+
+    private function visitorUploadPath(string $token): string
+    {
+        return 'visitor-imports/' . Auth::id() . '/' . $token;
+    }
+
+    private function readVisitorRows(string $path): array
+    {
+        $sheets = Excel::toArray(new MembersImport, $path, 'local');
+
+        return $sheets[0] ?? [];
+    }
+
+    private function assertOpenForRegistration(Program $program): void
+    {
+        abort_unless($program->classification === 'special', 422, 'Only special programs accept registration.');
+        abort_unless($program->status === 'active', 422, 'This program is not currently open for registration.');
+    }
+
+    public function visitorTemplate()
+    {
+        return Excel::download(new ProgramVisitorTemplateExport, 'first-time-visitors-template.xlsx');
+    }
+
+    public function previewVisitors(Request $request, Program $program, ProgramVisitorBulkRegistrar $registrar)
+    {
+        $this->assertOpenForRegistration($program);
+
+        $data = $request->validate([
+            'church_id' => 'required|exists:churches,id',
+            'file' => 'required|file|max:5120|mimes:xlsx,xls,csv,txt',
+        ], [
+            'church_id.required' => 'Select the church these visitors belong to first.',
+            'file.mimes' => 'Upload an Excel file (.xlsx or .xls) or a CSV file.',
+        ]);
+        $church = Church::findOrFail($data['church_id']);
+
+        $extension = strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx');
+        $token = Str::uuid() . '.' . (in_array($extension, ['xlsx', 'xls', 'csv']) ? $extension : 'xlsx');
+        $path = $this->visitorUploadPath($token);
+
+        // One pending upload per user: a new check replaces any earlier file
+        // that was checked but never registered.
+        Storage::disk('local')->delete(Storage::disk('local')->files(dirname($path)));
+        Storage::disk('local')->putFileAs(dirname($path), $request->file('file'), $token);
+
+        try {
+            $rows = $this->readVisitorRows($path);
+        } catch (\Throwable $e) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'This file could not be read. Download the template and fill it in.');
+        }
+
+        $firstRow = $rows[0] ?? [];
+        if (!array_key_exists('first_name', $firstRow) || !array_key_exists('phone', $firstRow)) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'The file is missing the template columns (First Name, Last Name, Phone). Download the template and fill it in.');
+        }
+
+        $result = $registrar->analyse($rows, $program);
+
+        if ($result['total'] > ProgramVisitorBulkRegistrar::MAX_ROWS) {
+            Storage::disk('local')->delete($path);
+            abort(422, 'A file can hold at most ' . ProgramVisitorBulkRegistrar::MAX_ROWS . ' visitors. Split it into smaller files.');
+        }
+
+        return response()->json([
+            'token' => $token,
+            'program' => $program->name,
+            'church' => $church->name,
+            'total_rows' => $result['total'],
+            'new_count' => count($result['new']),
+            'register_count' => count($result['new']) + count($result['existing']),
+            'existing' => collect($result['existing'])->map(fn ($r) => ['row' => $r['row'], 'name' => $r['name'], 'note' => $r['note']])->values(),
+            'skipped' => $result['skipped'],
+        ]);
+    }
+
+    public function registerVisitors(Request $request, Program $program, ProgramVisitorBulkRegistrar $registrar)
+    {
+        $this->assertOpenForRegistration($program);
+
+        $data = $request->validate([
+            'church_id' => 'required|exists:churches,id',
+            'token' => ['required', 'regex:/^[0-9a-f-]{36}\.(xlsx|xls|csv)$/'],
+        ]);
+        $church = Church::findOrFail($data['church_id']);
+        $path = $this->visitorUploadPath($data['token']);
+
+        if (!Storage::disk('local')->exists($path)) {
+            return redirect()->route('my-programs.browse')->withErrors('The uploaded file has expired. Please upload it again.');
+        }
+
+        // Re-checked rather than trusting the preview: someone may have been
+        // registered at the desk in between.
+        $result = $registrar->analyse($this->readVisitorRows($path), $program);
+        $count = $registrar->register($result, $program, $church, Auth::id());
+        Storage::disk('local')->delete($path);
+
+        $newCount = count($result['new']);
+        $message = "{$count} " . ($count === 1 ? 'person' : 'people') . " registered for {$program->name}";
+        $message .= $newCount ? " ({$newCount} new first-time " . ($newCount === 1 ? 'visitor' : 'visitors') . " added to {$church->name})." : '.';
+        if ($skipped = count($result['skipped'])) {
+            $message .= " {$skipped} row" . ($skipped === 1 ? ' was' : 's were') . ' skipped.';
+        }
+
+        return redirect()->route('my-programs.browse')->with('success', $message);
     }
 }

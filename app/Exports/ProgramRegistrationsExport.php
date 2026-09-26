@@ -28,7 +28,7 @@ class ProgramRegistrationsExport implements FromCollection, WithHeadings, WithMa
 
     public function headings(): array
     {
-        return ['#', 'Reference', 'Member', 'Church', 'Program', 'Status', 'Payment', 'Amount Paid', 'Registered On'];
+        return ['#', 'Reference', 'Attendee', 'Phone', 'Type', 'Church', 'Program', 'Invited By', 'Status', 'Payment', 'Amount Paid', 'Registered On'];
     }
 
     public function map($reg): array
@@ -40,8 +40,11 @@ class ProgramRegistrationsExport implements FromCollection, WithHeadings, WithMa
             $row,
             $reg->registration_reference,
             trim(optional($reg->member)->first_name . ' ' . optional($reg->member)->last_name),
+            optional($reg->member)->phone ?? '—',
+            $reg->attendeeTypeLabel(),
             optional(optional($reg->member)->church)->name ?? '—',
             optional($reg->program)->name,
+            $reg->invitedByLabel(),
             ucfirst($reg->registration_status),
             ucfirst($reg->payment_status),
             $reg->amount_paid ? number_format($reg->amount_paid, 2) : '-',
@@ -56,21 +59,21 @@ class ProgramRegistrationsExport implements FromCollection, WithHeadings, WithMa
 
     public function columnWidths(): array
     {
-        return ['A' => 5, 'B' => 16, 'C' => 24, 'D' => 22, 'E' => 26, 'F' => 12, 'G' => 12, 'H' => 14, 'I' => 14];
+        return ['A' => 5, 'B' => 16, 'C' => 24, 'D' => 15, 'E' => 18, 'F' => 22, 'G' => 26, 'H' => 22, 'I' => 12, 'J' => 12, 'K' => 14, 'L' => 14];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:I1')->applyFromArray([
+        $sheet->getStyle('A1:L1')->applyFromArray([
             'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF'], 'size' => 11],
             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '2E5AAC']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         ]);
 
-        $sheet->getStyle('A1:I1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->getStyle('A1:L1')->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         $highestRow = $sheet->getHighestRow();
-        $sheet->getStyle('A2:I' . $highestRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+        $sheet->getStyle('A2:L' . $highestRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
         $sheet->getStyle('A1:A' . $highestRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $sheet->getRowDimension(1)->setRowHeight(22);
 

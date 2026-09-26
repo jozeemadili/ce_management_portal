@@ -66,8 +66,12 @@ class ProgramReportController extends Controller
 
     private function scopedRegistrationsQuery(Request $request)
     {
-        $query = ProgramRegistration::with(['program', 'member.church'])
+        $query = ProgramRegistration::with(['program', 'member.church', 'registeredBy'])
             ->whereIn('program_id', $this->scopedProgramIds());
+        // Attendee type: first-time visitors (new souls) vs regular members.
+        if (in_array($request->attendee_type, ['new_soul', 'member'], true)) {
+            $query->whereHas('member', fn ($q) => $q->where('member_type', $request->attendee_type));
+        }
 
         if ($request->filled('program_id')) {
             $query->where('program_id', $request->program_id);

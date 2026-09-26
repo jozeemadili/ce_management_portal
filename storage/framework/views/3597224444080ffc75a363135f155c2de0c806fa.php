@@ -1,152 +1,151 @@
-@extends('layouts.admin.master')
+<?php $__env->startSection('title', 'Programs Open for Registration'); ?>
 
-@section('title', 'Programs Open for Registration')
-
-@push('css')
-@include('portal.programs.partials.styles')
-<link rel="stylesheet" type="text/css" href="{{ asset('assets/css/select2.css') }}">
+<?php $__env->startPush('css'); ?>
+<?php echo $__env->make('portal.programs.partials.styles', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+<link rel="stylesheet" type="text/css" href="<?php echo e(asset('assets/css/select2.css')); ?>">
 <style>
     .register-church-hint { font-size: .78rem; }
     .register-mode-group .btn { flex: 1; }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
-@component('components.breadcrumb')
-    @slot('breadcrumb_title')
+<?php $__env->startComponent('components.breadcrumb'); ?>
+    <?php $__env->slot('breadcrumb_title'); ?>
         <h3>Programs Open for Registration</h3>
-    @endslot
-    @slot('breadcrumb_action_buttons')
+    <?php $__env->endSlot(); ?>
+    <?php $__env->slot('breadcrumb_action_buttons'); ?>
         <li>
-            <a class="btn btn-outline-primary" href="{{ route('my-programs.index') }}">
+            <a class="btn btn-outline-primary" href="<?php echo e(route('my-programs.index')); ?>">
                 <i class="icofont icofont-listing-box"></i> People I've Invited
             </a>
         </li>
-    @endslot
+    <?php $__env->endSlot(); ?>
     <li class="breadcrumb-item active">Browse Programs</li>
-@endcomponent
+<?php echo $__env->renderComponent(); ?>
 
 <div class="container-fluid">
 
-@if ($errors->any())
-    @foreach ($errors->all() as $error)
+<?php if($errors->any()): ?>
+    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <div class="alert alert-danger alert-dismissible fade show">
-            {{ $error }}
+            <?php echo e($error); ?>
+
             <button class="btn-close" data-bs-dismiss="alert"></button>
         </div>
-    @endforeach
-@endif
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php endif; ?>
 
-@if(session('success'))
+<?php if(session('success')): ?>
     <div class="alert alert-success alert-dismissible fade show">
-        {{ session('success') }}
+        <?php echo e(session('success')); ?>
+
         <button class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-@endif
+<?php endif; ?>
 
-@if($programs->count())
+<?php if($programs->count()): ?>
 <div class="row">
-    @foreach($programs as $program)
-    @php $alreadyRegistered = $myRegisteredIds->contains($program->id); @endphp
+    <?php $__currentLoopData = $programs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $program): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <?php $alreadyRegistered = $myRegisteredIds->contains($program->id); ?>
     <div class="col-xl-4 col-md-6 mb-4">
         <div class="program-card">
-            <div class="program-card-banner" @if($program->banner_path) style="background-image:url('{{ asset('storage/'.$program->banner_path) }}');background-size:cover;background-position:center;" @endif>
-                @if(!$program->banner_path)<i class="icofont icofont-calendar"></i>@endif
+            <div class="program-card-banner" <?php if($program->banner_path): ?> style="background-image:url('<?php echo e(asset('storage/'.$program->banner_path)); ?>');background-size:cover;background-position:center;" <?php endif; ?>>
+                <?php if(!$program->banner_path): ?><i class="icofont icofont-calendar"></i><?php endif; ?>
             </div>
             <div class="program-card-body">
-                <h5 class="program-card-title">{{ $program->name }}</h5>
-                <p class="program-card-desc">{{ $program->description ? \Illuminate\Support\Str::limit($program->description, 90) : 'No description.' }}</p>
+                <h5 class="program-card-title"><?php echo e($program->name); ?></h5>
+                <p class="program-card-desc"><?php echo e($program->description ? \Illuminate\Support\Str::limit($program->description, 90) : 'No description.'); ?></p>
                 <div class="program-card-meta">
-                    <span><i class="icofont icofont-location-pin"></i> {{ $program->location ?? '—' }}</span>
+                    <span><i class="icofont icofont-location-pin"></i> <?php echo e($program->location ?? '—'); ?></span>
                 </div>
                 <div class="program-card-meta mt-1">
                     <span><i class="icofont icofont-calendar"></i>
-                        {{ optional($program->start_date)->format('d M Y') ?? '—' }}
-                        @if($program->end_date && !$program->end_date->equalTo($program->start_date))
-                            &ndash; {{ $program->end_date->format('d M Y') }}
-                        @endif
+                        <?php echo e(optional($program->start_date)->format('d M Y') ?? '—'); ?>
+
+                        <?php if($program->end_date && !$program->end_date->equalTo($program->start_date)): ?>
+                            &ndash; <?php echo e($program->end_date->format('d M Y')); ?>
+
+                        <?php endif; ?>
                     </span>
                 </div>
-                @if($program->start_time || $program->end_time)
+                <?php if($program->start_time || $program->end_time): ?>
                 <div class="program-card-meta mt-1">
                     <span><i class="icofont icofont-clock-time"></i> Daily
-                        @if($program->start_time){{ \Illuminate\Support\Carbon::parse($program->start_time)->format('H:i') }}@endif
-                        @if($program->start_time && $program->end_time) &ndash; @endif
-                        @if($program->end_time){{ \Illuminate\Support\Carbon::parse($program->end_time)->format('H:i') }}@endif
+                        <?php if($program->start_time): ?><?php echo e(\Illuminate\Support\Carbon::parse($program->start_time)->format('H:i')); ?><?php endif; ?>
+                        <?php if($program->start_time && $program->end_time): ?> &ndash; <?php endif; ?>
+                        <?php if($program->end_time): ?><?php echo e(\Illuminate\Support\Carbon::parse($program->end_time)->format('H:i')); ?><?php endif; ?>
                     </span>
                 </div>
-                @endif
-                <span class="badge-pill badge-access-{{ $program->access_type }} mt-2 d-inline-block">
-                    {{ $program->isFree() ? 'FREE' : $program->currency . ' ' . number_format($program->registration_fee) }}
+                <?php endif; ?>
+                <span class="badge-pill badge-access-<?php echo e($program->access_type); ?> mt-2 d-inline-block">
+                    <?php echo e($program->isFree() ? 'FREE' : $program->currency . ' ' . number_format($program->registration_fee)); ?>
+
                 </span>
 
-                @if($alreadyRegistered)
+                <?php if($alreadyRegistered): ?>
                 <p class="text-success small mb-1 mt-2"><i class="icofont icofont-check-circled"></i> You're already registered</p>
-                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#registerModal{{ $program->id }}">
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#registerModal<?php echo e($program->id); ?>">
                     <i class="icofont icofont-plus-circle"></i> Register Someone Else
                 </button>
-                @elseif($currentMember)
-                {{-- Self-registration: one click, no modal - reuses the same
-                     store() endpoint via a plain hidden member_id field. --}}
-                <form method="POST" action="{{ route('my-programs.register', $program->id) }}" class="mt-2">
-                    @csrf
-                    <input type="hidden" name="member_id" value="{{ $currentMember->id }}">
+                <?php elseif($currentMember): ?>
+                
+                <form method="POST" action="<?php echo e(route('my-programs.register', $program->id)); ?>" class="mt-2">
+                    <?php echo csrf_field(); ?>
+                    <input type="hidden" name="member_id" value="<?php echo e($currentMember->id); ?>">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="icofont icofont-plus-circle"></i> Register
                     </button>
                 </form>
-                @else
-                <button type="button" class="btn btn-primary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#registerModal{{ $program->id }}">
+                <?php else: ?>
+                <button type="button" class="btn btn-primary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#registerModal<?php echo e($program->id); ?>">
                     <i class="icofont icofont-plus-circle"></i> Register
                 </button>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
     </div>
-    @endforeach
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </div>
 
-{{-- Registration desk modals - kept OUTSIDE the .row grid above (Bootstrap's
-     .row is display:flex; a .modal placed inside it as a flex item can end
-     up mispositioned instead of centered, even though position:fixed should
-     normally escape flex flow). One modal per program, matched by id. --}}
-@foreach($programs as $program)
-@php $alreadyRegistered = $myRegisteredIds->contains($program->id); @endphp
-<div class="modal fade" id="registerModal{{ $program->id }}">
+
+<?php $__currentLoopData = $programs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $program): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<?php $alreadyRegistered = $myRegisteredIds->contains($program->id); ?>
+<div class="modal fade" id="registerModal<?php echo e($program->id); ?>">
 <div class="modal-dialog modal-dialog-centered">
 <div class="modal-content">
-<form method="POST" action="{{ route('my-programs.register', $program->id) }}" class="program-register-form">
-@csrf
+<form method="POST" action="<?php echo e(route('my-programs.register', $program->id)); ?>" class="program-register-form">
+<?php echo csrf_field(); ?>
 <div class="modal-header bg-primary text-white">
-    <h5 class="modal-title"><i class="icofont icofont-plus-circle"></i> Register for {{ $program->name }}</h5>
+    <h5 class="modal-title"><i class="icofont icofont-plus-circle"></i> Register for <?php echo e($program->name); ?></h5>
     <button class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
 </div>
 <div class="modal-body">
     <p class="text-muted small">
-        @if($alreadyRegistered)
+        <?php if($alreadyRegistered): ?>
             You're already registered for this program &mdash; register someone else below.
-        @else
+        <?php else: ?>
             Register yourself, or anyone else attending.
-        @endif
+        <?php endif; ?>
     </p>
 
     <label class="form-label">Church</label>
     <select name="church_id" class="form-control register-church-select" required>
         <option value="">-- Select Church --</option>
-        @foreach($churches as $church)
-            <option value="{{ $church->id }}" @selected(optional($currentMember)->church_id == $church->id)>{{ strtoupper($church->name) }}</option>
-        @endforeach
+        <?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $church): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($church->id); ?>" <?php if(optional($currentMember)->church_id == $church->id): echo 'selected'; endif; ?>><?php echo e(strtoupper($church->name)); ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
     <p class="text-muted mt-1 mb-3 register-church-hint"></p>
 
     <div class="btn-group register-mode-group w-100 mb-3" role="group">
-        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeExisting{{ $program->id }}" value="existing" checked>
-        <label class="btn btn-outline-primary btn-sm" for="modeExisting{{ $program->id }}">Existing Church Member</label>
-        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeNew{{ $program->id }}" value="new">
-        <label class="btn btn-outline-primary btn-sm" for="modeNew{{ $program->id }}">First-Time Visitor</label>
-        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeUpload{{ $program->id }}" value="upload">
-        <label class="btn btn-outline-primary btn-sm" for="modeUpload{{ $program->id }}"><i class="icofont icofont-file-excel"></i> Upload Excel</label>
+        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeExisting<?php echo e($program->id); ?>" value="existing" checked>
+        <label class="btn btn-outline-primary btn-sm" for="modeExisting<?php echo e($program->id); ?>">Existing Church Member</label>
+        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeNew<?php echo e($program->id); ?>" value="new">
+        <label class="btn btn-outline-primary btn-sm" for="modeNew<?php echo e($program->id); ?>">First-Time Visitor</label>
+        <input type="radio" class="btn-check register-mode-radio" name="mode" id="modeUpload<?php echo e($program->id); ?>" value="upload">
+        <label class="btn btn-outline-primary btn-sm" for="modeUpload<?php echo e($program->id); ?>"><i class="icofont icofont-file-excel"></i> Upload Excel</label>
     </div>
 
     <div class="register-existing-wrap">
@@ -160,25 +159,25 @@
         <div class="row">
             <div class="col-md-6">
                 <label class="form-label">First Name</label>
-                <input type="text" name="first_name" class="form-control register-new-input" value="{{ $alreadyRegistered ? '' : optional($currentMember)->first_name }}" disabled>
+                <input type="text" name="first_name" class="form-control register-new-input" value="<?php echo e($alreadyRegistered ? '' : optional($currentMember)->first_name); ?>" disabled>
             </div>
             <div class="col-md-6">
                 <label class="form-label">Last Name</label>
-                <input type="text" name="last_name" class="form-control register-new-input" value="{{ $alreadyRegistered ? '' : optional($currentMember)->last_name }}" disabled>
+                <input type="text" name="last_name" class="form-control register-new-input" value="<?php echo e($alreadyRegistered ? '' : optional($currentMember)->last_name); ?>" disabled>
             </div>
             <div class="col-md-12 mt-3">
                 <label class="form-label">Phone</label>
-                <input type="text" name="phone" class="form-control register-new-input" value="{{ $alreadyRegistered ? '' : optional($currentMember)->phone }}" disabled>
+                <input type="text" name="phone" class="form-control register-new-input" value="<?php echo e($alreadyRegistered ? '' : optional($currentMember)->phone); ?>" disabled>
             </div>
         </div>
         <p class="text-muted mt-2 mb-0 register-new-hint" style="font-size:.78rem;"></p>
     </div>
-    <div class="register-upload-wrap" style="display:none;" data-preview-url="{{ route('my-programs.visitors.preview', $program->id) }}">
+    <div class="register-upload-wrap" style="display:none;" data-preview-url="<?php echo e(route('my-programs.visitors.preview', $program->id)); ?>">
         <div class="register-upload-step1">
             <div class="alert alert-info py-2 mb-3 register-upload-hint" style="font-size:.85rem;"></div>
             <p class="mb-2" style="font-size:.85rem;">
                 Upload many <strong>first-time visitors</strong> at once.
-                <a href="{{ route('my-programs.visitor-template') }}"><i class="icofont icofont-download"></i> Download the template</a>
+                <a href="<?php echo e(route('my-programs.visitor-template')); ?>"><i class="icofont icofont-download"></i> Download the template</a>
                 &mdash; <strong>First Name</strong> and <strong>Phone</strong> are required; Last Name, Gender and Invited By are optional.
             </p>
             <input type="file" class="form-control register-upload-file" accept=".xlsx,.xls,.csv">
@@ -215,30 +214,30 @@
     <button type="button" class="btn btn-primary register-upload-confirm" style="display:none;"></button>
 </div>
 </form>
-{{-- Separate form (nested forms aren't allowed) that registers a checked upload. --}}
-<form method="POST" action="{{ route('my-programs.visitors.register', $program->id) }}" class="register-upload-submit d-none">
-    @csrf
+
+<form method="POST" action="<?php echo e(route('my-programs.visitors.register', $program->id)); ?>" class="register-upload-submit d-none">
+    <?php echo csrf_field(); ?>
     <input type="hidden" name="token">
     <input type="hidden" name="church_id">
 </form>
 </div>
 </div>
 </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-@else
+<?php else: ?>
 <div class="card prog-card"><div class="card-body prog-empty">
     <i class="icofont icofont-calendar"></i>
     <p class="mb-0">No programs are currently open for registration.</p>
 </div></div>
-@endif
+<?php endif; ?>
 
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('assets/js/select2/select2.full.min.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('assets/js/select2/select2.full.min.js')); ?>"></script>
 <script>
 (function () {
     var $ = window.jQuery;
@@ -436,7 +435,7 @@
                 width: '100%',
                 dropdownParent: $modal,
                 ajax: {
-                    url: '{{ route('my-programs.search-members') }}',
+                    url: '<?php echo e(route('my-programs.search-members')); ?>',
                     dataType: 'json',
                     delay: 300,
                     data: function (params) {
@@ -458,4 +457,6 @@
     });
 })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin.master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/programs/registrations/browse.blade.php ENDPATH**/ ?>

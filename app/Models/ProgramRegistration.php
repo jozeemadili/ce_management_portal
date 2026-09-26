@@ -73,9 +73,29 @@ class ProgramRegistration extends Model
         return $this->belongsTo(MemberDesignation::class, 'priced_designation_id');
     }
 
+    /** Confirmed payments only - what counts as paid. */
     public function totalPaid(): float
     {
-        return (float) ($this->relationLoaded('payments') ? $this->payments->sum('amount') : $this->payments()->sum('amount'));
+        return (float) ($this->relationLoaded('payments')
+            ? $this->payments->where('status', ProgramPayment::CONFIRMED)->sum('amount')
+            : $this->payments()->confirmed()->sum('amount'));
+    }
+
+    /** Submitted with proof, waiting for staff to confirm. */
+    public function pendingPaymentsTotal(): float
+    {
+        return (float) ($this->relationLoaded('payments')
+            ? $this->payments->where('status', ProgramPayment::PENDING)->sum('amount')
+            : $this->payments()->pending()->sum('amount'));
+    }
+
+    /**
+     * How much can still be submitted: the balance minus payments already
+     * waiting for confirmation (so the same money isn't claimed twice).
+     */
+    public function payableAmount(): float
+    {
+        return max(0, $this->balance() - $this->pendingPaymentsTotal());
     }
 
     public function balance(): float
@@ -114,6 +134,9 @@ class ProgramRegistration extends Model
     /** Free / Paid / Partially paid / Pending (for display). */
     public function paymentLabel(): string
     {
+        if ($this->payment_status === 'pending' && $this->pendingPaymentsTotal() > 0) {
+            return 'Awaiting confirmation';
+        }
         if ($this->payment_status === 'pending' && $this->totalPaid() > 0) {
             return 'Partially paid';
         }

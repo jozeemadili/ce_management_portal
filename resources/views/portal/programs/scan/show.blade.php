@@ -107,36 +107,26 @@
                 </div>
                 @endif
 
-                @if(!$registration->isSettled() && $registration->registration_status === 'registered')
+                @if($registration->pendingPaymentsTotal() > 0)
+                <div class="alert alert-info mt-3 mb-0">
+                    {{ $registration->program->currency }} {{ number_format($registration->pendingPaymentsTotal()) }} submitted with proof is awaiting confirmation.
+                    <a href="{{ route('programs.show', $registration->program_id) }}">Review it on the program page</a>.
+                </div>
+                @endif
+                @if(!$registration->isSettled() && $registration->registration_status === 'registered' && $registration->payableAmount() > 0)
                 {{-- Take payment at the door, then check in. --}}
-                <form method="POST" action="{{ route('program-payments.store', $registration->id) }}" class="mt-3 border rounded p-3">
-                    @csrf
+                <div class="mt-3 border rounded p-3">
                     <p class="modal-section-label mb-2">Record Payment</p>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label">Amount</label>
-                            <input type="number" step="0.01" min="1" name="amount" class="form-control" value="{{ $registration->balance() ?: '' }}" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Date</label>
-                            <input type="date" name="payment_date" class="form-control" value="{{ now()->toDateString() }}" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Method</label>
-                            <select name="payment_method" class="form-control">
-                                <option value="">-- Select --</option>
-                                @foreach($paymentMethods as $method)
-                                    <option value="{{ $method->name }}">{{ $method->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Reference</label>
-                            <input type="text" name="payment_reference" class="form-control" placeholder="e.g. M-Pesa code">
-                        </div>
-                    </div>
-                    <button class="btn btn-success w-100 mt-3"><i class="icofont icofont-money"></i> Record Payment</button>
-                </form>
+                    @include('portal.programs.partials.payment-form', [
+                        'action' => route('program-payments.store', $registration->id),
+                        'maxAmount' => $registration->payableAmount(),
+                        'currency' => $registration->program->currency,
+                        'paymentMethods' => $paymentMethods,
+                        'proofRequired' => false,
+                        'idPrefix' => 'scanpay',
+                        'submitLabel' => 'Record Payment',
+                    ])
+                </div>
                 @endif
 
                 @if($registration->attendance)

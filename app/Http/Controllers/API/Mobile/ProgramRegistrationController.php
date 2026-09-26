@@ -8,6 +8,8 @@ use App\Models\Member;
 use App\Models\Program;
 use App\Models\ProgramAuditLog;
 use App\Models\ProgramRegistration;
+use App\Services\ProgramPayments;
+use App\Http\Controllers\API\Programs\ProgramPaymentController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +83,22 @@ class ProgramRegistrationController extends Controller
             'share_url' => route('my-programs.show', $registration->id),
         ];
 
+        $payload['pending_amount'] = $registration->pendingPaymentsTotal();
+        $payload['payable_amount'] = $registration->registration_status === 'registered' ? $registration->payableAmount() : 0;
+
         if ($detailed) {
+            $payload['payments'] = $registration->payments->sortByDesc('created_at')->map(fn ($p) => [
+                'id' => $p->id,
+                'amount' => (float) $p->amount,
+                'payment_date' => optional($p->payment_date)->toDateString(),
+                'payment_method' => $p->payment_method,
+                'payment_reference' => $p->payment_reference,
+                'status' => $p->status,
+                'status_label' => $p->statusLabel(),
+                'review_note' => $p->review_note,
+                'has_proof' => (bool) $p->proof_path,
+            ])->values();
+
             $attendance = $registration->relationLoaded('attendance') ? $registration->attendance : null;
             $payload['checked_in'] = $attendance !== null;
             $payload['checked_in_at'] = $attendance ? optional($attendance->checked_in_at)->toDateTimeString() : null;
@@ -276,5 +293,46 @@ class ProgramRegistrationController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'attachment; filename="' . $registration->registration_reference . '.pdf"',
         ]);
+    }
+
+    /** Payment methods for the app's payment form (same list as the portal). */
+    public function paymentMethods()
+    {
+        return response()->json(ProgramPaymentController::methods()->pluck('name')->values());
+    }
+
+    /**
+     * Pay for a registration from the app - in full or in part - with a
+     * proof of payment (multipart upload "proof"). Awaits confirmation by the
+     * church, like a payment submitted on the portal. Only the person
+     * registered, or whoever registered them, can pay.
+     */
+    public function submitPayment(Request $request, ProgramRegistration $registration, ProgramPayments $payments)
+    {
+        $member = $this->currentMember($request);
+        abort_unless(
+            $registration->registered_by === $request->user()->id || $registration->member_id === $member->id,
+            403,
+            'You can only pay for registrations you made or your own.'
+        );
+
+        $data = $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'payment_date' => 'required|date|before_or_equal:today',
+            'payment_method' => 'nullable|string|max:100',
+            'payment_reference' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:1000',
+            'proof' => 'required|' . ProgramPayments::PROOF_RULES,
+        ], [
+            'proof.required' => 'Attach a proof of payment (photo or screenshot of the receipt).',
+            'proof.mimes' => 'The proof must be a photo (JPG, PNG, WEBP, HEIC) or a PDF.',
+            'proof.max' => 'The proof file must be 5 MB or smaller.',
+        ]);
+
+        $payments->submit($registration, $data, $request->file('proof'), $request->user()->id);
+
+        $registration->refresh()->load(['program.sessions', 'attendance', 'member.church', 'payments', 'pricedDesignation']);
+
+        return response()->json($this->registrationPayload($registration, $member, true), 201);
     }
 }

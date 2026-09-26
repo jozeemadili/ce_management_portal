@@ -50,6 +50,8 @@ Route::prefix('v1')->group(function () {
         Route::get('programs/registrations', [ProgramRegistrationController::class, 'index']);
         Route::get('programs/registrations/{registration}', [ProgramRegistrationController::class, 'show']);
         Route::get('programs/registrations/{registration}/pdf', [ProgramRegistrationController::class, 'downloadPdf']);
+        Route::post('programs/registrations/{registration}/payments', [ProgramRegistrationController::class, 'submitPayment']);
+        Route::get('programs/payment-methods', [ProgramRegistrationController::class, 'paymentMethods']);
         Route::post('programs/{program}/register', [ProgramRegistrationController::class, 'store']);
 
         Route::get('programs/scan/{registration}', [ProgramAttendanceController::class, 'scan']);

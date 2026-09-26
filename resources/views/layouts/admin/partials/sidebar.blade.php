@@ -62,7 +62,7 @@
                     </li>
 
                     <li class="dropdown">
-                        <a class="nav-link menu-title {{(request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings')) ? 'active' : ''}}" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
+                        <a class="nav-link menu-title {{(request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*')) ? 'active' : ''}}" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
                         <ul class="nav-submenu menu-content" style="display: {{ (request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings')) ? 'block' : '' }};">
                             <li><a href="{{route('programs.dashboard')}}" class="{{routeActive('programs.dashboard')}}"> - Dashboard</a></li>
                             <li><a href="{{route('programs.index')}}" class="{{routeActive('programs.index')}}"> - Programs</a></li>
@@ -70,6 +70,8 @@
                             <li><a href="{{route('program-reports.attendance')}}" class="{{routeActive('program-reports.attendance')}}"> - Attendance</a></li>
                             <li><a href="{{route('my-programs.browse')}}" class="{{routeActive('my-programs.browse')}}"> - My Registrations</a></li>
                             <li><a href="{{route('new-souls.index')}}" class="{{routeActive('new-souls.index')}}"> - New Souls</a></li>
+                            @php $pendingProgramPayments = \App\Models\ProgramPayment::pending()->count(); @endphp
+                            <li><a href="{{route('program-payments.index')}}" class="{{routeActive('program-payments.index')}}"> - Payments to Confirm @if($pendingProgramPayments)<span class="badge bg-warning text-dark ms-1">{{ $pendingProgramPayments }}</span>@endif</a></li>
                             <li><a href="{{route('program-reports.index')}}" class="{{routeActive('program-reports.index')}}"> - Reports</a></li>
                             <li><a href="{{route('program-settings.index')}}" class="{{routeActive('program-settings.index')}}"> - Settings</a></li>
                         </ul>

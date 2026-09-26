@@ -24,6 +24,13 @@
             </a>
         </li>
         <?php endif; ?>
+        <?php if($program->access_type === 'paid'): ?>
+        <li>
+            <a class="btn btn-outline-warning" href="<?php echo e(route('program-payments.index')); ?>">
+                <i class="icofont icofont-money"></i> Payments to Confirm
+            </a>
+        </li>
+        <?php endif; ?>
         <li>
             <a class="btn btn-primary" href="<?php echo e(route('programs.index')); ?>">
                 <i class="icofont icofont-listing-box"></i> All Programs
@@ -212,9 +219,17 @@
                             <td><?php echo e(optional($reg->registered_at)->format('d M Y')); ?></td>
                             <?php if($program->access_type === 'paid'): ?>
                             <td class="text-end">
-                                <?php if(!$reg->isSettled() && $reg->registration_status === 'registered'): ?>
+                                <?php if($reg->pendingPaymentsTotal() > 0): ?>
+                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#paymentModal<?php echo e($reg->id); ?>">
+                                    <i class="icofont icofont-eye"></i> Review Proof
+                                </button>
+                                <?php elseif(!$reg->isSettled() && $reg->registration_status === 'registered'): ?>
                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal<?php echo e($reg->id); ?>">
                                     <i class="icofont icofont-money"></i> Record Payment
+                                </button>
+                                <?php elseif($reg->payments->count()): ?>
+                                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#paymentModal<?php echo e($reg->id); ?>">
+                                    <i class="icofont icofont-listing-box"></i> Payments
                                 </button>
                                 <?php endif; ?>
                             </td>
@@ -281,14 +296,12 @@
 
 <?php if($program->access_type === 'paid'): ?>
 <?php $__currentLoopData = $registrations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $reg): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-<?php if(!$reg->isSettled() && $reg->registration_status === 'registered'): ?>
+<?php if($reg->payments->count() || (!$reg->isSettled() && $reg->registration_status === 'registered')): ?>
 <div class="modal fade" id="paymentModal<?php echo e($reg->id); ?>" tabindex="-1" aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered">
+<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
 <div class="modal-content">
-<form method="POST" action="<?php echo e(route('program-payments.store', $reg->id)); ?>">
-    <?php echo csrf_field(); ?>
     <div class="modal-header bg-success text-white">
-        <h5 class="modal-title"><i class="icofont icofont-money"></i> Record Payment &middot; <?php echo e($reg->registration_reference); ?></h5>
+        <h5 class="modal-title"><i class="icofont icofont-money"></i> Payments &middot; <?php echo e($reg->registration_reference); ?></h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
     </div>
     <div class="modal-body">
@@ -298,49 +311,32 @@
             <br>
             <span class="text-muted">Due <?php echo e($program->currency); ?> <?php echo e(number_format($reg->amount_due)); ?>
 
-                &middot; paid <?php echo e(number_format($reg->totalPaid())); ?>
+                &middot; confirmed <?php echo e(number_format($reg->totalPaid())); ?>
 
+                <?php if($reg->pendingPaymentsTotal() > 0): ?> &middot; awaiting <?php echo e(number_format($reg->pendingPaymentsTotal())); ?> <?php endif; ?>
                 &middot; balance <strong><?php echo e(number_format($reg->balance())); ?></strong></span>
         </p>
-        <div class="row g-2">
-            <div class="col-6">
-                <label class="form-label" for="pay_amount_<?php echo e($reg->id); ?>">Amount (<?php echo e($program->currency); ?>)</label>
-                <input type="number" step="0.01" min="1" max="<?php echo e($reg->balance()); ?>" name="amount" id="pay_amount_<?php echo e($reg->id); ?>" class="form-control" value="<?php echo e($reg->balance()); ?>" required>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_date_<?php echo e($reg->id); ?>">Payment Date</label>
-                <input type="date" name="payment_date" id="pay_date_<?php echo e($reg->id); ?>" class="form-control" value="<?php echo e(now()->toDateString()); ?>" max="<?php echo e(now()->toDateString()); ?>" required>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_method_<?php echo e($reg->id); ?>">Method</label>
-                <select name="payment_method" id="pay_method_<?php echo e($reg->id); ?>" class="form-control">
-                    <option value="">-- Select --</option>
-                    <?php $__currentLoopData = $paymentMethods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <option value="<?php echo e($method->name); ?>"><?php echo e($method->name); ?></option>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                </select>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_ref_<?php echo e($reg->id); ?>">Reference</label>
-                <input type="text" name="payment_reference" id="pay_ref_<?php echo e($reg->id); ?>" class="form-control" placeholder="e.g. M-Pesa code">
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="pay_notes_<?php echo e($reg->id); ?>">Notes</label>
-                <textarea name="notes" id="pay_notes_<?php echo e($reg->id); ?>" class="form-control" rows="2"></textarea>
-            </div>
-        </div>
-        <?php if($reg->payments->count()): ?>
-        <p class="modal-section-label mt-3 mb-1">Earlier payments</p>
-        <?php $__currentLoopData = $reg->payments->sortByDesc('payment_date'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $pay): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-            <div class="small"><?php echo e($pay->payment_date->format('d M Y')); ?> &middot; <?php echo e($program->currency); ?> <?php echo e(number_format($pay->amount)); ?><?php echo e($pay->payment_method ? ' · ' . $pay->payment_method : ''); ?><?php echo e($pay->payment_reference ? ' · ' . $pay->payment_reference : ''); ?></div>
-        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+        <?php echo $__env->make('portal.programs.partials.payment-list', [
+            'payments' => $reg->payments,
+            'currency' => $program->currency,
+            'canReview' => true,
+        ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+        <?php if($reg->registration_status === 'registered' && $reg->payableAmount() > 0): ?>
+        <hr>
+        <p class="modal-section-label mb-2">Record a Payment</p>
+        <?php echo $__env->make('portal.programs.partials.payment-form', [
+            'action' => route('program-payments.store', $reg->id),
+            'maxAmount' => $reg->payableAmount(),
+            'currency' => $program->currency,
+            'paymentMethods' => $paymentMethods,
+            'proofRequired' => false,
+            'idPrefix' => 'pay' . $reg->id,
+            'submitLabel' => 'Record Payment',
+        ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
         <?php endif; ?>
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-success">Record Payment</button>
-    </div>
-</form>
 </div>
 </div>
 </div>

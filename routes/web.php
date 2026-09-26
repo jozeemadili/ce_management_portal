@@ -172,6 +172,11 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
 
     //Programs & Attendance - Registration payments (paid programs)
     Route::post('programs/registrations/{registration}/payments', [ProgramPaymentController::class, 'store'])->name('program-payments.store');
+    Route::post('programs/my/{registration}/payments', [ProgramPaymentController::class, 'submit'])->name('program-payments.submit');
+    Route::post('program-payments/{payment}/confirm', [ProgramPaymentController::class, 'confirm'])->name('program-payments.confirm');
+    Route::post('program-payments/{payment}/reject', [ProgramPaymentController::class, 'reject'])->name('program-payments.reject');
+    Route::get('program-payments/{payment}/proof', [ProgramPaymentController::class, 'proof'])->name('program-payments.proof');
+    Route::get('program-payments', [ProgramPaymentController::class, 'index'])->name('program-payments.index');
 
     //Programs & Attendance - New Souls
     Route::get('new-souls', [NewSoulController::class, 'index'])->name('new-souls.index');

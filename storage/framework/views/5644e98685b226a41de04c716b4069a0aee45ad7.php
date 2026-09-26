@@ -46,6 +46,16 @@
 
 <div class="container-fluid">
 
+<?php if($errors->any()): ?>
+    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <?php echo e($error); ?>
+
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php endif; ?>
+
 <?php if(session('success')): ?>
     <div class="alert alert-success alert-dismissible fade show">
         <?php echo e(session('success')); ?>
@@ -131,6 +141,60 @@
 
         </div>
     </div>
+
+    <?php if((float) $registration->amount_due > 0): ?>
+    
+    <div class="col-lg-9 mb-3" id="payments">
+        <div class="card prog-card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h5 class="mb-0"><i class="icofont icofont-money"></i> Payments</h5>
+                    <span class="badge-pill badge-payment-<?php echo e($registration->payment_status); ?>"><?php echo e($registration->paymentLabel()); ?></span>
+                </div>
+                <div class="row text-center g-2 mb-3">
+                    <?php $__currentLoopData = [
+                        'Amount Due' => $registration->amount_due,
+                        'Confirmed' => $registration->totalPaid(),
+                        'Awaiting Confirmation' => $registration->pendingPaymentsTotal(),
+                        'Balance' => $registration->balance(),
+                    ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $label => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2">
+                            <div class="fw-bold"><?php echo e($registration->program->currency); ?> <?php echo e(number_format($value)); ?></div>
+                            <div class="text-muted small"><?php echo e($label); ?></div>
+                        </div>
+                    </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+                <?php if($registration->pricedDesignation): ?>
+                <p class="text-muted small">Price for <?php echo e(ucwords($registration->pricedDesignation->name)); ?>.</p>
+                <?php endif; ?>
+
+                <?php echo $__env->make('portal.programs.partials.payment-list', [
+                    'payments' => $registration->payments,
+                    'currency' => $registration->program->currency,
+                ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
+                <?php if($registration->registration_status === 'registered' && $registration->payableAmount() > 0): ?>
+                <hr>
+                <h6 class="mb-1">Submit a Payment</h6>
+                <p class="text-muted small">Pay the full balance or part of it, and attach your proof of payment. It counts once the church confirms it.</p>
+                <?php echo $__env->make('portal.programs.partials.payment-form', [
+                    'action' => route('program-payments.submit', $registration->id),
+                    'maxAmount' => $registration->payableAmount(),
+                    'currency' => $registration->program->currency,
+                    'paymentMethods' => $paymentMethods,
+                    'proofRequired' => true,
+                    'idPrefix' => 'submit',
+                    'submitLabel' => 'Submit Payment',
+                ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+                <?php elseif($registration->pendingPaymentsTotal() > 0 && $registration->balance() > 0): ?>
+                <div class="alert alert-info mt-3 mb-0">Your payment is waiting for the church to confirm it.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 </div>

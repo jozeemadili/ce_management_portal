@@ -171,7 +171,9 @@ class MyProgramRegistrationController extends Controller
             ? asset('storage/' . $registration->program->banner_path)
             : null;
 
-        return view('portal.programs.registrations.detail', compact('registration', 'qr', 'bannerUrl'));
+        $paymentMethods = ProgramPaymentController::methods();
+
+        return view('portal.programs.registrations.detail', compact('registration', 'qr', 'bannerUrl', 'paymentMethods'));
     }
 
     /**

@@ -109,36 +109,26 @@
                 </div>
                 <?php endif; ?>
 
-                <?php if(!$registration->isSettled() && $registration->registration_status === 'registered'): ?>
+                <?php if($registration->pendingPaymentsTotal() > 0): ?>
+                <div class="alert alert-info mt-3 mb-0">
+                    <?php echo e($registration->program->currency); ?> <?php echo e(number_format($registration->pendingPaymentsTotal())); ?> submitted with proof is awaiting confirmation.
+                    <a href="<?php echo e(route('programs.show', $registration->program_id)); ?>">Review it on the program page</a>.
+                </div>
+                <?php endif; ?>
+                <?php if(!$registration->isSettled() && $registration->registration_status === 'registered' && $registration->payableAmount() > 0): ?>
                 
-                <form method="POST" action="<?php echo e(route('program-payments.store', $registration->id)); ?>" class="mt-3 border rounded p-3">
-                    <?php echo csrf_field(); ?>
+                <div class="mt-3 border rounded p-3">
                     <p class="modal-section-label mb-2">Record Payment</p>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label">Amount</label>
-                            <input type="number" step="0.01" min="1" name="amount" class="form-control" value="<?php echo e($registration->balance() ?: ''); ?>" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Date</label>
-                            <input type="date" name="payment_date" class="form-control" value="<?php echo e(now()->toDateString()); ?>" required>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Method</label>
-                            <select name="payment_method" class="form-control">
-                                <option value="">-- Select --</option>
-                                <?php $__currentLoopData = $paymentMethods; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $method): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <option value="<?php echo e($method->name); ?>"><?php echo e($method->name); ?></option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </select>
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label">Reference</label>
-                            <input type="text" name="payment_reference" class="form-control" placeholder="e.g. M-Pesa code">
-                        </div>
-                    </div>
-                    <button class="btn btn-success w-100 mt-3"><i class="icofont icofont-money"></i> Record Payment</button>
-                </form>
+                    <?php echo $__env->make('portal.programs.partials.payment-form', [
+                        'action' => route('program-payments.store', $registration->id),
+                        'maxAmount' => $registration->payableAmount(),
+                        'currency' => $registration->program->currency,
+                        'paymentMethods' => $paymentMethods,
+                        'proofRequired' => false,
+                        'idPrefix' => 'scanpay',
+                        'submitLabel' => 'Record Payment',
+                    ], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+                </div>
                 <?php endif; ?>
 
                 <?php if($registration->attendance): ?>

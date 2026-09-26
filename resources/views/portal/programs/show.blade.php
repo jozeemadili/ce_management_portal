@@ -26,6 +26,13 @@
             </a>
         </li>
         @endif
+        @if($program->access_type === 'paid')
+        <li>
+            <a class="btn btn-outline-warning" href="{{ route('program-payments.index') }}">
+                <i class="icofont icofont-money"></i> Payments to Confirm
+            </a>
+        </li>
+        @endif
         <li>
             <a class="btn btn-primary" href="{{ route('programs.index') }}">
                 <i class="icofont icofont-listing-box"></i> All Programs
@@ -207,9 +214,17 @@
                             <td>{{ optional($reg->registered_at)->format('d M Y') }}</td>
                             @if($program->access_type === 'paid')
                             <td class="text-end">
-                                @if(!$reg->isSettled() && $reg->registration_status === 'registered')
+                                @if($reg->pendingPaymentsTotal() > 0)
+                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#paymentModal{{ $reg->id }}">
+                                    <i class="icofont icofont-eye"></i> Review Proof
+                                </button>
+                                @elseif(!$reg->isSettled() && $reg->registration_status === 'registered')
                                 <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal{{ $reg->id }}">
                                     <i class="icofont icofont-money"></i> Record Payment
+                                </button>
+                                @elseif($reg->payments->count())
+                                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#paymentModal{{ $reg->id }}">
+                                    <i class="icofont icofont-listing-box"></i> Payments
                                 </button>
                                 @endif
                             </td>
@@ -273,17 +288,15 @@
 
 </div>
 
-{{-- Record Payment modals (paid programs) --}}
+{{-- Payment modals (paid programs): record a payment, review proofs --}}
 @if($program->access_type === 'paid')
 @foreach($registrations as $reg)
-@if(!$reg->isSettled() && $reg->registration_status === 'registered')
+@if($reg->payments->count() || (!$reg->isSettled() && $reg->registration_status === 'registered'))
 <div class="modal fade" id="paymentModal{{ $reg->id }}" tabindex="-1" aria-hidden="true">
-<div class="modal-dialog modal-dialog-centered">
+<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
 <div class="modal-content">
-<form method="POST" action="{{ route('program-payments.store', $reg->id) }}">
-    @csrf
     <div class="modal-header bg-success text-white">
-        <h5 class="modal-title"><i class="icofont icofont-money"></i> Record Payment &middot; {{ $reg->registration_reference }}</h5>
+        <h5 class="modal-title"><i class="icofont icofont-money"></i> Payments &middot; {{ $reg->registration_reference }}</h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
     </div>
     <div class="modal-body">
@@ -292,48 +305,31 @@
             @if($reg->pricedDesignation) &middot; {{ ucwords($reg->pricedDesignation->name) }} @endif
             <br>
             <span class="text-muted">Due {{ $program->currency }} {{ number_format($reg->amount_due) }}
-                &middot; paid {{ number_format($reg->totalPaid()) }}
+                &middot; confirmed {{ number_format($reg->totalPaid()) }}
+                @if($reg->pendingPaymentsTotal() > 0) &middot; awaiting {{ number_format($reg->pendingPaymentsTotal()) }} @endif
                 &middot; balance <strong>{{ number_format($reg->balance()) }}</strong></span>
         </p>
-        <div class="row g-2">
-            <div class="col-6">
-                <label class="form-label" for="pay_amount_{{ $reg->id }}">Amount ({{ $program->currency }})</label>
-                <input type="number" step="0.01" min="1" max="{{ $reg->balance() }}" name="amount" id="pay_amount_{{ $reg->id }}" class="form-control" value="{{ $reg->balance() }}" required>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_date_{{ $reg->id }}">Payment Date</label>
-                <input type="date" name="payment_date" id="pay_date_{{ $reg->id }}" class="form-control" value="{{ now()->toDateString() }}" max="{{ now()->toDateString() }}" required>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_method_{{ $reg->id }}">Method</label>
-                <select name="payment_method" id="pay_method_{{ $reg->id }}" class="form-control">
-                    <option value="">-- Select --</option>
-                    @foreach($paymentMethods as $method)
-                        <option value="{{ $method->name }}">{{ $method->name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-6">
-                <label class="form-label" for="pay_ref_{{ $reg->id }}">Reference</label>
-                <input type="text" name="payment_reference" id="pay_ref_{{ $reg->id }}" class="form-control" placeholder="e.g. M-Pesa code">
-            </div>
-            <div class="col-12">
-                <label class="form-label" for="pay_notes_{{ $reg->id }}">Notes</label>
-                <textarea name="notes" id="pay_notes_{{ $reg->id }}" class="form-control" rows="2"></textarea>
-            </div>
-        </div>
-        @if($reg->payments->count())
-        <p class="modal-section-label mt-3 mb-1">Earlier payments</p>
-        @foreach($reg->payments->sortByDesc('payment_date') as $pay)
-            <div class="small">{{ $pay->payment_date->format('d M Y') }} &middot; {{ $program->currency }} {{ number_format($pay->amount) }}{{ $pay->payment_method ? ' · ' . $pay->payment_method : '' }}{{ $pay->payment_reference ? ' · ' . $pay->payment_reference : '' }}</div>
-        @endforeach
+
+        @include('portal.programs.partials.payment-list', [
+            'payments' => $reg->payments,
+            'currency' => $program->currency,
+            'canReview' => true,
+        ])
+
+        @if($reg->registration_status === 'registered' && $reg->payableAmount() > 0)
+        <hr>
+        <p class="modal-section-label mb-2">Record a Payment</p>
+        @include('portal.programs.partials.payment-form', [
+            'action' => route('program-payments.store', $reg->id),
+            'maxAmount' => $reg->payableAmount(),
+            'currency' => $program->currency,
+            'paymentMethods' => $paymentMethods,
+            'proofRequired' => false,
+            'idPrefix' => 'pay' . $reg->id,
+            'submitLabel' => 'Record Payment',
+        ])
         @endif
     </div>
-    <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-success">Record Payment</button>
-    </div>
-</form>
 </div>
 </div>
 </div>

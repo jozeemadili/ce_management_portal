@@ -67,12 +67,7 @@
                     <span class="text-muted">Date</span>
                     <strong><?php echo e(optional(optional($registration->program)->start_date)->format('d M Y') ?? '—'); ?></strong>
                 </div>
-                <?php if($session): ?>
-                <div class="d-flex justify-content-between py-2 border-bottom">
-                    <span class="text-muted">Session now</span>
-                    <strong><?php echo e($session->name); ?> (<?php echo e($session->timeRange()); ?>)</strong>
-                </div>
-                <?php elseif($registration->program && $registration->program->sessions->isNotEmpty()): ?>
+                <?php if(empty($sessionOptions) && $registration->program && $registration->program->sessions->isNotEmpty()): ?>
                 <div class="d-flex justify-content-between py-2 border-bottom">
                     <span class="text-muted">Sessions</span>
                     <strong class="text-end"><?php echo e($registration->program->sessionsLabel()); ?></strong>
@@ -98,6 +93,28 @@
                 <?php if($ok): ?>
                 <form method="POST" action="<?php echo e(route('program-scan.check-in', $registration->id)); ?>">
                     <?php echo csrf_field(); ?>
+                    <?php if(!empty($sessionOptions)): ?>
+                    
+                    <p class="modal-section-label mb-2">Check in for session</p>
+                    <div class="list-group mb-3">
+                        <?php $__currentLoopData = $sessionOptions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <?php $s = $option['session']; $done = $option['checked_in_at']; ?>
+                            <label class="list-group-item d-flex align-items-center gap-2 <?php echo e($done ? 'text-muted' : ''); ?>" style="cursor: <?php echo e($done ? 'default' : 'pointer'); ?>;">
+                                <input class="form-check-input m-0" type="radio" name="session_id" value="<?php echo e($s->id); ?>"
+                                       <?php if(optional($session)->id === $s->id): echo 'checked'; endif; ?> <?php if($done): echo 'disabled'; endif; ?> required>
+                                <span class="flex-grow-1">
+                                    <strong><?php echo e($s->name); ?></strong>
+                                    <span class="text-muted">&middot; <?php echo e($s->timeRange()); ?></span>
+                                </span>
+                                <?php if($done): ?>
+                                    <span class="badge-pill badge-payment-paid">Checked in <?php echo e($done->format('H:i')); ?></span>
+                                <?php elseif($option['open_now']): ?>
+                                    <span class="badge-pill badge-payment-pending">Now</span>
+                                <?php endif; ?>
+                            </label>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </div>
+                    <?php endif; ?>
                     <button class="btn btn-primary w-100">
                         <i class="icofont icofont-check-circled"></i> Confirm Check-In
                     </button>
@@ -107,6 +124,16 @@
                     <i class="icofont icofont-warning"></i> <?php echo e($message); ?>
 
                 </div>
+                <?php if(!empty($sessionOptions)): ?>
+                <ul class="list-group mt-2">
+                    <?php $__currentLoopData = $sessionOptions; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $option): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span><?php echo e($option['session']->name); ?> <span class="text-muted">&middot; <?php echo e($option['session']->timeRange()); ?></span></span>
+                        <?php if($option['checked_in_at']): ?><span class="badge-pill badge-payment-paid">Checked in <?php echo e($option['checked_in_at']->format('H:i')); ?></span><?php endif; ?>
+                    </li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </ul>
+                <?php endif; ?>
                 <?php endif; ?>
 
                 <?php if($registration->pendingPaymentsTotal() > 0): ?>

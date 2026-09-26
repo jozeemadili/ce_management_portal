@@ -21,7 +21,7 @@ class ProgramAttendanceController extends Controller
         ] : null;
     }
 
-    private function scanPayload(ProgramRegistration $registration, bool $ok, string $message, ?ProgramSession $session): array
+    private function scanPayload(ProgramRegistration $registration, bool $ok, string $message, ?ProgramSession $session, array $sessionOptions = []): array
     {
         $program = $registration->program;
         $member = $registration->member;
@@ -30,7 +30,13 @@ class ProgramAttendanceController extends Controller
         return [
             'ok' => $ok,
             'message' => $message,
+            // Suggested session (running now / next) - preselected in the app.
             'session' => $this->sessionPayload($session),
+            // Today's sessions to choose from, with their check-in state.
+            'session_options' => collect($sessionOptions)->map(fn ($item) => $this->sessionPayload($item['session']) + [
+                'checked_in_at' => optional($item['checked_in_at'])->format('H:i'),
+                'open_now' => $item['open_now'],
+            ])->values(),
             'registration' => [
                 'id' => $registration->id,
                 'reference' => $registration->registration_reference,
@@ -80,18 +86,22 @@ class ProgramAttendanceController extends Controller
 
         $check = $checkIn->evaluate($registration);
 
-        return response()->json($this->scanPayload($registration, $check['ok'], $check['message'], $check['session']));
+        return response()->json($this->scanPayload($registration, $check['ok'], $check['message'], $check['session'], $check['sessions']));
     }
 
     public function checkIn(Request $request, ProgramRegistration $registration, ProgramCheckIn $checkIn)
     {
         $this->loadForScan($registration);
 
-        $result = $checkIn->checkIn($registration, Auth::id());
+        // session_id: the session picked in the app (optional - defaults to
+        // the one running now, which is what older app versions rely on).
+        $request->validate(['session_id' => 'nullable|integer']);
+        $result = $checkIn->checkIn($registration, Auth::id(), $request->integer('session_id') ?: null);
 
         $registration->unsetRelation('attendance');
         $registration->load('attendance.session');
-        $payload = $this->scanPayload($registration, $result['ok'], $result['message'], $result['session']);
+        $after = $checkIn->evaluate($registration);
+        $payload = $this->scanPayload($registration, $result['ok'], $result['message'], $result['session'], $after['sessions']);
 
         return response()->json($payload, $result['ok'] ? 201 : 422);
     }

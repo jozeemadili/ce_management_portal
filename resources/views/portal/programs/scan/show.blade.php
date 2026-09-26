@@ -66,12 +66,7 @@
                     <span class="text-muted">Date</span>
                     <strong>{{ optional(optional($registration->program)->start_date)->format('d M Y') ?? '—' }}</strong>
                 </div>
-                @if($session)
-                <div class="d-flex justify-content-between py-2 border-bottom">
-                    <span class="text-muted">Session now</span>
-                    <strong>{{ $session->name }} ({{ $session->timeRange() }})</strong>
-                </div>
-                @elseif($registration->program && $registration->program->sessions->isNotEmpty())
+                @if(empty($sessionOptions) && $registration->program && $registration->program->sessions->isNotEmpty())
                 <div class="d-flex justify-content-between py-2 border-bottom">
                     <span class="text-muted">Sessions</span>
                     <strong class="text-end">{{ $registration->program->sessionsLabel() }}</strong>
@@ -97,6 +92,28 @@
                 @if($ok)
                 <form method="POST" action="{{ route('program-scan.check-in', $registration->id) }}">
                     @csrf
+                    @if(!empty($sessionOptions))
+                    {{-- Pick which of today's sessions to check in for. --}}
+                    <p class="modal-section-label mb-2">Check in for session</p>
+                    <div class="list-group mb-3">
+                        @foreach($sessionOptions as $option)
+                            @php $s = $option['session']; $done = $option['checked_in_at']; @endphp
+                            <label class="list-group-item d-flex align-items-center gap-2 {{ $done ? 'text-muted' : '' }}" style="cursor: {{ $done ? 'default' : 'pointer' }};">
+                                <input class="form-check-input m-0" type="radio" name="session_id" value="{{ $s->id }}"
+                                       @checked(optional($session)->id === $s->id) @disabled($done) required>
+                                <span class="flex-grow-1">
+                                    <strong>{{ $s->name }}</strong>
+                                    <span class="text-muted">&middot; {{ $s->timeRange() }}</span>
+                                </span>
+                                @if($done)
+                                    <span class="badge-pill badge-payment-paid">Checked in {{ $done->format('H:i') }}</span>
+                                @elseif($option['open_now'])
+                                    <span class="badge-pill badge-payment-pending">Now</span>
+                                @endif
+                            </label>
+                        @endforeach
+                    </div>
+                    @endif
                     <button class="btn btn-primary w-100">
                         <i class="icofont icofont-check-circled"></i> Confirm Check-In
                     </button>
@@ -105,6 +122,16 @@
                 <div class="alert alert-warning mb-0">
                     <i class="icofont icofont-warning"></i> {{ $message }}
                 </div>
+                @if(!empty($sessionOptions))
+                <ul class="list-group mt-2">
+                    @foreach($sessionOptions as $option)
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ $option['session']->name }} <span class="text-muted">&middot; {{ $option['session']->timeRange() }}</span></span>
+                        @if($option['checked_in_at'])<span class="badge-pill badge-payment-paid">Checked in {{ $option['checked_in_at']->format('H:i') }}</span>@endif
+                    </li>
+                    @endforeach
+                </ul>
+                @endif
                 @endif
 
                 @if($registration->pendingPaymentsTotal() > 0)

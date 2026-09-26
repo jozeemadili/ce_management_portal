@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PledgePaymentMethod;
 use App\Models\ProgramRegistration;
 use App\Services\ProgramCheckIn;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class ProgramQrController extends Controller
@@ -28,18 +29,20 @@ class ProgramQrController extends Controller
         $check = $checkIn->evaluate($registration);
         $ok = $check['ok'];
         $message = $check['message'];
-        $session = $check['session'];
+        $session = $check['session'];        // suggested (running now / next)
+        $sessionOptions = $check['sessions']; // today's sessions + their check-in state
         $paymentMethods = PledgePaymentMethod::where('is_active', true)->orderBy('name')->get();
 
-        return view('portal.programs.scan.show', compact('registration', 'ok', 'message', 'session', 'paymentMethods'));
+        return view('portal.programs.scan.show', compact('registration', 'ok', 'message', 'session', 'sessionOptions', 'paymentMethods'));
     }
 
-    public function checkIn(ProgramRegistration $registration, ProgramCheckIn $checkIn)
+    public function checkIn(Request $request, ProgramRegistration $registration, ProgramCheckIn $checkIn)
     {
         $this->authorizeProgram('ATTENDANCE_SCAN_QR');
 
+        $request->validate(['session_id' => 'nullable|integer']);
         $registration->load('program');
-        $result = $checkIn->checkIn($registration, Auth::id());
+        $result = $checkIn->checkIn($registration, Auth::id(), $request->integer('session_id') ?: null);
 
         return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
     }

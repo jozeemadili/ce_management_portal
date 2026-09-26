@@ -12,22 +12,27 @@ use Illuminate\Support\Carbon;
  * QR check-in rules, shared by the web scan page and the mobile API:
  *  - the program must be active and the registration valid and paid (or free);
  *  - a special program only checks in on its own dates;
- *  - with sessions, check-in is per session: it opens
- *    ProgramSession::CHECK_IN_OPENS_BEFORE_MINUTES before the session starts
- *    and closes when it ends, and each person checks in once per session
- *    per day. Programs without sessions keep one check-in per day.
+ *  - with sessions, whoever scans picks which of today's sessions to check
+ *    the person into (the one running now is suggested); each person checks
+ *    in once per session per day. Programs without sessions keep one
+ *    check-in per day.
  */
 class ProgramCheckIn
 {
     /**
-     * @return array{ok: bool, message: string, occurrence: ?\App\Models\ProgramOccurrence, session: ?ProgramSession}
+     * @return array{
+     *   ok: bool, message: string,
+     *   occurrence: ?\App\Models\ProgramOccurrence,
+     *   session: ?ProgramSession,
+     *   sessions: array<int, array{session: ProgramSession, checked_in_at: ?Carbon, open_now: bool}>
+     * }
      */
     public function evaluate(ProgramRegistration $registration, ?Carbon $now = null): array
     {
         $now = $now ?: now();
         $program = $registration->program;
-        $fail = fn (string $message, $occurrence = null, $session = null) => [
-            'ok' => false, 'message' => $message, 'occurrence' => $occurrence, 'session' => $session,
+        $fail = fn (string $message, $occurrence = null, array $sessions = []) => [
+            'ok' => false, 'message' => $message, 'occurrence' => $occurrence, 'session' => null, 'sessions' => $sessions,
         ];
 
         if (!$program || $program->status === 'cancelled') {
@@ -59,62 +64,85 @@ class ProgramCheckIn
             }
         }
 
-        $sessions = $program->sessions()->get();
-        $session = null;
-
-        if ($sessions->isNotEmpty()) {
-            $session = $sessions->first(fn (ProgramSession $s) => $s->isCheckInOpen($now));
-
-            if (!$session) {
-                $next = $sessions->first(fn (ProgramSession $s) => $s->startsOn($now)->gt($now));
-
-                return $fail($next
-                    ? "No session is open for check-in right now. Next: {$next->name} at " . substr($next->start_time, 0, 5)
-                        . ' (check-in opens ' . ProgramSession::CHECK_IN_OPENS_BEFORE_MINUTES . ' minutes before).'
-                    : "Today's sessions have ended.");
-            }
-        }
-
         $occurrence = $program->occurrenceForDate($now->toDateString());
-
-        $already = ProgramAttendance::where('occurrence_id', $occurrence->id)
+        $checkIns = ProgramAttendance::where('occurrence_id', $occurrence->id)
             ->where('registration_id', $registration->id)
-            ->when($session, fn ($q) => $q->where('session_id', $session->id))
-            ->first();
+            ->get();
 
-        if ($already) {
-            return $fail(
-                ($session ? "Already checked in for the {$session->name} today" : 'This registration has already been checked in for today')
-                    . ' at ' . optional($already->checked_in_at)->format('H:i') . '.',
-                $occurrence,
-                $session
-            );
+        $sessions = $program->sessions()->get();
+
+        if ($sessions->isEmpty()) {
+            $already = $checkIns->first();
+            if ($already) {
+                return $fail('This registration has already been checked in for today at ' . optional($already->checked_in_at)->format('H:i') . '.', $occurrence);
+            }
+
+            return ['ok' => true, 'message' => 'Ready to check in.', 'occurrence' => $occurrence, 'session' => null, 'sessions' => []];
         }
+
+        $list = $sessions->map(fn (ProgramSession $s) => [
+            'session' => $s,
+            'checked_in_at' => optional($checkIns->firstWhere('session_id', $s->id))->checked_in_at,
+            'open_now' => $s->isCheckInOpen($now),
+        ])->all();
+
+        $available = collect($list)->whereNull('checked_in_at');
+        if ($available->isEmpty()) {
+            return $fail("Already checked in for all of today's sessions.", $occurrence, $list);
+        }
+
+        // Suggest the session running now, else the next one today, else the
+        // first one not yet checked in (e.g. a late arrival).
+        $suggested = $available->firstWhere('open_now', true)
+            ?? $available->first(fn ($item) => $item['session']->startsOn($now)->gt($now))
+            ?? $available->first();
 
         return [
             'ok' => true,
-            'message' => $session ? "Ready to check in for the {$session->name}." : 'Ready to check in.',
+            'message' => 'Choose the session to check in for.',
             'occurrence' => $occurrence,
-            'session' => $session,
+            'session' => $suggested['session'],
+            'sessions' => $list,
         ];
     }
 
     /**
-     * Records the check-in if evaluate() allows it.
+     * Records the check-in. With sessions, $sessionId picks the session
+     * (any of today's not yet checked in); without it, the suggested one -
+     * the session running now - is used, so older app versions keep working.
      *
      * @return array{ok: bool, message: string, attendance: ?ProgramAttendance, session: ?ProgramSession}
      */
-    public function checkIn(ProgramRegistration $registration, ?int $recordedBy): array
+    public function checkIn(ProgramRegistration $registration, ?int $recordedBy, ?int $sessionId = null): array
     {
         $check = $this->evaluate($registration);
         if (!$check['ok']) {
-            return ['ok' => false, 'message' => $check['message'], 'attendance' => null, 'session' => $check['session']];
+            return ['ok' => false, 'message' => $check['message'], 'attendance' => null, 'session' => null];
+        }
+
+        $session = $check['session'];
+
+        if ($check['sessions'] && $sessionId) {
+            $picked = collect($check['sessions'])->first(fn ($item) => $item['session']->id === $sessionId);
+
+            if (!$picked) {
+                return ['ok' => false, 'message' => 'That session is not part of this program.', 'attendance' => null, 'session' => null];
+            }
+            if ($picked['checked_in_at']) {
+                return [
+                    'ok' => false,
+                    'message' => "Already checked in for the {$picked['session']->name} today at " . $picked['checked_in_at']->format('H:i') . '.',
+                    'attendance' => null,
+                    'session' => $picked['session'],
+                ];
+            }
+            $session = $picked['session'];
         }
 
         $attendance = ProgramAttendance::create([
             'program_id' => $registration->program_id,
             'occurrence_id' => $check['occurrence']->id,
-            'session_id' => optional($check['session'])->id,
+            'session_id' => optional($session)->id,
             'member_id' => $registration->member_id,
             'registration_id' => $registration->id,
             'attendance_status' => 'present',
@@ -127,9 +155,9 @@ class ProgramCheckIn
 
         return [
             'ok' => true,
-            'message' => $check['session'] ? "Checked in for the {$check['session']->name}." : 'Checked in successfully.',
+            'message' => $session ? "Checked in for the {$session->name}." : 'Checked in successfully.',
             'attendance' => $attendance,
-            'session' => $check['session'],
+            'session' => $session,
         ];
     }
 }

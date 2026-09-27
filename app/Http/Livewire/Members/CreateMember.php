@@ -13,6 +13,7 @@ use App\Models\Member;
 use App\Models\Church;
 use App\Models\MemberDesignation;
 use App\Models\MemberRole;
+use App\Services\AccountLogin;
 
 class CreateMember extends Component
 {
@@ -20,6 +21,7 @@ class CreateMember extends Component
     public $last_name;
     public $phone;
     public $email;
+    public $kingschat_username;
     public $church_id;
     public $designation_ids = []; // multiple roles
 
@@ -28,8 +30,16 @@ class CreateMember extends Component
         return [
             'first_name' => 'required|string',
             'last_name'  => 'required|string',
-            'phone'      => 'nullable|string',
-            'email'      => 'required|email|unique:users,email',
+            'phone'      => ['required', 'string', function ($attribute, $value, $fail) {
+                $mobile = AccountLogin::normaliseMobile($value);
+                if (!$mobile) {
+                    $fail('Enter a valid phone number, e.g. 0712345678.');
+                } elseif (User::where('mobile', $mobile)->exists()) {
+                    $fail('A user with this phone number already exists.');
+                }
+            }],
+            'email'      => 'nullable|email|unique:users,email',
+            'kingschat_username' => 'nullable|string|max:100',
             'church_id'  => 'required|exists:churches,id',
             'designation_ids' => 'required|array|min:1',
             'designation_ids.*' => 'exists:member_designations,id',
@@ -40,19 +50,25 @@ class CreateMember extends Component
     {
         $this->validate();
 
-        DB::transaction(function () {
+        $mobile = AccountLogin::normaliseMobile($this->phone);
+        $phone = '0' . $mobile;
+        $email = $this->email ? mb_strtolower(trim($this->email)) : null;
+
+        DB::transaction(function () use ($mobile, $phone, $email) {
 
             /* -----------------------------
              | CREATE USER
-             | Password = email
+             | Shared initial password; the member must set their own
+             | on first login (must_change_password).
              |------------------------------*/
             $user = User::create([
                 'first_name' => $this->first_name,
                 'last_name'  => $this->last_name,
-                'email'      => $this->email,
-                'mobile'     => $this->phone,
-                'password'   => Hash::make($this->email), // ✅ default password
-                'status'     => 'ACTIVE',
+                'email'      => $email,
+                'mobile'     => $mobile,
+                'password'   => Hash::make(AccountLogin::defaultPassword()),
+                'must_change_password' => true,
+                'status'     => 'Active', // users.status allows Pending/Active/Inactive/Rejected (case-sensitive on PostgreSQL)
                 'company_id' => 1,
                 'created_by' => Auth::user()->id
             ]);
@@ -65,8 +81,9 @@ class CreateMember extends Component
                 'church_id' => $this->church_id,
                 'first_name'=> $this->first_name,
                 'last_name' => $this->last_name,
-                'phone'     => $this->phone,
-                'email'     => $this->email,
+                'phone'     => $phone,
+                'email'     => $email,
+                'kingschat_username' => Member::normaliseKingschat($this->kingschat_username),
             ]);
 
             /* -----------------------------
@@ -80,7 +97,10 @@ class CreateMember extends Component
             }
         });
 
-        session()->flash('success', 'Member registered successfully');
+        session()->flash('success', "Member registered. They can log in with phone {$phone}"
+            . ($email ? " or {$email}" : '')
+            . ' and the initial password ' . AccountLogin::defaultPassword()
+            . ' - they will be asked to set their own password.');
 
         $this->reset();
     }

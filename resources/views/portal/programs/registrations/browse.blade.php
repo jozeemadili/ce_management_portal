@@ -171,9 +171,13 @@
                 <label class="form-label">Last Name</label>
                 <input type="text" name="last_name" class="form-control register-new-input" value="{{ $alreadyRegistered ? '' : optional($currentMember)->last_name }}" disabled>
             </div>
-            <div class="col-md-12 mt-3">
+            <div class="col-md-6 mt-3">
                 <label class="form-label">Phone</label>
                 <input type="text" name="phone" class="form-control register-new-input" value="{{ $alreadyRegistered ? '' : optional($currentMember)->phone }}" disabled>
+            </div>
+            <div class="col-md-6 mt-3">
+                <label class="form-label">KingsChat Username <span class="text-muted">(optional)</span></label>
+                <input type="text" name="kingschat_username" class="form-control register-new-input" placeholder="e.g. johnmushi" value="{{ $alreadyRegistered ? '' : optional($currentMember)->kingschat_username }}" disabled>
             </div>
         </div>
         <p class="text-muted mt-2 mb-0 register-new-hint" style="font-size:.78rem;"></p>
@@ -184,7 +188,7 @@
             <p class="mb-2" style="font-size:.85rem;">
                 Upload many <strong>first-time visitors</strong> at once.
                 <a href="{{ route('my-programs.visitor-template') }}"><i class="icofont icofont-download"></i> Download the template</a>
-                &mdash; <strong>First Name</strong> and <strong>Phone</strong> are required; Last Name, Gender and Invited By are optional.
+                &mdash; <strong>First Name</strong> and <strong>Phone</strong> are required; Last Name, Gender, Invited By and KingsChat Username are optional.
             </p>
             <input type="file" class="form-control register-upload-file" accept=".xlsx,.xls,.csv">
             <div class="text-danger small mt-2 register-upload-error" style="display:none;"></div>

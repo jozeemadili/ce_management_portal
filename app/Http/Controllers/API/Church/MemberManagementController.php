@@ -143,7 +143,9 @@ class MemberManagementController extends Controller
             'baptism_date',
             'marriage_status',
             'marriage_dates',
-        ]));
+        ]) + [
+            'kingschat_username' => Member::normaliseKingschat($request->input('kingschat_username')),
+        ]);
 
         $member->member_roles()->delete();
 

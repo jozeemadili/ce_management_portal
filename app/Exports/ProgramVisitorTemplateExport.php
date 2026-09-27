@@ -17,13 +17,13 @@ class ProgramVisitorTemplateExport implements FromArray, WithHeadings, WithStyle
 {
     public function headings(): array
     {
-        return ['First Name', 'Last Name', 'Phone', 'Gender', 'Invited By'];
+        return ['First Name', 'Last Name', 'Phone', 'Gender', 'Invited By', 'KingsChat Username'];
     }
 
     public function array(): array
     {
         return [
-            ['Neema', 'John', '0712345678', 'female', 'Grace Mushi'],
+            ['Neema', 'John', '0712345678', 'female', 'Grace Mushi', 'neemajohn'],
         ];
     }
 
@@ -34,7 +34,7 @@ class ProgramVisitorTemplateExport implements FromArray, WithHeadings, WithStyle
 
     public function columnWidths(): array
     {
-        return ['A' => 20, 'B' => 20, 'C' => 18, 'D' => 12, 'E' => 24];
+        return ['A' => 20, 'B' => 20, 'C' => 18, 'D' => 12, 'E' => 24, 'F' => 22];
     }
 
     public function title(): string

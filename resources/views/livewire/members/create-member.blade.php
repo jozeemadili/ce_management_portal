@@ -24,16 +24,28 @@
             </div>
 
             <div class="col-md-6 mb-3">
-                <label class="form-label">Email</label>
+                <label class="form-label">Phone</label>
+                <input type="text" class="form-control" wire:model.defer="phone" placeholder="e.g. 0712345678">
+                <small class="text-muted">Used to log in.</small>
+                @error('phone') <small class="text-danger d-block">{{ $message }}</small> @enderror
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Email <span class="text-muted">(optional)</span></label>
                 <input type="email" class="form-control" wire:model.defer="email">
                 @error('email') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
 
             <div class="col-md-6 mb-3">
-                <label class="form-label">Phone</label>
-                <input type="text" class="form-control" wire:model.defer="phone">
+                <label class="form-label">KingsChat Username <span class="text-muted">(optional)</span></label>
+                <input type="text" class="form-control" wire:model.defer="kingschat_username" placeholder="e.g. johnmushi">
+                @error('kingschat_username') <small class="text-danger">{{ $message }}</small> @enderror
             </div>
         </div>
+        <small class="text-muted d-block mb-3">
+            <i class="icofont icofont-lock"></i> The member's first password is <strong>{{ \App\Services\AccountLogin::defaultPassword() }}</strong>;
+            they will be asked to choose their own the first time they log in.
+        </small>
 
         <hr class="my-3">
         <p class="modal-section-label"><i class="icofont icofont-building-alt"></i> Church Assignment</p>

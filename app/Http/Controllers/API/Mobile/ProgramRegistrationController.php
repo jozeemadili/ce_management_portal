@@ -178,6 +178,7 @@ class ProgramRegistrationController extends Controller
                 'first_name' => 'required|string|max:255',
                 'last_name' => 'nullable|string|max:255',
                 'phone' => 'required|string|max:50',
+                'kingschat_username' => 'nullable|string|max:100',
                 'church_id' => 'nullable|exists:churches,id',
             ]);
 
@@ -185,6 +186,7 @@ class ProgramRegistrationController extends Controller
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'] ?? null,
                 'phone' => $data['phone'],
+                'kingschat_username' => Member::normaliseKingschat($data['kingschat_username'] ?? null),
             ], (int) ($data['church_id'] ?? $actingMember->church_id), Auth::id());
         } else {
             $member = $actingMember;

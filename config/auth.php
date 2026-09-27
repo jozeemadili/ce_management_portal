@@ -122,4 +122,17 @@ return [
 
     'password_timeout' => 10800,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Initial Member Password
+    |--------------------------------------------------------------------------
+    |
+    | Shared starting password for accounts created from Member Management
+    | (and for staff password resets). Accounts get must_change_password, so
+    | the member has to choose their own password on first login.
+    |
+    */
+
+    'member_default_password' => env('MEMBER_DEFAULT_PASSWORD', 'Loveworld26!'),
+
 ];

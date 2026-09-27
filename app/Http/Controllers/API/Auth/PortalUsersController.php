@@ -11,6 +11,7 @@ use App\Models\InsurerIntermediary;
 use App\Models\PRODUCT;
 use App\Models\PRODUCTCONDITION;
 use App\Models\User;
+use App\Services\AccountLogin;
 use App\TIRAClient\Scripts\Classes\Utils;
 use App\TIRAClient\Scripts\Classes\TIRAClient;
 use App\TIRAClient\Scripts\Classes\EsbClient;
@@ -93,6 +94,7 @@ class PortalUsersController extends Controller
         $User = User::find(Auth::user()->id);
         $User->password    = Hash::make($request->new_password);
         $User->is_first_time_pin = false;
+        $User->must_change_password = false;
         $User->save();
         Session::flush();
         Auth::logout();
@@ -101,12 +103,12 @@ class PortalUsersController extends Controller
 
     public function resert_password(Request $request)
     {
-        $User = User::find($request->id);
-        $User->password    = Hash::make("Azania@2024!");
-        $User->is_first_time_pin = false;
+        $User = User::findOrFail($request->id);
+        $User->password    = Hash::make(AccountLogin::defaultPassword());
+        $User->must_change_password = true;
         $User->save();
-        
-        return redirect('/v1/security/users')->with('success', 'Successfully Resert password');
+
+        return redirect('/v1/security/users')->with('success', 'Password reset to the initial password (' . AccountLogin::defaultPassword() . '). The user must choose a new one at next login.');
     }
     public function sendOTP($otp, $authenticatedUser = null)
     {
@@ -169,39 +171,43 @@ class PortalUsersController extends Controller
             ]);
             return redirect()->route('portal-users')->with('success', 'e-Mkopo User <b>'.strtoupper($request->first_name).' With user name ('.strtoupper($request->username).')</b> Successfully Registered  : ');
     }
+    /**
+     * Username is the account email OR phone number (members often have no
+     * email). Accounts on the shared initial password go straight to the
+     * set-password screen.
+     */
     public function loginWeb(Request $request)
     {
-        $credentials = $request->validate(['email' => ['required', 'email'],'password' => ['required']]);
-        
-        if (!Auth::attempt($credentials))
-        {
-            return redirect('/')->with('error', 'Invalid username or Password');
-        }
-        else
-        {
-            $user = User::where('email', $request['email'])->first();
-                if($user->status != 'Active')
-                {
-                    return redirect('/')->with('error', 'Sorry ! You have been deactivated.');
-                }
-                else
-                {
-                    if($request->password ==="Safe@2024!")
-                    {
-                        return redirect()->intended(route('security-user-profile'));
-                    }
-                    else
-                    {
-                        return redirect()->intended(route('home'));
-                    }
+        $request->validate(['email' => ['required', 'string'], 'password' => ['required']]);
 
-                }
+        $user = AccountLogin::findUser($request->email);
 
-            
-            
+        if (!$user || !Hash::check($request->password, $user->password))
+        {
+            return redirect('/')->withInput($request->only('email'))->with('error', 'Invalid username or Password');
         }
-        
-   }
+
+        if ($user->status != 'Active')
+        {
+            return redirect('/')->with('error', 'Sorry ! You have been deactivated.');
+        }
+
+        Auth::login($user, $request->boolean('remember'));
+        $request->session()->regenerate();
+
+        if ($user->must_change_password)
+        {
+            return redirect()->route('password.first-change');
+        }
+
+        if ($request->password === "Safe@2024!")
+        {
+            return redirect()->intended(route('security-user-profile'));
+        }
+
+        return redirect()->intended(route('home'));
+    }
+
     public function logout(Request $request)
     {
         try

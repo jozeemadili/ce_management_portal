@@ -127,6 +127,7 @@ class MemberBulkImporter
                 'baptism_date' => $dates['baptism_date'],
                 'marriage_status' => $this->choice($row['marriage_status'] ?? null, ['married', 'single']),
                 'marriage_dates' => $dates['marriage_date'],
+                'kingschat_username' => Member::normaliseKingschat($row['kingschat_username'] ?? null),
             ];
         }
 

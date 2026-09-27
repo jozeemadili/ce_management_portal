@@ -60,6 +60,7 @@ class Member extends Model
 		'last_name',
 		'phone',
 		'email',
+		'kingschat_username',
 		'foundation_clases',
 		'foundation_clases_date',
 		'baptism_status',
@@ -117,6 +118,16 @@ class Member extends Model
 		return $query->where('member_type', 'new_soul');
 	}
 
+	/**
+	 * KingsChat usernames are stored without a leading "@"; blank -> null.
+	 */
+	public static function normaliseKingschat($value): ?string
+	{
+		$value = ltrim(trim((string) $value), '@');
+
+		return $value === '' ? null : mb_substr($value, 0, 100);
+	}
+
 	public function isNewSoul(): bool
 	{
 		return $this->member_type === 'new_soul';
@@ -145,6 +156,11 @@ class Member extends Model
 		$member = $query->first();
 
 		if ($member) {
+			// Fill in a KingsChat username we didn't have yet; never overwrite one.
+			if (!empty($attributes['kingschat_username']) && empty($member->kingschat_username)) {
+				$member->update(['kingschat_username' => $attributes['kingschat_username']]);
+			}
+
 			return $member;
 		}
 

@@ -28,6 +28,7 @@ class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles,
         'Baptism Date',
         'Marriage Status',
         'Marriage Date',
+        'KingsChat Username',
     ];
 
     public function headings(): array
@@ -38,7 +39,7 @@ class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles,
     public function array(): array
     {
         return [
-            ['John', 'Mushi', '0712345678', 'john@example.com', 'male', '1990-05-14', 'yes', '2024-03-10', 'yes', '2024-06-02', 'married', '2018-12-01'],
+            ['John', 'Mushi', '0712345678', 'john@example.com', 'male', '1990-05-14', 'yes', '2024-03-10', 'yes', '2024-06-02', 'married', '2018-12-01', 'johnmushi'],
         ];
     }
 
@@ -49,7 +50,7 @@ class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles,
 
     public function columnWidths(): array
     {
-        return array_combine(range('A', 'L'), array_fill(0, 12, 20));
+        return array_combine(range('A', 'M'), array_fill(0, 13, 20));
     }
 
     public function title(): string

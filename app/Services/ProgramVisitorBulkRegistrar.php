@@ -88,6 +88,7 @@ class ProgramVisitorBulkRegistrar
                 'phone' => $phone,
                 'gender' => $this->choice($row['gender'] ?? null, ['male', 'female'], ['m' => 'male', 'f' => 'female', 'me' => 'male', 'ke' => 'female']),
                 'invited_by' => $this->text($row['invited_by'] ?? null),
+                'kingschat_username' => Member::normaliseKingschat($row['kingschat_username'] ?? null),
             ];
 
             if ($person = $people->get($phone)) {

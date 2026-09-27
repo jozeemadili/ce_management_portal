@@ -1,11 +1,9 @@
-@extends('layouts.admin.master')
-
-@section('title')
+<?php $__env->startSection('title'); ?>
 Church Management
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('css')
-<link rel="stylesheet" type="text/css" href="{{ asset('assets/css/select2.css') }}">
+<?php $__env->startPush('css'); ?>
+<link rel="stylesheet" type="text/css" href="<?php echo e(asset('assets/css/select2.css')); ?>">
 <style>
     .select2-container .select2-selection--single {
         height: 42px !important;
@@ -112,18 +110,18 @@ Church Management
     .church-empty { padding: 60px 20px; text-align: center; color: #9aa2b1; }
     .church-empty i { font-size: 48px; display: block; margin-bottom: 12px; color: #c8cedb; }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
-@component('components.breadcrumb')
-    @slot('breadcrumb_title')
+<?php $__env->startComponent('components.breadcrumb'); ?>
+    <?php $__env->slot('breadcrumb_title'); ?>
         <h3>Church Management</h3>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
-    @slot('breadcrumb_action_buttons')
+    <?php $__env->slot('breadcrumb_action_buttons'); ?>
         <li>
-            <a class="btn btn-outline-success" href="{{ route('churches-export', request()->query()) }}">
+            <a class="btn btn-outline-success" href="<?php echo e(route('churches-export', request()->query())); ?>">
                 Export Excel <i class="icofont icofont-file-excel"></i>
             </a>
         </li>
@@ -132,38 +130,40 @@ Church Management
                 New Church <i class="icofont icofont-plus-circle"></i>
             </button>
         </li>
-    @endslot
+    <?php $__env->endSlot(); ?>
 
     <li class="breadcrumb-item">Church</li>
     <li class="breadcrumb-item active">Management</li>
-@endcomponent
+<?php echo $__env->renderComponent(); ?>
 
 <div class="container-fluid">
 
-{{-- ERRORS --}}
-@foreach ($errors->all() as $error)
+
+<?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
 <div class="alert alert-danger alert-dismissible fade show">
-    {{ $error }}
+    <?php echo e($error); ?>
+
     <button class="btn-close" data-bs-dismiss="alert"></button>
 </div>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-{{-- SUCCESS --}}
-@if(session('success'))
+
+<?php if(session('success')): ?>
 <div class="alert alert-success alert-dismissible fade show">
-    {{ session('success') }}
+    <?php echo e(session('success')); ?>
+
     <button class="btn-close" data-bs-dismiss="alert"></button>
 </div>
-@endif
+<?php endif; ?>
 
-{{-- ================= STAT CARDS ================= --}}
+
 <div class="row mb-3">
     <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
         <div class="card church-stat-card">
             <div class="stat-body">
                 <div class="church-stat-icon bg-total"><i class="icofont icofont-building-alt"></i></div>
                 <div>
-                    <p class="church-stat-value">{{ $stats['total'] }}</p>
+                    <p class="church-stat-value"><?php echo e($stats['total']); ?></p>
                     <p class="church-stat-label">Total Churches</p>
                 </div>
             </div>
@@ -174,7 +174,7 @@ Church Management
             <div class="stat-body">
                 <div class="church-stat-icon bg-active"><i class="icofont icofont-check-circled"></i></div>
                 <div>
-                    <p class="church-stat-value">{{ $stats['active'] }}</p>
+                    <p class="church-stat-value"><?php echo e($stats['active']); ?></p>
                     <p class="church-stat-label">Active</p>
                 </div>
             </div>
@@ -185,7 +185,7 @@ Church Management
             <div class="stat-body">
                 <div class="church-stat-icon bg-inactive"><i class="icofont icofont-close-circled"></i></div>
                 <div>
-                    <p class="church-stat-value">{{ $stats['inactive'] }}</p>
+                    <p class="church-stat-value"><?php echo e($stats['inactive']); ?></p>
                     <p class="church-stat-label">Inactive</p>
                 </div>
             </div>
@@ -196,7 +196,7 @@ Church Management
             <div class="stat-body">
                 <div class="church-stat-icon bg-members"><i class="icofont icofont-group"></i></div>
                 <div>
-                    <p class="church-stat-value">{{ $stats['members'] }}</p>
+                    <p class="church-stat-value"><?php echo e($stats['members']); ?></p>
                     <p class="church-stat-label">Total Members</p>
                 </div>
             </div>
@@ -209,41 +209,41 @@ Church Management
 <div class="card church-card">
 <div class="card-body">
 
-{{-- ================= FILTER BAR ================= --}}
-<form method="GET" action="{{ route('churches-management') }}" class="church-filter-bar">
+
+<form method="GET" action="<?php echo e(route('churches-management')); ?>" class="church-filter-bar">
 <div class="row g-2 align-items-end">
     <div class="col-md-4">
         <label class="form-label mb-1">Search</label>
-        <input type="text" name="q" value="{{ request('q') }}" class="form-control" placeholder="Search by name or location">
+        <input type="text" name="q" value="<?php echo e(request('q')); ?>" class="form-control" placeholder="Search by name or location">
     </div>
     <div class="col-md-3">
         <label class="form-label mb-1">Designation</label>
         <select name="designation_id" class="form-control">
             <option value="">All Designations</option>
-            @foreach($designations as $des)
-                <option value="{{ $des->id }}" @selected(request('designation_id') == $des->id)>{{ strtoupper($des->name) }}</option>
-            @endforeach
+            <?php $__currentLoopData = $designations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $des): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                <option value="<?php echo e($des->id); ?>" <?php if(request('designation_id') == $des->id): echo 'selected'; endif; ?>><?php echo e(strtoupper($des->name)); ?></option>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </select>
     </div>
     <div class="col-md-3">
         <label class="form-label mb-1">Status</label>
         <select name="status" class="form-control">
             <option value="">All Status</option>
-            <option value="ACTIVE" @selected(request('status') == 'ACTIVE')>Active</option>
-            <option value="INACTIVE" @selected(request('status') == 'INACTIVE')>Inactive</option>
+            <option value="ACTIVE" <?php if(request('status') == 'ACTIVE'): echo 'selected'; endif; ?>>Active</option>
+            <option value="INACTIVE" <?php if(request('status') == 'INACTIVE'): echo 'selected'; endif; ?>>Inactive</option>
         </select>
     </div>
     <div class="col-md-2 d-flex gap-2">
         <button class="btn btn-primary w-100" type="submit"><i class="icofont icofont-search"></i> Filter</button>
-        @if(request()->anyFilled(['q','designation_id','status']))
-        <a href="{{ route('churches-management') }}" class="btn btn-outline-secondary" title="Clear filters"><i class="icofont icofont-refresh"></i></a>
-        @endif
+        <?php if(request()->anyFilled(['q','designation_id','status'])): ?>
+        <a href="<?php echo e(route('churches-management')); ?>" class="btn btn-outline-secondary" title="Clear filters"><i class="icofont icofont-refresh"></i></a>
+        <?php endif; ?>
     </div>
 </div>
 </form>
 
-{{-- CHURCH TABLE --}}
-@if($churches->count())
+
+<?php if($churches->count()): ?>
 <div class="table-responsive">
 <table class="table church-table align-middle">
 <thead>
@@ -260,33 +260,34 @@ Church Management
 </tr>
 </thead>
 <tbody>
-@foreach($churches as $church)
-@php($pastor = optional($church->current_head)->member)
+<?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $church): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+<?php ($pastor = optional($church->current_head)->member); ?>
 <tr>
-    <td>{{ $loop->iteration + ($churches->currentPage() - 1) * $churches->perPage() }}</td>
+    <td><?php echo e($loop->iteration + ($churches->currentPage() - 1) * $churches->perPage()); ?></td>
     <td>
         <div class="church-name-cell">
             <div class="church-avatar"><i class="icofont icofont-building-alt"></i></div>
-            <span class="fw-semibold">{{ strtoupper($church->name) }}</span>
+            <span class="fw-semibold"><?php echo e(strtoupper($church->name)); ?></span>
         </div>
     </td>
-    <td><span class="badge-designation">{{ strtoupper($church->church_designation->name ?? '-') }}</span></td>
-    <td>{{ $church->church ? strtoupper($church->church->name) : 'ROOT' }}</td>
+    <td><span class="badge-designation"><?php echo e(strtoupper($church->church_designation->name ?? '-')); ?></span></td>
+    <td><?php echo e($church->church ? strtoupper($church->church->name) : 'ROOT'); ?></td>
     <td>
-        @if($pastor)
+        <?php if($pastor): ?>
             <div class="pastor-cell">
-                <div class="pastor-avatar">{{ strtoupper(substr($pastor->first_name ?? '?', 0, 1)) }}</div>
-                <span>{{ $pastor->first_name }} {{ $pastor->last_name }}</span>
+                <div class="pastor-avatar"><?php echo e(strtoupper(substr($pastor->first_name ?? '?', 0, 1))); ?></div>
+                <span><?php echo e($pastor->first_name); ?> <?php echo e($pastor->last_name); ?></span>
             </div>
-        @else
+        <?php else: ?>
             <span class="badge-unassigned">Not Assigned</span>
-        @endif
+        <?php endif; ?>
     </td>
-    <td>{{ $church->physical_location }}</td>
-    <td><span class="badge-members">{{ $church->members_count ?? 0 }}</span></td>
+    <td><?php echo e($church->physical_location); ?></td>
+    <td><span class="badge-members"><?php echo e($church->members_count ?? 0); ?></span></td>
     <td>
-        <span class="{{ $church->status == 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive' }}">
-            {{ $church->status }}
+        <span class="<?php echo e($church->status == 'ACTIVE' ? 'badge-status-active' : 'badge-status-inactive'); ?>">
+            <?php echo e($church->status); ?>
+
         </span>
     </td>
     <td class="text-end">
@@ -298,62 +299,63 @@ Church Management
                 <li>
                     <a class="dropdown-item edit-church-btn" href="javascript:void(0)"
                         data-bs-toggle="modal" data-bs-target="#editChurchModal"
-                        data-id="{{ $church->id }}"
-                        data-name="{{ $church->name }}"
-                        data-location="{{ $church->physical_location }}"
-                        data-designation="{{ $church->designation_id }}"
-                        data-parent="{{ $church->parent_church_id }}"
-                        data-head="{{ optional($church->current_head)->head_of_unit }}">
+                        data-id="<?php echo e($church->id); ?>"
+                        data-name="<?php echo e($church->name); ?>"
+                        data-location="<?php echo e($church->physical_location); ?>"
+                        data-designation="<?php echo e($church->designation_id); ?>"
+                        data-parent="<?php echo e($church->parent_church_id); ?>"
+                        data-head="<?php echo e(optional($church->current_head)->head_of_unit); ?>">
                         <i class="icofont icofont-edit"></i> Edit
                     </a>
                 </li>
                 <li>
                     <a class="dropdown-item" href="javascript:void(0)" data-bs-toggle="modal"
-                        data-bs-target="#transferModal" data-id="{{ $church->id }}">
+                        data-bs-target="#transferModal" data-id="<?php echo e($church->id); ?>">
                         <i class="icofont icofont-exchange"></i> Transfer
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{{ route('churches.transfer.history', $church->id) }}">
+                    <a class="dropdown-item" href="<?php echo e(route('churches.transfer.history', $church->id)); ?>">
                         <i class="icofont icofont-history"></i> History
                     </a>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
-                    @if($church->status == 'ACTIVE')
-                    <form method="POST" action="{{ route('churches-deactivate',$church->id) }}"
+                    <?php if($church->status == 'ACTIVE'): ?>
+                    <form method="POST" action="<?php echo e(route('churches-deactivate',$church->id)); ?>"
                           onsubmit="return confirm('Deactivate this church?')">
-                        @csrf
+                        <?php echo csrf_field(); ?>
                         <button type="submit" class="dropdown-item text-danger">
                             <i class="icofont icofont-close-circled"></i> Deactivate
                         </button>
                     </form>
-                    @else
-                    <form method="POST" action="{{ route('churches-activate',$church->id) }}"
+                    <?php else: ?>
+                    <form method="POST" action="<?php echo e(route('churches-activate',$church->id)); ?>"
                           onsubmit="return confirm('Activate this church?')">
-                        @csrf
+                        <?php echo csrf_field(); ?>
                         <button type="submit" class="dropdown-item text-success">
                             <i class="icofont icofont-check-circled"></i> Activate
                         </button>
                     </form>
-                    @endif
+                    <?php endif; ?>
                 </li>
             </ul>
         </div>
     </td>
 </tr>
-@endforeach
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </tbody>
 </table>
 
-{{ $churches->links() }}
+<?php echo e($churches->links()); ?>
+
 </div>
-@else
+<?php else: ?>
 <div class="church-empty">
     <i class="icofont icofont-building-alt"></i>
-    <p class="mb-0">No churches found @if(request()->anyFilled(['q','designation_id','status'])) for the selected filters @endif.</p>
+    <p class="mb-0">No churches found <?php if(request()->anyFilled(['q','designation_id','status'])): ?> for the selected filters <?php endif; ?>.</p>
 </div>
-@endif
+<?php endif; ?>
 
 </div>
 </div>
@@ -362,12 +364,12 @@ Church Management
 
 </div>
 
-{{-- ================= NEW CHURCH MODAL ================= --}}
+
 <div class="modal fade" id="newChurchModal">
 <div class="modal-dialog modal-lg">
 <div class="modal-content">
-<form method="POST" action="{{ route('churches-store') }}">
-@csrf
+<form method="POST" action="<?php echo e(route('churches-store')); ?>">
+<?php echo csrf_field(); ?>
 
 <div class="modal-header bg-primary text-white">
     <h5 class="modal-title"><i class="icofont icofont-building-alt"></i> Register Church</h5>
@@ -392,9 +394,9 @@ Church Management
     <label>Church Designation</label>
     <select name="designation_id" id="designation_id" class="form-control" required>
         <option value="">-- Select --</option>
-        @foreach($designations as $des)
-            <option value="{{ $des->id }}">{{ strtoupper($des->name) }}</option>
-        @endforeach
+        <?php $__currentLoopData = $designations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $des): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($des->id); ?>"><?php echo e(strtoupper($des->name)); ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
 </div>
 
@@ -414,9 +416,9 @@ Church Management
     <label>Head of Church (Pastor)</label>
     <select name="head_of_unit" class="form-control church-head-select">
         <option value="">-- Not Assigned Yet --</option>
-        @foreach($members as $m)
-            <option value="{{ $m->id }}">{{ $m->first_name }} {{ $m->last_name }}@if($m->member_roles->first()) — {{ ucwords($m->member_roles->first()->member_designation->name ?? '') }}@endif (@if($m->church){{ strtoupper($m->church->name) }}@endif)</option>
-        @endforeach
+        <?php $__currentLoopData = $members; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($m->id); ?>"><?php echo e($m->first_name); ?> <?php echo e($m->last_name); ?><?php if($m->member_roles->first()): ?> — <?php echo e(ucwords($m->member_roles->first()->member_designation->name ?? '')); ?><?php endif; ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
     <small class="text-muted">Optional — you can assign a head later from the church's Edit action.</small>
 </div>
@@ -434,12 +436,12 @@ Church Management
 </div>
 </div>
 
-{{-- ================= EDIT CHURCH MODAL ================= --}}
+
 <div class="modal fade" id="editChurchModal">
 <div class="modal-dialog modal-lg">
 <div class="modal-content">
 <form method="POST" id="editChurchForm" action="">
-@csrf
+<?php echo csrf_field(); ?>
 
 <div class="modal-header bg-primary text-white">
     <h5 class="modal-title"><i class="icofont icofont-edit"></i> Edit Church</h5>
@@ -464,9 +466,9 @@ Church Management
     <label>Church Designation</label>
     <select name="designation_id" id="edit_designation_id" class="form-control" required>
         <option value="">-- Select --</option>
-        @foreach($designations as $des)
-            <option value="{{ $des->id }}">{{ strtoupper($des->name) }}</option>
-        @endforeach
+        <?php $__currentLoopData = $designations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $des): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($des->id); ?>"><?php echo e(strtoupper($des->name)); ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
 </div>
 
@@ -486,9 +488,9 @@ Church Management
     <label>Head of Church (Pastor)</label>
     <select name="head_of_unit" id="edit_head_of_unit" class="form-control church-head-select">
         <option value="">-- Not Assigned --</option>
-        @foreach($members as $m)
-            <option value="{{ $m->id }}">{{ $m->first_name }} {{ $m->last_name }}@if($m->member_roles->first()) — {{ ucwords($m->member_roles->first()->member_designation->name ?? '') }}@endif (@if($m->church){{ strtoupper($m->church->name) }}@endif)</option>
-        @endforeach
+        <?php $__currentLoopData = $members; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <option value="<?php echo e($m->id); ?>"><?php echo e($m->first_name); ?> <?php echo e($m->last_name); ?><?php if($m->member_roles->first()): ?> — <?php echo e(ucwords($m->member_roles->first()->member_designation->name ?? '')); ?><?php endif; ?></option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </select>
     <small class="text-muted">Selecting a different member records a new leadership assignment for this church.</small>
 </div>
@@ -506,12 +508,12 @@ Church Management
 </div>
 </div>
 
-{{-- ================= TRANSFER MODAL ================= --}}
+
 <div class="modal fade" id="transferModal">
 <div class="modal-dialog">
 <div class="modal-content">
-<form method="POST" action="{{ route('churches-transfer') }}">
-@csrf
+<form method="POST" action="<?php echo e(route('churches-transfer')); ?>">
+<?php echo csrf_field(); ?>
 
 <input type="hidden" name="church_id" id="transfer_church_id">
 
@@ -523,9 +525,9 @@ Church Management
 <div class="modal-body">
 <label>New Parent Church</label>
 <select name="parent_church_id" class="form-control" required>
-@foreach($churches as $c)
-    <option value="{{ $c->id }}">{{ strtoupper($c->name) }}</option>
-@endforeach
+<?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+    <option value="<?php echo e($c->id); ?>"><?php echo e(strtoupper($c->name)); ?></option>
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 </select>
 <small class="text-muted d-block mt-2">This moves the church to a new parent one designation level up and keeps a full history of the change.</small>
 </div>
@@ -540,14 +542,14 @@ Church Management
 </div>
 </div>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('scripts')
-<script src="{{ asset('assets/js/select2/select2.full.min.js') }}"></script>
+<?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('assets/js/select2/select2.full.min.js')); ?>"></script>
 <script>
-const designationHierarchy = @json(
+const designationHierarchy = <?php echo json_encode(
     $designations->sortBy('id')->values()
-);
+, 15, 512) ?>;
 
 function wireDesignationParent(designationSelectId, parentSelectId) {
     document.getElementById(designationSelectId).addEventListener('change', function () {
@@ -648,4 +650,6 @@ document.querySelectorAll('.edit-church-btn').forEach(btn => {
     initSelect2In('#editChurchModal');
 })();
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.admin.master', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/josephatwilliammadili/Desktop/new3/PROJECTS/New LARAVEL PROJECTS/ce_applications/ce_management_portal/resources/views/portal/churches/index.blade.php ENDPATH**/ ?>

@@ -26,11 +26,18 @@ Route::middleware(['auth:sanctum'])->group(function ()
 
 // Mobile app (Flutter) API
 Route::prefix('v1')->group(function () {
-    Route::post('login', [AuthController::class, 'login']);
+    Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
+    Route::post('password/forgot', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset');
+    Route::post('password/reset', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset');
 
+    // Reachable while must_change_password is still set.
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('logout', [AuthController::class, 'logout']);
         Route::get('me', [AuthController::class, 'me']);
+        Route::post('password/change', [AuthController::class, 'changePassword']);
+    });
+
+    Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
 
         Route::get('dashboard', [DashboardController::class, 'index']);
 

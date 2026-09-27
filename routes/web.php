@@ -26,6 +26,7 @@ use App\Http\Controllers\API\Programs\ProgramReportController;
 use App\Http\Controllers\API\Programs\ProgramSettingsController;
 
 use App\Http\Controllers\API\Auth\PortalUsersController;
+use App\Http\Controllers\API\Auth\MemberPasswordController;
 use Illuminate\Support\Facades\Route;
 
 // app/Http/Controllers/API/Church/ChurchManagementController.php
@@ -37,7 +38,7 @@ use Illuminate\Support\Facades\Route;
 
 //Portal Users Auth
 Route::get('/', [PortalUsersController::class, 'index'])->name('/');
-Route::post('/portal/auth', [PortalUsersController::class, 'loginWeb']);
+Route::post('/portal/auth', [PortalUsersController::class, 'loginWeb'])->middleware('throttle:login');
 
 Route::get('/portal/auth', [PortalUsersController::class, 'index'])->name('login');
 
@@ -46,9 +47,19 @@ Route::post('/forget-password', function(){
 })->name('forget-password');
 
 Route::get('/how-to-use', [PortalUsersController::class, 'howToUse'])->name('how-to-use');
+
+// Member passwords (two-segment URLs so they are not caught by the "/{id}" route below)
+Route::get('/password/forgot', [MemberPasswordController::class, 'showForgot'])->name('password.forgot');
+Route::post('/password/forgot', [MemberPasswordController::class, 'checkForgot'])->middleware('throttle:password-reset')->name('password.forgot.check');
+Route::get('/password/reset', [MemberPasswordController::class, 'showReset'])->name('password.reset');
+Route::post('/password/reset', [MemberPasswordController::class, 'saveReset'])->middleware('throttle:password-reset')->name('password.reset.save');
+Route::middleware('auth')->group(function () {
+    Route::get('/password/set', [MemberPasswordController::class, 'showFirstChange'])->name('password.first-change');
+    Route::post('/password/set', [MemberPasswordController::class, 'saveFirstChange'])->name('password.first-change.save');
+});
 Route::get('/{id}',[InvoiceController::class, 'download'])->name('free-quotation-download');
 
-Route::group(['prefix' => 'v1/','middleware' => ['auth']], function()
+Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], function()
 {
     Route::get('logout',[PortalUsersController::class, 'logout'])->name('logout');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('home');

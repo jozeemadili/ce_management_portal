@@ -385,7 +385,7 @@
                             Fill one member per row. <strong>First Name</strong>, <strong>Last Name</strong> and
                             <strong>Phone</strong> are required. Optional: Email, Gender (male/female), Date of Birth,
                             Foundation Classes (yes/no) + date, Baptism Status (yes/no) + date,
-                            Marriage Status (married/single) + date. Dates as <code>YYYY-MM-DD</code>.
+                            Marriage Status (married/single) + date, KingsChat Username. Dates as <code>YYYY-MM-DD</code>.
                         </li>
                         <li>Upload it below and check the result before importing.</li>
                     </ol>
@@ -523,6 +523,11 @@
                         {{ $Member->created_at->format('d M Y') }}
                     </div>
 
+                    <div class="col-md-6">
+                        <strong>KingsChat:</strong><br>
+                        {{ $Member->kingschat_username ? '@' . $Member->kingschat_username : 'N/A' }}
+                    </div>
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <strong>Foundation Classes:</strong><br>
@@ -643,6 +648,12 @@
                                     <label class="form-label">Phone</label>
                                     <input type="text" name="phone" class="form-control"
                                            value="{{ $Member->phone }}">
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">KingsChat Username <span class="text-muted">(optional)</span></label>
+                                    <input type="text" name="kingschat_username" class="form-control"
+                                           value="{{ $Member->kingschat_username }}" maxlength="100">
                                 </div>
 
                                 <div class="col-md-12">

@@ -1,0 +1,93 @@
+/*
+ * Phones: a data table that is wider than the screen is shown as one card
+ * per row ("Label: value" lines) instead of scrolling sideways, so columns
+ * like Status and Actions are never hidden off-screen. mobile-tables.js adds
+ * the .table-stacked class (only to tables that actually overflow) and the
+ * data-label attributes. Opt a table out with class="no-stack".
+ */
+@media (max-width: 767.98px) {
+  .table-responsive:has(> table.table-stacked) {
+    overflow: visible;
+  }
+
+  table.table-stacked {
+    min-width: 0 !important;
+    width: 100% !important;
+    border: 0;
+  }
+
+  table.table-stacked thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  table.table-stacked,
+  table.table-stacked tbody,
+  table.table-stacked tr,
+  table.table-stacked td {
+    display: block;
+  }
+
+  table.table-stacked tbody tr {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06);
+  }
+
+  table.table-stacked tbody tr > td {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0 !important;
+    border: 0 !important;
+    border-bottom: 1px dashed #eef0f3 !important;
+    text-align: right !important;
+    white-space: normal !important;
+    word-break: break-word;
+    background: transparent !important;
+  }
+
+  table.table-stacked tbody tr > td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  table.table-stacked tbody tr > td[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    max-width: 38%;
+    text-align: left;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: #6b7280;
+  }
+
+  /* Value side: keep badges, avatars and button groups together. */
+  table.table-stacked tbody tr > td > * {
+    max-width: 100%;
+  }
+
+  table.table-stacked tbody tr > td:not([data-label]),
+  table.table-stacked tbody tr > td[data-label=""] {
+    justify-content: flex-end;
+  }
+
+  /* "No records" rows etc. */
+  table.table-stacked tbody tr > td[colspan] {
+    display: block;
+    text-align: center !important;
+  }
+
+  table.table-stacked tfoot {
+    display: block;
+  }
+}

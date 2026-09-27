@@ -18,6 +18,7 @@
 
     <?php echo view('livewire-powergrid::assets.styles')->render(); ?>
     <link rel="stylesheet" type="text/css" href="<?php echo e(asset('assets/css/sweetalert2.css')); ?>">
+    <link rel="stylesheet" type="text/css" href="<?php echo e(asset('assets/css/mobile-tables.css')); ?>">
     <style>
       [x-cloak] { display: none !important; }
     </style>
@@ -64,6 +65,7 @@
     <?php echo \Livewire\Livewire::scripts(); ?>
 
     <?php echo view('livewire-powergrid::assets.scripts')->render(); ?>
+    <script src="<?php echo e(asset('assets/js/mobile-tables.js')); ?>"></script>
     <script src="<?php echo e(asset('assets/js/sweet-alert/sweetalert.min.js')); ?>"></script>
     <script src="<?php echo e(asset('assets/js/sweet-alert/sweetalert.min.js')); ?>"></script>
     <script>

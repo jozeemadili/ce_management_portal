@@ -33,6 +33,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'Full Name',
             'Phone',
             'Email',
+            'KingsChat Username',
             'Church',
             'Designation(s)',
             'Cell Group(s)',
@@ -54,6 +55,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             trim($member->first_name . ' ' . $member->last_name),
             $member->phone,
             $member->email,
+            $member->kingschat_username,
             optional($member->church)->name,
             $member->member_roles->pluck('member_designation.name')->filter()->implode(', '),
             $member->cell_groups->pluck('name')->implode(', '),
@@ -77,20 +79,21 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'B' => 26,
             'C' => 16,
             'D' => 26,
-            'E' => 26,
-            'F' => 24,
-            'G' => 22,
+            'E' => 20,
+            'F' => 26,
+            'G' => 24,
             'H' => 22,
-            'I' => 16,
-            'J' => 14,
+            'I' => 22,
+            'J' => 16,
             'K' => 14,
             'L' => 14,
+            'M' => 14,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:L1')->applyFromArray([
+        $sheet->getStyle('A1:M1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -106,7 +109,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             ],
         ]);
 
-        $sheet->getStyle('A1:L1')->getBorders()->getAllBorders()
+        $sheet->getStyle('A1:M1')->getBorders()->getAllBorders()
             ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         $highestRow = $sheet->getHighestRow();

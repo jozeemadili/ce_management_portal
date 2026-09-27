@@ -20,6 +20,7 @@
     @livewireStyles
     @powerGridStyles
     <link rel="stylesheet" type="text/css" href="{{asset('assets/css/sweetalert2.css')}}">
+    <link rel="stylesheet" type="text/css" href="{{asset('assets/css/mobile-tables.css')}}">
     <style>
       [x-cloak] { display: none !important; }
     </style>
@@ -65,6 +66,7 @@
     @includeIf('layouts.admin.partials.js')
     @livewireScripts
     @powerGridScripts
+    <script src="{{asset('assets/js/mobile-tables.js')}}"></script>
     <script src="{{asset('assets/js/sweet-alert/sweetalert.min.js')}}"></script>
     <script src="{{asset('assets/js/sweet-alert/sweetalert.min.js')}}"></script>
     <script>

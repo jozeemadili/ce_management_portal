@@ -392,6 +392,10 @@
                         </li>
                         <li>Upload it below and check the result before importing.</li>
                     </ol>
+                    <p class="text-muted mb-3" style="font-size:.85rem;">
+                        <i class="icofont icofont-lock"></i> Each member gets a login: their phone number (or email) and the first password
+                        <strong>{{ \App\Services\AccountLogin::defaultPassword() }}</strong>; they will be asked to choose their own the first time they log in.
+                    </p>
 
                     <label class="form-label" for="bulkUploadFile">Excel file (.xlsx, .xls or .csv, up to 5 MB)</label>
                     <input class="form-control" type="file" id="bulkUploadFile" name="file" accept=".xlsx,.xls,.csv" required>

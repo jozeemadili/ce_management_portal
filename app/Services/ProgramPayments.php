@@ -98,6 +98,10 @@ class ProgramPayments
         $this->refreshRegistration($registration);
         ProgramAuditLog::record($action, $registration, null, $payment->toArray());
 
+        if ($status === ProgramPayment::CONFIRMED) {
+            app(ProgramSmsNotifier::class)->paymentConfirmed($payment);
+        }
+
         return $payment;
     }
 
@@ -127,6 +131,10 @@ class ProgramPayments
 
         $this->refreshRegistration($registration);
         ProgramAuditLog::record($action, $registration, null, $payment->fresh()->toArray());
+
+        if ($status === ProgramPayment::CONFIRMED) {
+            app(ProgramSmsNotifier::class)->paymentConfirmed($payment);
+        }
     }
 
     private function refreshRegistration(ProgramRegistration $registration): void

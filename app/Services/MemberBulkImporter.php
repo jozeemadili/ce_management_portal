@@ -6,8 +6,10 @@ use App\Models\Church;
 use App\Models\Member;
 use App\Models\MemberDesignation;
 use App\Models\MemberRole;
+use App\Models\User;
 use App\Services\Concerns\ReadsSpreadsheetRows;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 /**
  * Bulk member upload for Member Management. analyse() checks every sheet row
@@ -51,6 +53,13 @@ class MemberBulkImporter
         $existingByEmail = Member::with('church')->whereIn(DB::raw('LOWER(email)'), array_unique($emails))->get()
             ->keyBy(fn ($m) => strtolower($m->email));
 
+        // Every imported member gets a login account, so the phone/email
+        // must not already belong to one (users.mobile/email are unique).
+        $mobiles = array_filter(array_map(fn ($p) => AccountLogin::normaliseMobile($p), $phones));
+        $loginByMobile = User::whereIn('mobile', array_unique($mobiles) ?: [0])->get()->keyBy('mobile');
+        $loginByEmail = User::whereIn(DB::raw('LOWER(email)'), array_unique($emails) ?: [''])->get()
+            ->keyBy(fn ($u) => strtolower($u->email));
+
         foreach ($rows as $index => $row) {
             $sheetRow = $index + 2; // row 1 is the heading row
 
@@ -80,6 +89,10 @@ class MemberBulkImporter
                 $problem = 'Already registered: ' . $this->describe($match) . ' has this phone.';
             } elseif ($email && ($match = $existingByEmail->get($email))) {
                 $problem = 'Already registered: ' . $this->describe($match) . ' has this email.';
+            } elseif ($login = $loginByMobile->get(AccountLogin::normaliseMobile($phone))) {
+                $problem = 'A login account already uses this phone (' . trim($login->first_name . ' ' . $login->last_name) . ').';
+            } elseif ($email && ($login = $loginByEmail->get($email))) {
+                $problem = 'A login account already uses this email (' . trim($login->first_name . ' ' . $login->last_name) . ').';
             }
 
             $dates = [];
@@ -136,16 +149,29 @@ class MemberBulkImporter
 
     /**
      * Saves analysed rows as regular members of $church, each with the
-     * "normal member" designation (when that designation exists). All or
-     * nothing: one transaction.
+     * "normal member" designation (when that designation exists) and a
+     * login account: phone (or email) + the shared initial password, to be
+     * changed on first login. All or nothing: one transaction.
      */
     public function import(array $validRows, Church $church, ?int $recordedBy): int
     {
         $designationId = MemberDesignation::whereRaw('LOWER(name) = ?', ['normal member'])->value('id');
+        // Same initial password for everyone: hash it once, not per row.
+        $passwordHash = Hash::make(AccountLogin::defaultPassword());
 
-        DB::transaction(function () use ($validRows, $church, $recordedBy, $designationId) {
+        DB::transaction(function () use ($validRows, $church, $recordedBy, $designationId, $passwordHash) {
             foreach ($validRows as $attributes) {
+                $user = AccountLogin::createMemberUser(
+                    $attributes['first_name'],
+                    $attributes['last_name'],
+                    AccountLogin::normaliseMobile($attributes['phone']),
+                    $attributes['email'],
+                    $recordedBy,
+                    $passwordHash
+                );
+
                 $member = Member::create($attributes + [
+                    'user_id' => $user->id,
                     'church_id' => $church->id,
                     'member_type' => 'member',
                     'recorded_by' => $recordedBy,

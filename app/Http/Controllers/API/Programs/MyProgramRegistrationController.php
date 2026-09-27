@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Services\ProgramSmsNotifier;
+
 
 class MyProgramRegistrationController extends Controller
 {
@@ -97,6 +99,7 @@ class MyProgramRegistrationController extends Controller
         abort_if($already, 422, "{$attendeeName} is already registered for this program.");
 
         $registration = ProgramRegistration::createFor($member, $program, Auth::id());
+        app(ProgramSmsNotifier::class)->registered($registration);
 
         ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray());
 

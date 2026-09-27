@@ -13,6 +13,8 @@ use App\Http\Controllers\API\Programs\ProgramPaymentController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Services\ProgramSmsNotifier;
+
 
 class ProgramRegistrationController extends Controller
 {
@@ -202,6 +204,7 @@ class ProgramRegistrationController extends Controller
         abort_if($already, 422, "{$attendeeName} is already registered for this program.");
 
         $registration = ProgramRegistration::createFor($member, $program, Auth::id());
+        app(ProgramSmsNotifier::class)->registered($registration);
 
         ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray());
 

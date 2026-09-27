@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\API\Auth;
 
-use App\Http\Controllers\API\Notifications\SMSController;
 
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
@@ -12,6 +11,7 @@ use App\Models\PRODUCT;
 use App\Models\PRODUCTCONDITION;
 use App\Models\User;
 use App\Services\AccountLogin;
+use App\Services\SmsService;
 use App\TIRAClient\Scripts\Classes\Utils;
 use App\TIRAClient\Scripts\Classes\TIRAClient;
 use App\TIRAClient\Scripts\Classes\EsbClient;
@@ -112,19 +112,14 @@ class PortalUsersController extends Controller
     }
     public function sendOTP($otp, $authenticatedUser = null)
     {
-        $utils = new Utils();
         $user = $authenticatedUser == null ? Auth::user() : $authenticatedUser;
-            
-        $message       = "Dear ".ucfirst($user->first_name).", Use OTP ".$otp." to Verify your phone number";
-        $SMSController = new SMSController();
-        try{
-             $response = $SMSController->send("255".$user->mobile, $message);
-            //$response = $SMSController->sendSandBox("255".$user->mobile, $message);
-            return array('responseCode' => 'SUCCESS', 'message' => 'SMS Submitted', 'response' => $response);
-        }
-        catch(Exception $e){
-            return array("responseCode" => "FAILED", "message" => $e->getMessage());
-        } 
+
+        $message = "Dear ".ucfirst($user->first_name).", Use OTP ".$otp." to Verify your phone number";
+        $result  = app(SmsService::class)->send((string) $user->mobile, $message);
+
+        return $result['success']
+            ? array('responseCode' => 'SUCCESS', 'message' => 'SMS Submitted', 'response' => $result)
+            : array('responseCode' => 'FAILED', 'message' => $result['message']);
     }
 
     public function search(Request $request)

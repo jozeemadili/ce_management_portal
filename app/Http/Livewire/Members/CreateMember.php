@@ -61,17 +61,7 @@ class CreateMember extends Component
              | Shared initial password; the member must set their own
              | on first login (must_change_password).
              |------------------------------*/
-            $user = User::create([
-                'first_name' => $this->first_name,
-                'last_name'  => $this->last_name,
-                'email'      => $email,
-                'mobile'     => $mobile,
-                'password'   => Hash::make(AccountLogin::defaultPassword()),
-                'must_change_password' => true,
-                'status'     => 'Active', // users.status allows Pending/Active/Inactive/Rejected (case-sensitive on PostgreSQL)
-                'company_id' => 1,
-                'created_by' => Auth::user()->id
-            ]);
+            $user = AccountLogin::createMemberUser($this->first_name, $this->last_name, $mobile, $email, Auth::id());
 
             /* -----------------------------
              | CREATE MEMBER

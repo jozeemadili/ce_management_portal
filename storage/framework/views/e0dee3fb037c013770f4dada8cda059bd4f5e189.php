@@ -24,6 +24,18 @@
             </a>
         </li>
         <?php endif; ?>
+        <?php if($program->classification === 'special'): ?>
+        <li>
+            <?php $smsCount = $registrations->where('registration_status', 'registered')->count(); ?>
+            <form method="POST" action="<?php echo e(route('program-sms.remind', $program->id)); ?>"
+                  onsubmit="return confirm('Send the reminder SMS to <?php echo e($smsCount); ?> registered <?php echo e($smsCount === 1 ? 'person' : 'people'); ?>? Each SMS uses credit.')">
+                <?php echo csrf_field(); ?>
+                <button type="submit" class="btn btn-outline-success" <?php if($smsCount === 0): echo 'disabled'; endif; ?>>
+                    <i class="icofont icofont-ui-message"></i> Send Reminder SMS
+                </button>
+            </form>
+        </li>
+        <?php endif; ?>
         <?php if($program->access_type === 'paid'): ?>
         <li>
             <a class="btn btn-outline-warning" href="<?php echo e(route('program-payments.index')); ?>">
@@ -276,7 +288,11 @@
                         <div class="activity-item">
                             <div class="activity-dot"></div>
                             <div>
+                                <?php if($a->action === 'sms.reminder_sent'): ?>
+                                    <span>Reminder SMS sent to <?php echo e($a->new_values['sent'] ?? 0); ?> of <?php echo e(($a->new_values['recipients'] ?? 0)); ?> people<?php echo e(!empty($a->new_values['failed']) ? ' (' . $a->new_values['failed'] . ' failed)' : ''); ?><?php echo e(!empty($a->new_values['no_phone']) ? ', ' . $a->new_values['no_phone'] . ' without a phone number' : ''); ?></span>
+                                <?php else: ?>
                                 <span><?php echo e(str_replace('_',' ',str_replace('program.','',$a->action))); ?></span>
+                                <?php endif; ?>
                                 by <strong><?php echo e(optional($a->actor)->first_name ?? 'System'); ?></strong>
                                 <br><small class="text-muted"><?php echo e($a->created_at->diffForHumans()); ?></small>
                             </div>

@@ -63,7 +63,7 @@
 
                     <li class="dropdown">
                         <a class="nav-link menu-title <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*')) ? 'active' : ''); ?>" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
-                        <ul class="nav-submenu menu-content" style="display: <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings')) ? 'block' : ''); ?>;">
+                        <ul class="nav-submenu menu-content" style="display: <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/programs-sms-templates')) ? 'block' : ''); ?>;">
                             <li><a href="<?php echo e(route('programs.dashboard')); ?>" class="<?php echo e(routeActive('programs.dashboard')); ?>"> - Dashboard</a></li>
                             <li><a href="<?php echo e(route('programs.index')); ?>" class="<?php echo e(routeActive('programs.index')); ?>"> - Programs</a></li>
                             <li><a href="<?php echo e(route('programs.index')); ?>?classification=recurring" class="<?php echo e(request()->is('v1/programs') && request('classification')==='recurring' ? 'active' : ''); ?>"> - Recurring Services</a></li>
@@ -73,6 +73,7 @@
                             <?php $pendingProgramPayments = \App\Models\ProgramPayment::pending()->count(); ?>
                             <li><a href="<?php echo e(route('program-payments.index')); ?>" class="<?php echo e(routeActive('program-payments.index')); ?>"> - Payments to Confirm <?php if($pendingProgramPayments): ?><span class="badge bg-warning text-dark ms-1"><?php echo e($pendingProgramPayments); ?></span><?php endif; ?></a></li>
                             <li><a href="<?php echo e(route('program-reports.index')); ?>" class="<?php echo e(routeActive('program-reports.index')); ?>"> - Reports</a></li>
+                            <li><a href="<?php echo e(route('program-sms.index')); ?>" class="<?php echo e(routeActive('program-sms.index')); ?>"> - SMS Templates</a></li>
                             <li><a href="<?php echo e(route('program-settings.index')); ?>" class="<?php echo e(routeActive('program-settings.index')); ?>"> - Settings</a></li>
                         </ul>
                     </li>

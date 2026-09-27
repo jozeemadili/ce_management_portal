@@ -26,6 +26,18 @@
             </a>
         </li>
         @endif
+        @if($program->classification === 'special')
+        <li>
+            @php $smsCount = $registrations->where('registration_status', 'registered')->count(); @endphp
+            <form method="POST" action="{{ route('program-sms.remind', $program->id) }}"
+                  onsubmit="return confirm('Send the reminder SMS to {{ $smsCount }} registered {{ $smsCount === 1 ? 'person' : 'people' }}? Each SMS uses credit.')">
+                @csrf
+                <button type="submit" class="btn btn-outline-success" @disabled($smsCount === 0)>
+                    <i class="icofont icofont-ui-message"></i> Send Reminder SMS
+                </button>
+            </form>
+        </li>
+        @endif
         @if($program->access_type === 'paid')
         <li>
             <a class="btn btn-outline-warning" href="{{ route('program-payments.index') }}">
@@ -271,7 +283,11 @@
                         <div class="activity-item">
                             <div class="activity-dot"></div>
                             <div>
+                                @if($a->action === 'sms.reminder_sent')
+                                    <span>Reminder SMS sent to {{ $a->new_values['sent'] ?? 0 }} of {{ ($a->new_values['recipients'] ?? 0) }} people{{ !empty($a->new_values['failed']) ? ' (' . $a->new_values['failed'] . ' failed)' : '' }}{{ !empty($a->new_values['no_phone']) ? ', ' . $a->new_values['no_phone'] . ' without a phone number' : '' }}</span>
+                                @else
                                 <span>{{ str_replace('_',' ',str_replace('program.','',$a->action)) }}</span>
+                                @endif
                                 by <strong>{{ optional($a->actor)->first_name ?? 'System' }}</strong>
                                 <br><small class="text-muted">{{ $a->created_at->diffForHumans() }}</small>
                             </div>

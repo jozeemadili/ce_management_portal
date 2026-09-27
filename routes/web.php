@@ -24,6 +24,7 @@ use App\Http\Controllers\API\Programs\NewSoulController;
 use App\Http\Controllers\API\Programs\ProgramDashboardController;
 use App\Http\Controllers\API\Programs\ProgramReportController;
 use App\Http\Controllers\API\Programs\ProgramSettingsController;
+use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
 
 use App\Http\Controllers\API\Auth\PortalUsersController;
 use App\Http\Controllers\API\Auth\MemberPasswordController;
@@ -205,6 +206,14 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
 
     //Programs & Attendance - Settings
     Route::get('programs-settings', [ProgramSettingsController::class, 'index'])->name('program-settings.index');
+
+    //Programs & Attendance - SMS templates + reminder
+    Route::get('programs-sms-templates', [ProgramSmsTemplateController::class, 'index'])->name('program-sms.index');
+    Route::post('programs-sms-templates', [ProgramSmsTemplateController::class, 'store'])->name('program-sms.store');
+    Route::post('programs-sms-templates/test', [ProgramSmsTemplateController::class, 'test'])->name('program-sms.test');
+    Route::post('programs-sms-templates/{template}/update', [ProgramSmsTemplateController::class, 'update'])->name('program-sms.update');
+    Route::post('programs-sms-templates/{template}/delete', [ProgramSmsTemplateController::class, 'destroy'])->name('program-sms.destroy');
+    Route::post('programs/{program}/sms-reminder', [ProgramSmsTemplateController::class, 'remind'])->name('program-sms.remind');
 
     Route::post('pledges/settings/payment-methods', [PledgeSettingsController::class, 'storePaymentMethod'])->name('pledge-settings.payment-methods.store');
     Route::post('pledges/settings/payment-methods/{paymentMethod}/toggle', [PledgeSettingsController::class, 'togglePaymentMethod'])->name('pledge-settings.payment-methods.toggle');

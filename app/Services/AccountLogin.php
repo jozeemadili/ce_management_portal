@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
 /**
@@ -60,6 +61,27 @@ class AccountLogin
         $email = trim((string) $email);
 
         return $email === '' ? null : User::whereRaw('LOWER(email) = ?', [mb_strtolower($email)])->first();
+    }
+
+    /**
+     * Login account for a member (Member Management form and Excel upload):
+     * phone is the username, email optional, shared initial password that
+     * must be changed on first login. $passwordHash lets a bulk upload hash
+     * the initial password once instead of once per row.
+     */
+    public static function createMemberUser(string $firstName, string $lastName, int $mobile, ?string $email, ?int $createdBy, ?string $passwordHash = null): User
+    {
+        return User::create([
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email ?: null,
+            'mobile' => $mobile,
+            'password' => $passwordHash ?? Hash::make(self::defaultPassword()),
+            'must_change_password' => true,
+            'status' => 'Active', // users.status allows Pending/Active/Inactive/Rejected (case-sensitive on PostgreSQL)
+            'company_id' => 1,
+            'created_by' => $createdBy,
+        ]);
     }
 
     /**

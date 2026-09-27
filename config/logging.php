@@ -56,6 +56,13 @@ return [
 
         // php artisan deploy - one file per day (deployment-YYYY-MM-DD.log),
         // older than 30 days removed automatically. Never logs secrets.
+        'sms' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/sms.log'),
+            'level' => 'info',
+            'days' => 30,
+        ],
+
         'deployment' => [
             'driver' => 'daily',
             'path' => storage_path('logs/deployment.log'),

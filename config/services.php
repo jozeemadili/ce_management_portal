@@ -30,4 +30,18 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+
+    /*
+     | Beem Africa SMS (https://beem.africa). Credentials live only in .env.
+     | SMS_PRETEND=true logs messages instead of sending them (local/testing).
+     */
+    'beem' => [
+        'api_key' => env('SMS_GW_API_KEY'),
+        'secret_key' => env('SMS_GW_API_SECRET'),
+        'sender_id' => env('SMS_GW_SENDER_ID'),
+        'base_url' => env('SMS_GW_BASE_URL', 'https://apisms.beem.africa'),
+        'pretend' => env('SMS_PRETEND', false),
+        'timeout' => 20,
+    ],
+
 ];

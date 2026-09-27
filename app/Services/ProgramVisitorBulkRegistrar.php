@@ -117,13 +117,21 @@ class ProgramVisitorBulkRegistrar
     {
         $rows = array_merge($analysis['new'], $analysis['existing']);
 
-        DB::transaction(function () use ($rows, $program, $church, $userId) {
+        $registrations = [];
+
+        DB::transaction(function () use ($rows, $program, $church, $userId, &$registrations) {
             foreach ($rows as $row) {
                 $member = Member::findOrCreateNewSoul($row['attributes'], $church->id, $userId);
                 $registration = ProgramRegistration::createFor($member, $program, $userId);
                 ProgramAuditLog::record('registration.created', $registration, null, $registration->toArray() + ['source' => 'excel_upload']);
+                $registrations[] = $registration;
             }
         });
+
+        // Only once everything is saved.
+        foreach ($registrations as $registration) {
+            app(ProgramSmsNotifier::class)->registered($registration);
+        }
 
         return count($rows);
     }

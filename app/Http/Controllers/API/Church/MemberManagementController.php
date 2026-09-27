@@ -268,7 +268,9 @@ class MemberManagementController extends Controller
         $imported = $importer->import($result['valid'], $church, Auth::id());
         Storage::disk('local')->delete($path);
 
-        $message = "{$imported} member" . ($imported === 1 ? '' : 's') . " added to {$church->name}.";
+        $message = "{$imported} member" . ($imported === 1 ? '' : 's') . " added to {$church->name}."
+            . ($imported ? ' They can log in with their phone number (or email) and the initial password '
+                . \App\Services\AccountLogin::defaultPassword() . ' - they will be asked to choose their own the first time they log in.' : '');
         if ($skipped = count($result['skipped'])) {
             $message .= " {$skipped} row" . ($skipped === 1 ? ' was' : 's were') . ' skipped.';
         }

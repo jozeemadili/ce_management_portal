@@ -47,7 +47,8 @@ class ProgramReportController extends Controller
     {
         $churchIds = $this->scopedChurchIds();
 
-        $query = Program::query();
+        // Training services are practice - never in reports.
+        $query = Program::where('is_training', false);
         if (!is_null($churchIds)) {
             $query->where(function ($q) use ($churchIds) {
                 $q->where('scope', 'global')->orWhereIn('church_id', $churchIds);

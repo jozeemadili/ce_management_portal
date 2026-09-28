@@ -28,6 +28,10 @@ class NewSoulFollowupSms
     {
         $occurrence->loadMissing('program', 'church');
 
+        if ($occurrence->program->is_training) {
+            return 0; // training never sends SMS
+        }
+
         if (!ProgramSmsTemplate::resolve(ProgramSmsTemplate::NEW_SOUL_FOLLOWUP, $occurrence->program)) {
             return 0;
         }

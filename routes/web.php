@@ -216,6 +216,9 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     //Programs & Attendance - Church services (per-church times, check-in, dashboard)
     Route::get('services', [ChurchServiceController::class, 'index'])->name('services.index');
     Route::post('services/setup', [ChurchServiceController::class, 'setup'])->name('services.setup');
+    Route::post('services/training', [ChurchServiceController::class, 'createTraining'])->name('services.training.create');
+    Route::post('services/training/{program}/reset', [ChurchServiceController::class, 'resetTraining'])->name('services.training.reset');
+    Route::post('services/training/{program}/remove', [ChurchServiceController::class, 'removeTraining'])->name('services.training.remove');
     Route::get('services/times', [ChurchServiceController::class, 'times'])->name('services.times');
     Route::post('services/times', [ChurchServiceController::class, 'saveTimes'])->name('services.times.save');
     Route::get('services/check-in', [ChurchServiceController::class, 'checkin'])->name('services.checkin');

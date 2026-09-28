@@ -77,6 +77,7 @@ class Member extends Model
 		'first_visit_program_id',
 		'first_visit_date',
 		'recorded_by',
+		'is_training',
 
 	];
 
@@ -139,7 +140,8 @@ class Member extends Model
 
 	public function scopeNewSouls($query)
 	{
-		return $query->where('member_type', 'new_soul');
+		// Training new souls (from a training service) are practice data.
+		return $query->where('member_type', 'new_soul')->where('is_training', false);
 	}
 
 	/**

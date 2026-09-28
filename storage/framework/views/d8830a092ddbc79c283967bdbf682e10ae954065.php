@@ -18,7 +18,7 @@
     <?php $__env->slot('breadcrumb_action_buttons'); ?>
         <li><a class="btn btn-primary" href="<?php echo e(route('services.checkin')); ?>"><i class="icofont icofont-qr-code"></i> Service Check-in</a></li>
     <?php $__env->endSlot(); ?>
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Services Dashboard</li>
 <?php echo $__env->renderComponent(); ?>
 

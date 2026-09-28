@@ -33,7 +33,7 @@
         <li><a class="btn btn-outline-primary" href="<?php echo e(route('services.dashboard')); ?>"><i class="icofont icofont-chart-bar-graph"></i> Dashboard</a></li>
         <li><a class="btn btn-outline-secondary" href="<?php echo e(route('services.times')); ?>"><i class="icofont icofont-clock-time"></i> Service Times</a></li>
     <?php $__env->endSlot(); ?>
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Service Check-in</li>
 <?php echo $__env->renderComponent(); ?>
 
@@ -69,6 +69,7 @@
         <a class="svc-chip <?php echo e($current && $current->service->id === $item->service->id ? 'active' : ''); ?>"
            href="<?php echo e(route('services.checkin', ['church' => $church->id, 'service' => $item->service->id])); ?>">
             <strong><?php echo e($item->service->name); ?></strong>
+            <?php if($item->service->is_training): ?><span class="svc-state" style="background:#fff4e5;color:#b45309;">Training</span><?php endif; ?>
             <span><?php echo e($w['starts']->format('H:i')); ?>&ndash;<?php echo e($w['ends']->format('H:i')); ?></span>
             <span class="svc-state <?php echo e($item->state); ?>"><?php echo e($item->state); ?></span>
         </a>
@@ -96,6 +97,12 @@
     <?php endif; ?>
 <?php else: ?>
     <?php $w = $current->window; ?>
+    <?php if($occurrence->program->is_training): ?>
+        <div class="alert" style="background:#fff4e5;color:#92400e;border:1px dashed #f0b429;">
+            <i class="icofont icofont-graduate-alt"></i> <strong>Training mode</strong> &mdash; practise freely: nobody is marked absent, no SMS is sent,
+            and nothing here appears on the dashboard or in reports. Clear it with <em>Reset</em> on <a href="<?php echo e(route('services.index')); ?>">Church Services &rarr; Services</a>.
+        </div>
+    <?php endif; ?>
     <div class="row">
         <div class="col-12 mb-3">
             <div class="card prog-card">

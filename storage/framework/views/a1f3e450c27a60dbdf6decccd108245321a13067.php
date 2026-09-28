@@ -348,15 +348,15 @@
                 <?php
 if (! isset($_instance)) {
     $html = \Livewire\Livewire::mount('members.create-member')->html();
-} elseif ($_instance->childHasBeenRendered('VhYcwqU')) {
-    $componentId = $_instance->getRenderedChildComponentId('VhYcwqU');
-    $componentTag = $_instance->getRenderedChildComponentTagName('VhYcwqU');
+} elseif ($_instance->childHasBeenRendered('6qmqqgz')) {
+    $componentId = $_instance->getRenderedChildComponentId('6qmqqgz');
+    $componentTag = $_instance->getRenderedChildComponentTagName('6qmqqgz');
     $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
-    $_instance->preserveRenderedChild('VhYcwqU');
+    $_instance->preserveRenderedChild('6qmqqgz');
 } else {
     $response = \Livewire\Livewire::mount('members.create-member');
     $html = $response->html();
-    $_instance->logRenderedChild('VhYcwqU', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+    $_instance->logRenderedChild('6qmqqgz', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
 }
 echo $html;
 ?>
@@ -407,6 +407,10 @@ echo $html;
                         </li>
                         <li>Upload it below and check the result before importing.</li>
                     </ol>
+                    <p class="text-muted mb-3" style="font-size:.85rem;">
+                        <i class="icofont icofont-lock"></i> Each member gets a login: their phone number (or email) and the first password
+                        <strong><?php echo e(\App\Services\AccountLogin::defaultPassword()); ?></strong>; they will be asked to choose their own the first time they log in.
+                    </p>
 
                     <label class="form-label" for="bulkUploadFile">Excel file (.xlsx, .xls or .csv, up to 5 MB)</label>
                     <input class="form-control" type="file" id="bulkUploadFile" name="file" accept=".xlsx,.xls,.csv" required>

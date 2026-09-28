@@ -103,6 +103,63 @@
     </div>
     <?php endif; ?>
 
+    <div class="card prog-card mb-3" style="border: 2px dashed #f0b429;">
+    <div class="card-body">
+        <p class="modal-section-label" style="color:#b45309;"><i class="icofont icofont-graduate-alt"></i> Training mode</p>
+        <p class="text-muted" style="font-size:.85rem;">
+            A <strong>training service</strong> lets ushers practise any day: it is <strong>open for check-in all day</strong>
+            (its start time still decides who is <em>late</em>), <strong>never marks anyone absent</strong>, <strong>sends no SMS</strong>
+            and is <strong>left out of the dashboard and reports</strong>. <em>Reset</em> clears what was recorded.
+        </p>
+
+        <?php $__currentLoopData = $training; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $t): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <div class="setup-row">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <strong><?php echo e($t->name); ?></strong>
+                        <span class="badge-pill ms-1" style="background:#fff4e5;color:#b45309;">TRAINING</span>
+                        <div class="svc-meta">
+                            <?php echo e($t->church ? strtoupper($t->church->name) : 'All churches'); ?>
+
+                            &middot; start <?php echo e(substr($t->start_time, 0, 5)); ?> (late after <?php echo e(\Carbon\Carbon::parse($t->start_time)->addMinutes(\App\Services\ChurchServices::LATE_AFTER_MINUTES)->format('H:i')); ?>)
+                            <?php if($t->status !== 'active'): ?> &middot; <?php echo e(ucfirst($t->status)); ?> <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mt-2">
+                    <a class="btn btn-sm btn-primary" href="<?php echo e(route('services.checkin', array_filter(['church' => $t->church_id, 'service' => $t->id]))); ?>">Practise check-in</a>
+                    <form method="POST" action="<?php echo e(route('services.training.reset', $t->id)); ?>" onsubmit="return confirm('Remove all check-ins and practice new souls recorded in <?php echo e(addslashes($t->name)); ?>?')">
+                        <?php echo csrf_field(); ?>
+                        <button class="btn btn-sm btn-outline-warning">Reset</button>
+                    </form>
+                    <form method="POST" action="<?php echo e(route('services.training.remove', $t->id)); ?>" onsubmit="return confirm('Delete <?php echo e(addslashes($t->name)); ?> and everything recorded in it?')">
+                        <?php echo csrf_field(); ?>
+                        <button class="btn btn-sm btn-outline-danger">Remove</button>
+                    </form>
+                </div>
+            </div>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+
+        <form method="POST" action="<?php echo e(route('services.training.create')); ?>" class="mt-2">
+            <?php echo csrf_field(); ?>
+            <div class="row g-2">
+                <div class="col-12"><input class="form-control form-control-sm" name="name" value="<?php echo e(old('name', 'Training Service')); ?>" placeholder="Name" required></div>
+                <div class="col-12">
+                    <select name="church_id" class="form-select form-select-sm">
+                        <?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $c): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($c->id); ?>" <?php if((int) old('church_id', optional(Auth::user()->member)->church_id) === $c->id): echo 'selected'; endif; ?>><?php echo e(strtoupper($c->name)); ?></option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <option value="">All churches</option>
+                    </select>
+                </div>
+                <div class="col-6"><label class="form-label mb-0" style="font-size:.75rem;">Starts (for "late")</label><input type="time" class="form-control form-control-sm" name="start" value="<?php echo e(old('start', now()->format('H:00'))); ?>" required></div>
+                <div class="col-6"><label class="form-label mb-0" style="font-size:.75rem;">Ends</label><input type="time" class="form-control form-control-sm" name="end" value="<?php echo e(old('end', '23:00')); ?>" required></div>
+            </div>
+            <button class="btn btn-warning btn-sm w-100 mt-2"><i class="icofont icofont-plus-circle"></i> Create training service</button>
+        </form>
+    </div>
+    </div>
+
     <?php if($missing): ?>
     <div class="card prog-card">
     <div class="card-body">

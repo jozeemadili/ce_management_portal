@@ -43,7 +43,8 @@ class ProgramDashboardController extends Controller
     {
         $churchIds = $this->scopedChurchIds();
 
-        $query = Program::query();
+        // Training services are practice - never in figures.
+        $query = Program::where('is_training', false);
         if (!is_null($churchIds)) {
             $query->where(function ($q) use ($churchIds) {
                 $q->where('scope', 'global')->orWhereIn('church_id', $churchIds);
@@ -106,7 +107,8 @@ class ProgramDashboardController extends Controller
             ->get();
 
         $churchIds = $this->scopedChurchIds();
-        $visitorsBase = is_null($churchIds) ? Member::whereNotNull('first_visit_date') : Member::whereNotNull('first_visit_date')->whereIn('church_id', $churchIds);
+        $visitorsBase = Member::whereNotNull('first_visit_date')->where('is_training', false)
+            ->when(!is_null($churchIds), fn ($q) => $q->whereIn('church_id', $churchIds));
         $newSoulsToday = (clone $visitorsBase)->whereDate('first_visit_date', $today)->count();
 
         $scopedProgramIds = $this->scopedProgramsBase()->pluck('id');

@@ -46,12 +46,86 @@ class ChurchServiceController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_VIEW');
 
-        $services = $this->services->services();
+        $services = $this->services->services(false);
         $notRunning = $this->services->notRunning();
         $missing = $this->services->missingStandardDays();
         $customTimes = ServiceChurchTime::selectRaw('program_id, COUNT(*) as total')->groupBy('program_id')->pluck('total', 'program_id');
+        $training = $this->services->trainingServices();
+        $churches = $this->visibleChurches();
 
-        return view('portal.programs.services.index', compact('services', 'notRunning', 'missing', 'customTimes'));
+        return view('portal.programs.services.index', compact('services', 'notRunning', 'missing', 'customTimes', 'training', 'churches'));
+    }
+
+    /* =================================================================
+     | TRAINING SERVICES
+     |=================================================================*/
+
+    public function createTraining(Request $request)
+    {
+        $this->authorizeProgram('PROGRAMS_CREATE');
+
+        $data = $request->validate([
+            'name' => 'required|string|max:100',
+            'church_id' => 'nullable|exists:churches,id',
+            'start' => 'required|date_format:H:i',
+            'end' => 'required|date_format:H:i|after:start',
+        ]);
+
+        if ($data['church_id'] && !$this->visibleChurches()->contains('id', (int) $data['church_id'])) {
+            abort(403, 'That church is not one of yours.');
+        }
+
+        DB::transaction(function () use ($data) {
+            $program = Program::create([
+                'name' => $data['name'],
+                'category' => 'service',
+                'classification' => 'recurring',
+                'scope' => $data['church_id'] ? 'church' : 'global',
+                'church_id' => $data['church_id'] ?: null,
+                'is_recurring' => true,
+                'recurrence_frequency' => 'daily',
+                'start_time' => $data['start'] . ':00',
+                'end_time' => $data['end'] . ':00',
+                'access_type' => 'free',
+                'registration_fee' => 0,
+                'currency' => 'TZS',
+                'qr_enabled' => true,
+                'status' => 'active',
+                'is_training' => true,
+                'created_by' => Auth::id(),
+            ]);
+            ProgramSession::create([
+                'program_id' => $program->id,
+                'name' => 'Service',
+                'start_time' => $data['start'] . ':00',
+                'end_time' => $data['end'] . ':00',
+                'sort_order' => 0,
+            ]);
+            ProgramAuditLog::record('program.created', $program, null, $program->toArray() + ['source' => 'training']);
+        });
+
+        return redirect()->route('services.index')->with('success', "Training service \"{$data['name']}\" created. It is open for check-in all day - go to Service Check-in to practise.");
+    }
+
+    public function resetTraining(Program $program)
+    {
+        $this->authorizeProgram('PROGRAMS_EDIT');
+
+        $done = $this->services->resetTraining($program);
+
+        return back()->with('success', "Training reset: {$done['checkins']} check-in(s) and {$done['new_souls']} practice new soul(s) removed.");
+    }
+
+    public function removeTraining(Program $program)
+    {
+        $this->authorizeProgram('PROGRAMS_EDIT');
+
+        $this->services->resetTraining($program); // also refuses non-training programs
+        ProgramAuditLog::where('subject_type', Program::class)->where('subject_id', $program->id)->delete();
+        $name = $program->name;
+        $program->delete();
+
+        return back()->with('success', "Training service \"{$name}\" removed with everything recorded in it.");
     }
 
     /**
@@ -133,7 +207,7 @@ class ChurchServiceController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_EDIT');
 
-        $services = $this->services->services();
+        $services = $this->services->services(false);
         $churches = $this->visibleChurches();
         $overrides = ServiceChurchTime::whereIn('church_id', $churches->pluck('id'))->get()
             ->keyBy(fn ($t) => $t->program_id . '-' . $t->church_id);
@@ -151,7 +225,7 @@ class ChurchServiceController extends Controller
             'times.*.*.end' => 'nullable|date_format:H:i',
         ]);
 
-        $services = $this->services->services()->keyBy('id');
+        $services = $this->services->services(false)->keyBy('id');
         $churchIds = $this->visibleChurches()->pluck('id')->all();
         $saved = 0;
 
@@ -234,8 +308,10 @@ class ChurchServiceController extends Controller
         $this->assertVisible($occurrence);
 
         $q = trim((string) $request->get('q'));
+        $training = (bool) optional($occurrence->program)->is_training;
         $members = Member::where('church_id', $occurrence->church_id)
             ->whereIn('member_type', ['member', 'new_soul'])
+            ->when(!$training, fn ($query) => $query->where('is_training', false))
             ->when($q !== '', function ($query) use ($q) {
                 $like = '%' . mb_strtolower($q) . '%';
                 $digits = preg_replace('/\D/', '', $q);
@@ -371,7 +447,7 @@ class ChurchServiceController extends Controller
         $this->services->sync();
 
         $churches = $this->visibleChurches();
-        $services = $this->services->services();
+        $services = $this->services->services(false);
         $from = $request->filled('from') ? Carbon::parse($request->from)->startOfDay() : now()->subWeeks(8)->startOfDay();
         $to = $request->filled('to') ? Carbon::parse($request->to)->endOfDay() : now()->endOfDay();
         $churchIds = $request->filled('church') ? [(int) $request->church] : $churches->pluck('id')->all();
@@ -449,6 +525,10 @@ class ChurchServiceController extends Controller
 
         $this->assertVisible($occurrence);
 
+        if (optional($occurrence->program)->is_training) {
+            return back()->withErrors(['sms' => 'Training services never send SMS.']);
+        }
+
         $queued = $followups->queue($occurrence);
 
         if ($queued === 0) {
@@ -507,6 +587,7 @@ class ChurchServiceController extends Controller
             $open = [
                 'occurrence_id' => $occurrence->id,
                 'service' => $current->service->name,
+                'training' => (bool) $current->service->is_training,
                 'ends' => $current->window['ends']->format('H:i'),
                 'late_after' => $current->window['late']->format('H:i'),
                 'counts' => $this->services->counts($occurrence),
@@ -532,6 +613,7 @@ class ChurchServiceController extends Controller
                 'ends' => $item->window['ends']->format('H:i'),
                 'state' => $item->state,
                 'selected' => $current && $current->service->id === $item->service->id,
+                'training' => (bool) $item->service->is_training,
             ])->values(),
             'open' => $open,
         ]);

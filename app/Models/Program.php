@@ -49,6 +49,7 @@ class Program extends Model
         'recurrence_days' => 'array',
         'registration_fee' => 'decimal:2',
         'qr_enabled' => 'bool',
+        'is_training' => 'bool',
     ];
 
     protected $fillable = [
@@ -57,7 +58,7 @@ class Program extends Model
         'organizer', 'location', 'start_date', 'end_date', 'start_time', 'end_time',
         'is_recurring', 'recurrence_frequency', 'recurrence_days',
         'access_type', 'registration_fee', 'currency', 'qr_enabled',
-        'status', 'created_by',
+        'status', 'created_by', 'is_training',
     ];
 
     public function church()

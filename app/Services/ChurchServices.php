@@ -40,14 +40,56 @@ class ChurchServices
         'friday' => ['Friday Service', '17:30', '19:30'],
     ];
 
-    /** Active recurring programs that are per-church services. */
-    public function services(): Collection
+    /**
+     * Active recurring programs that are per-church services - including
+     * training services (open all day, see TRAINING below); pass false to
+     * leave those out (dashboard, figures).
+     */
+    public function services(bool $withTraining = true): Collection
     {
         return Program::where('classification', 'recurring')
+            ->when(!$withTraining, fn ($q) => $q->where('is_training', false))
             ->orderBy('start_time')
             ->get()
             ->filter(fn ($p) => $this->whyNotRunning($p) === null)
             ->values();
+    }
+
+    /* TRAINING: a service flagged is_training is for practice. It is open
+     | for check-in all day every day (its start time still decides "late"),
+     | never marks absentees, sends no follow-up SMS, is left out of the
+     | dashboard and reports, and resetTraining() wipes what was recorded. */
+
+    /** Training services, any status. */
+    public function trainingServices(): Collection
+    {
+        return Program::with('church')->where('is_training', true)->orderBy('name')->get();
+    }
+
+    /**
+     * Deletes everything recorded in a training service: its check-ins
+     * (occurrences) and the new souls first recorded there.
+     *
+     * @return array{checkins: int, new_souls: int}
+     */
+    public function resetTraining(Program $program): array
+    {
+        abort_unless($program->is_training, 422, 'Only a training service can be reset.');
+
+        return DB::transaction(function () use ($program) {
+            $occurrenceIds = ProgramOccurrence::where('program_id', $program->id)->pluck('id');
+            $checkins = ProgramAttendance::whereIn('occurrence_id', $occurrenceIds)->count();
+
+            $souls = Member::where('is_training', true)->where('first_visit_program_id', $program->id)->pluck('id');
+            DB::table('member_roles')->whereIn('member_id', $souls)->delete();
+            ProgramAuditLog::where('subject_type', Member::class)->whereIn('subject_id', $souls)->delete();
+            Member::whereIn('id', $souls)->delete(); // their attendance/follow-ups cascade
+
+            ProgramAuditLog::where('subject_type', ProgramOccurrence::class)->whereIn('subject_id', $occurrenceIds)->delete();
+            ProgramOccurrence::whereIn('id', $occurrenceIds)->delete(); // attendance cascades
+
+            return ['checkins' => $checkins, 'new_souls' => $souls->count()];
+        });
     }
 
     /**
@@ -82,6 +124,7 @@ class ChurchServices
     public function notRunning(): Collection
     {
         return Program::where('classification', 'recurring')
+            ->where('is_training', false)
             ->orderBy('name')
             ->get()
             ->map(fn ($p) => (object) ['program' => $p, 'reason' => $this->whyNotRunning($p)])
@@ -92,7 +135,7 @@ class ChurchServices
     /** Standard service days (sunday/wednesday/friday) no recurring program covers yet. */
     public function missingStandardDays(): array
     {
-        $covered = Program::where('classification', 'recurring')->get()
+        $covered = Program::where('classification', 'recurring')->where('is_training', false)->get()
             ->flatMap(fn ($p) => array_map('strtolower', (array) $p->recurrence_days))
             ->unique()
             ->all();
@@ -107,7 +150,7 @@ class ChurchServices
 
     public function isServiceDay(Program $service, Carbon $date): bool
     {
-        if ($service->recurrence_frequency === 'daily') {
+        if ($service->is_training || $service->recurrence_frequency === 'daily') {
             return true;
         }
 
@@ -138,6 +181,16 @@ class ChurchServices
         $ends = $date->copy()->setTimeFromTimeString($end);
         if ($ends->lessThanOrEqualTo($starts)) {
             $ends->addDay(); // e.g. a night vigil 22:00-02:00
+        }
+
+        if ($service->is_training) {
+            // Practice any time of the day; start time still decides "late".
+            return [
+                'opens' => $date->copy()->startOfDay(),
+                'starts' => $starts,
+                'late' => $starts->copy()->addMinutes(self::LATE_AFTER_MINUTES),
+                'ends' => $date->copy()->endOfDay(),
+            ];
         }
 
         return [
@@ -231,12 +284,19 @@ class ChurchServices
         }
 
         // Earlier days still open (scheduler wasn't running then).
-        ProgramOccurrence::whereNotNull('church_id')
+        ProgramOccurrence::with('program')
+            ->whereNotNull('church_id')
             ->whereNull('closed_at')
             ->whereDate('occurrence_date', '<', $now->toDateString())
             ->where('status', '!=', 'cancelled')
             ->get()
             ->each(function ($occurrence) use (&$closed) {
+                // Service cancelled while open (e.g. a training service):
+                // end it without marking anyone absent.
+                if (optional($occurrence->program)->status === 'cancelled') {
+                    $occurrence->update(['status' => 'cancelled', 'closed_at' => now()]);
+                    return;
+                }
                 $this->close($occurrence);
                 $closed++;
             });
@@ -251,8 +311,15 @@ class ChurchServices
     public function close(ProgramOccurrence $occurrence): int
     {
         return DB::transaction(function () use ($occurrence) {
-            $occurrence = ProgramOccurrence::whereKey($occurrence->id)->lockForUpdate()->first();
+            $occurrence = ProgramOccurrence::with('program')->whereKey($occurrence->id)->lockForUpdate()->first();
             if (!$occurrence || $occurrence->isClosed()) {
+                return 0;
+            }
+
+            // Training: nobody is expected, so nobody is marked absent.
+            if (optional($occurrence->program)->is_training) {
+                $occurrence->update(['status' => 'completed', 'closed_at' => now()]);
+
                 return 0;
             }
 
@@ -344,6 +411,7 @@ class ChurchServices
                     'invited_by_member_id' => optional($broughtBy)->id,
                     'first_visit_program_id' => $occurrence->program_id,
                     'first_visit_date' => $occurrence->occurrence_date->toDateString(),
+                    'is_training' => (bool) optional($occurrence->program)->is_training,
                 ], $occurrence->church_id, $userId);
 
                 ProgramAttendance::updateOrCreate(

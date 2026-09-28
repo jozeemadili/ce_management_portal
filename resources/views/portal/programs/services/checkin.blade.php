@@ -71,6 +71,7 @@
         <a class="svc-chip {{ $current && $current->service->id === $item->service->id ? 'active' : '' }}"
            href="{{ route('services.checkin', ['church' => $church->id, 'service' => $item->service->id]) }}">
             <strong>{{ $item->service->name }}</strong>
+            @if($item->service->is_training)<span class="svc-state" style="background:#fff4e5;color:#b45309;">Training</span>@endif
             <span>{{ $w['starts']->format('H:i') }}&ndash;{{ $w['ends']->format('H:i') }}</span>
             <span class="svc-state {{ $item->state }}">{{ $item->state }}</span>
         </a>
@@ -98,6 +99,12 @@
     @endif
 @else
     @php $w = $current->window; @endphp
+    @if($occurrence->program->is_training)
+        <div class="alert" style="background:#fff4e5;color:#92400e;border:1px dashed #f0b429;">
+            <i class="icofont icofont-graduate-alt"></i> <strong>Training mode</strong> &mdash; practise freely: nobody is marked absent, no SMS is sent,
+            and nothing here appears on the dashboard or in reports. Clear it with <em>Reset</em> on <a href="{{ route('services.index') }}">Church Services &rarr; Services</a>.
+        </div>
+    @endif
     <div class="row">
         <div class="col-12 mb-3">
             <div class="card prog-card">

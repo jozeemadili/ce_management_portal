@@ -3,7 +3,7 @@
 # ce-deploy-helper - the ONLY program the deploy user may run with sudo.
 #
 # Installed root-owned (root:root 0755) at /usr/local/sbin/ce-deploy-helper by
-# scripts/deploy/install-deploy-helper.sh, which fills in the @@...@@ values
+# scripts/deploy/install-deploy-helper.sh, which fills in the placeholder values
 # below. Every path and service name is fixed here at install time: nothing
 # the caller passes can change what gets chowned, synced or restarted.
 #

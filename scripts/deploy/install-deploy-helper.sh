@@ -157,7 +157,7 @@ sed -e "s#@@LIVE_PATH@@#$LIVE#" \
     -e "s#@@NGINX_SERVICE@@#$NGINX#" \
     -e "s#@@ALLOW_SYNC@@#$WITH_SYNC#" \
     "$HELPER_SRC" > "$tmp_helper"
-grep -q '@@' "$tmp_helper" && die "helper still has unfilled placeholders"
+grep -qE '@@[A-Z_]+@@' "$tmp_helper" && die "helper still has unfilled placeholders"
 bash -n "$tmp_helper" || die "helper has a syntax error"
 install -o root -g root -m 0755 "$tmp_helper" "$HELPER_DST"
 echo "Installed $HELPER_DST"
@@ -172,8 +172,8 @@ echo "Installed $SUDOERS_DST (validated with visudo)"
 # ---- optional one-time ownership of LIVE code ------------------------------------
 if [ "$OWN_LIVE" = "yes" ]; then
   find "$LIVE" -mindepth 1 \( -path "$LIVE/storage" -o -path "$LIVE/bootstrap/cache" -o -path "$LIVE/.env" \) -prune \
-    -o -exec chown -hP "$DEPLOY_USER:$WEB_GROUP" {} +
-  chown -hP "$DEPLOY_USER:$WEB_GROUP" "$LIVE"
+    -o -exec chown -h "$DEPLOY_USER:$WEB_GROUP" {} +
+  chown -h "$DEPLOY_USER:$WEB_GROUP" "$LIVE"
   if [ -f "$LIVE/.env" ]; then
     chown "$DEPLOY_USER:$WEB_GROUP" "$LIVE/.env"
     chmod 0640 "$LIVE/.env"

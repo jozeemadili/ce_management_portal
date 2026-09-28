@@ -20,7 +20,7 @@
     @slot('breadcrumb_action_buttons')
         <li><a class="btn btn-primary" href="{{ route('services.checkin') }}"><i class="icofont icofont-qr-code"></i> Service Check-in</a></li>
     @endslot
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Services Dashboard</li>
 @endcomponent
 

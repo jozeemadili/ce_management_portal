@@ -7,7 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Church;
 use App\Models\Member;
 use App\Models\NewSoulFollowup;
+use App\Models\Program;
 use App\Models\ProgramAttendance;
+use App\Models\ProgramAuditLog;
+use App\Models\ProgramSession;
 use App\Models\ProgramOccurrence;
 use App\Models\ServiceChurchTime;
 use App\Services\ChurchServices;
@@ -16,6 +19,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -32,6 +36,93 @@ class ChurchServiceController extends Controller
 
     public function __construct(private ChurchServices $services)
     {
+    }
+
+    /* =================================================================
+     | SERVICES OVERVIEW + QUICK SETUP
+     |=================================================================*/
+
+    public function index()
+    {
+        $this->authorizeProgram('PROGRAMS_VIEW');
+
+        $services = $this->services->services();
+        $notRunning = $this->services->notRunning();
+        $missing = $this->services->missingStandardDays();
+        $customTimes = ServiceChurchTime::selectRaw('program_id, COUNT(*) as total')->groupBy('program_id')->pluck('total', 'program_id');
+
+        return view('portal.programs.services.index', compact('services', 'notRunning', 'missing', 'customTimes'));
+    }
+
+    /**
+     * Creates the standard weekly services that don't exist yet (Sunday /
+     * Wednesday / Friday), held in every church, with the default times
+     * entered on the form.
+     */
+    public function setup(Request $request)
+    {
+        $this->authorizeProgram('PROGRAMS_CREATE');
+
+        $missing = $this->services->missingStandardDays();
+        $data = $request->validate([
+            'create' => 'required|array|min:1',
+            'create.*' => 'in:' . implode(',', array_keys(ChurchServices::STANDARD_SERVICES)),
+            'name.*' => 'nullable|string|max:100',
+            'start.*' => 'nullable|date_format:H:i',
+            'end.*' => 'nullable|date_format:H:i',
+        ], ['create.required' => 'Tick at least one service to create.']);
+
+        $created = [];
+        DB::transaction(function () use ($data, $missing, &$created) {
+            foreach (array_unique($data['create']) as $day) {
+                if (!in_array($day, $missing, true)) {
+                    continue; // created meanwhile
+                }
+
+                [$defaultName, $defaultStart, $defaultEnd] = ChurchServices::STANDARD_SERVICES[$day];
+                $name = trim($data['name'][$day] ?? '') ?: $defaultName;
+                $start = $data['start'][$day] ?? $defaultStart;
+                $end = $data['end'][$day] ?? $defaultEnd;
+
+                if ($end <= $start) {
+                    throw ValidationException::withMessages(['end' => "{$name} must end after it starts."]);
+                }
+
+                $program = Program::create([
+                    'name' => $name,
+                    'category' => 'service',
+                    'classification' => 'recurring',
+                    'scope' => 'global',
+                    'is_recurring' => true,
+                    'recurrence_frequency' => 'weekly',
+                    'recurrence_days' => [$day],
+                    'start_time' => $start . ':00',
+                    'end_time' => $end . ':00',
+                    'access_type' => 'free',
+                    'registration_fee' => 0,
+                    'currency' => 'TZS',
+                    'qr_enabled' => true,
+                    'status' => 'active',
+                    'created_by' => Auth::id(),
+                ]);
+                ProgramSession::create([
+                    'program_id' => $program->id,
+                    'name' => 'Service',
+                    'start_time' => $start . ':00',
+                    'end_time' => $end . ':00',
+                    'sort_order' => 0,
+                ]);
+                ProgramAuditLog::record('program.created', $program, null, $program->toArray() + ['source' => 'services_setup']);
+                $created[] = $name;
+            }
+        });
+
+        if (!$created) {
+            return back()->withErrors(['create' => 'Those services already exist.']);
+        }
+
+        return redirect()->route('services.index')->with('success', 'Created: ' . implode(', ', $created)
+            . '. Each church uses these times unless you set its own under Service Times.');
     }
 
     /* =================================================================
@@ -380,6 +471,85 @@ class ChurchServiceController extends Controller
         $qrSvg = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(240)->margin(1)->generate($url);
 
         return view('portal.programs.services.my-qr', compact('member', 'qrSvg'));
+    }
+
+    /* =================================================================
+     | MOBILE APP (JSON) - search, check-in, scan and new souls reuse the
+     | methods above; these two replace the web pages.
+     |=================================================================*/
+
+    /** Today's services for a church, with the open one's counts and latest check-ins. */
+    public function apiToday(Request $request)
+    {
+        $this->authorizeProgram('ATTENDANCE_RECORD');
+
+        $this->services->sync();
+
+        $churches = $this->visibleChurches();
+        $church = $churches->firstWhere('id', (int) $request->get('church', optional(Auth::user()->member)->church_id))
+            ?? $churches->first();
+
+        if (!$church) {
+            return response()->json(['message' => 'No church available for check-in.'], 404);
+        }
+
+        $today = $this->services->todayFor($church);
+        $current = $today->firstWhere('state', 'open');
+        if ($request->filled('service')) {
+            $current = $today->first(fn ($s) => $s->service->id === (int) $request->service) ?? $current;
+        }
+
+        $open = null;
+        if ($current && $current->state === 'open') {
+            $occurrence = $current->occurrence ?? $this->services->occurrenceFor($current->service, $church, now()->startOfDay());
+            $occurrence->setRelation('program', $current->service)->setRelation('church', $church);
+
+            $open = [
+                'occurrence_id' => $occurrence->id,
+                'service' => $current->service->name,
+                'ends' => $current->window['ends']->format('H:i'),
+                'late_after' => $current->window['late']->format('H:i'),
+                'counts' => $this->services->counts($occurrence),
+                'recent' => $this->recentCheckIns($occurrence)->map(fn ($a) => [
+                    'name' => trim(optional($a->member)->first_name . ' ' . optional($a->member)->last_name),
+                    'status' => $a->attendance_status,
+                    'time' => optional($a->checked_in_at)->format('H:i'),
+                    'method' => $a->check_in_method,
+                    'new_soul' => optional($a->member)->member_type === 'new_soul',
+                ])->values(),
+            ];
+        }
+
+        return response()->json([
+            'now' => now()->format('H:i'),
+            'churches' => $churches->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values(),
+            'church' => ['id' => $church->id, 'name' => $church->name],
+            'services' => $today->map(fn ($item) => [
+                'id' => $item->service->id,
+                'name' => $item->service->name,
+                'opens' => $item->window['opens']->format('H:i'),
+                'starts' => $item->window['starts']->format('H:i'),
+                'ends' => $item->window['ends']->format('H:i'),
+                'state' => $item->state,
+                'selected' => $current && $current->service->id === $item->service->id,
+            ])->values(),
+            'open' => $open,
+        ]);
+    }
+
+    /** The logged-in member's own check-in QR content. */
+    public function apiMyQr()
+    {
+        $member = Auth::user()->member;
+        if (!$member) {
+            return response()->json(['message' => 'Your account is not linked to a member record.'], 404);
+        }
+
+        return response()->json([
+            'name' => trim($member->first_name . ' ' . $member->last_name),
+            'church' => optional($member->church)->name,
+            'qr' => route('services.scan', $member->checkinToken()),
+        ]);
     }
 
     /* =================================================================

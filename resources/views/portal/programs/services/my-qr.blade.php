@@ -16,7 +16,7 @@
     @slot('breadcrumb_title')
         <h3>My Check-in QR</h3>
     @endslot
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">My Check-in QR</li>
 @endcomponent
 

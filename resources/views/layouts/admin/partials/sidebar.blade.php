@@ -62,17 +62,22 @@
                     </li>
 
                     <li class="dropdown">
-                        <a class="nav-link menu-title {{(request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*') || request()->is('v1/services*')) ? 'active' : ''}}" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
-                        <ul class="nav-submenu menu-content" style="display: {{ (request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/programs-sms-templates') || request()->is('v1/services*')) ? 'block' : '' }};">
-                            <li><a href="{{route('programs.dashboard')}}" class="{{routeActive('programs.dashboard')}}"> - Dashboard</a></li>
-                            <li><a href="{{route('programs.index')}}" class="{{routeActive('programs.index')}}"> - Programs</a></li>
-                            <li><a href="{{route('programs.index')}}?classification=recurring" class="{{ request()->is('v1/programs') && request('classification')==='recurring' ? 'active' : '' }}"> - Recurring Services</a></li>
+                        <a class="nav-link menu-title {{ request()->is('v1/services*') ? 'active' : '' }}" href="javascript:void(0)"><i data-feather="sun"></i><span>Church Services</span></a>
+                        <ul class="nav-submenu menu-content" style="display: {{ request()->is('v1/services*') ? 'block' : '' }};">
+                            <li><a href="{{route('services.index')}}" class="{{routeActive('services.index')}}"> - Services</a></li>
                             <li><a href="{{route('services.checkin')}}" class="{{routeActive('services.checkin')}}"> - Service Check-in</a></li>
                             <li><a href="{{route('services.dashboard')}}" class="{{routeActive('services.dashboard')}}"> - Services Dashboard</a></li>
                             <li><a href="{{route('services.times')}}" class="{{routeActive('services.times')}}"> - Service Times</a></li>
                             @if(Auth::user()->member)
                             <li><a href="{{route('services.my-qr')}}" class="{{routeActive('services.my-qr')}}"> - My Check-in QR</a></li>
                             @endif
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a class="nav-link menu-title {{(request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*')) ? 'active' : ''}}" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
+                        <ul class="nav-submenu menu-content" style="display: {{ (request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/programs-sms-templates')) ? 'block' : '' }};">
+                            <li><a href="{{route('programs.dashboard')}}" class="{{routeActive('programs.dashboard')}}"> - Dashboard</a></li>
+                            <li><a href="{{route('programs.index')}}" class="{{routeActive('programs.index')}}"> - Programs</a></li>
                             <li><a href="{{route('program-reports.attendance')}}" class="{{routeActive('program-reports.attendance')}}"> - Attendance</a></li>
                             <li><a href="{{route('my-programs.browse')}}" class="{{routeActive('my-programs.browse')}}"> - My Registrations</a></li>
                             <li><a href="{{route('new-souls.index')}}" class="{{routeActive('new-souls.index')}}"> - New Souls</a></li>

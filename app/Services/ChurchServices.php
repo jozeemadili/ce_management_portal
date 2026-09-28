@@ -34,17 +34,70 @@ class ChurchServices
     public const OPEN_BEFORE_MINUTES = 30;
     public const LATE_AFTER_MINUTES = 15;
 
+    public const STANDARD_SERVICES = [
+        'sunday' => ['Sunday Service', '09:00', '12:00'],
+        'wednesday' => ['Wednesday Service', '17:30', '19:30'],
+        'friday' => ['Friday Service', '17:30', '19:30'],
+    ];
+
     /** Active recurring programs that are per-church services. */
     public function services(): Collection
     {
         return Program::where('classification', 'recurring')
-            ->where('status', 'active')
-            ->whereIn('scope', ['global', 'church'])
-            ->whereIn('recurrence_frequency', ['daily', 'weekly'])
-            ->whereNotNull('start_time')
-            ->whereNotNull('end_time')
             ->orderBy('start_time')
-            ->get();
+            ->get()
+            ->filter(fn ($p) => $this->whyNotRunning($p) === null)
+            ->values();
+    }
+
+    /**
+     * Why a recurring program doesn't run as a church service (null = it
+     * does): shown on the Services page so a mis-set service is easy to fix.
+     */
+    public function whyNotRunning(Program $program): ?string
+    {
+        if ($program->status !== 'active') {
+            return 'Status is ' . ucfirst($program->status) . ' - it only opens for check-in when Active.';
+        }
+        if (!in_array($program->scope, ['global', 'church'], true)) {
+            return 'Scope is ' . ucfirst($program->scope) . ' - a church service must be Global (every church) or one Church.';
+        }
+        if ($program->scope === 'church' && !$program->church_id) {
+            return 'Scope is Church but no church is chosen.';
+        }
+        if (!in_array($program->recurrence_frequency, ['daily', 'weekly', 'custom'], true)) {
+            return 'Frequency is ' . ($program->recurrence_frequency ? ucfirst($program->recurrence_frequency) : 'not set') . ' - choose Weekly and the day(s).';
+        }
+        if ($program->recurrence_frequency !== 'daily' && empty($program->recurrence_days)) {
+            return 'No day chosen - pick the day(s) it happens (e.g. Sunday).';
+        }
+        if (!$program->start_time || !$program->end_time) {
+            return 'No start/end time.';
+        }
+
+        return null;
+    }
+
+    /** Recurring programs that are NOT running as services, with the reason. */
+    public function notRunning(): Collection
+    {
+        return Program::where('classification', 'recurring')
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($p) => (object) ['program' => $p, 'reason' => $this->whyNotRunning($p)])
+            ->filter(fn ($row) => $row->reason !== null)
+            ->values();
+    }
+
+    /** Standard service days (sunday/wednesday/friday) no recurring program covers yet. */
+    public function missingStandardDays(): array
+    {
+        $covered = Program::where('classification', 'recurring')->get()
+            ->flatMap(fn ($p) => array_map('strtolower', (array) $p->recurrence_days))
+            ->unique()
+            ->all();
+
+        return array_values(array_diff(array_keys(self::STANDARD_SERVICES), $covered));
     }
 
     public function heldAt(Program $service, Church $church): bool

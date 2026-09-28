@@ -24,7 +24,7 @@
             </a>
         </li>
     <?php $__env->endSlot(); ?>
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Service Times</li>
 <?php echo $__env->renderComponent(); ?>
 

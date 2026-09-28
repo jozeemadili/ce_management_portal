@@ -9,6 +9,7 @@ use App\Http\Controllers\API\Mobile\PledgeController;
 use App\Http\Controllers\API\Mobile\ProgramAttendanceController;
 use App\Http\Controllers\API\Mobile\ProgramController;
 use App\Http\Controllers\API\Mobile\ProgramRegistrationController;
+use App\Http\Controllers\API\Programs\ChurchServiceController;
 
 
 
@@ -40,6 +41,14 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'password.changed'])->group(function () {
 
         Route::get('dashboard', [DashboardController::class, 'index']);
+
+        // Church services: member QR + usher check-in (same logic as the portal page)
+        Route::get('me/checkin-qr', [ChurchServiceController::class, 'apiMyQr']);
+        Route::get('services/today', [ChurchServiceController::class, 'apiToday']);
+        Route::get('services/occurrences/{occurrence}/members', [ChurchServiceController::class, 'searchMembers']);
+        Route::post('services/occurrences/{occurrence}/members/{member}', [ChurchServiceController::class, 'checkInMember']);
+        Route::post('services/occurrences/{occurrence}/scan', [ChurchServiceController::class, 'scanCheckIn']);
+        Route::post('services/occurrences/{occurrence}/new-souls', [ChurchServiceController::class, 'addNewSouls']);
 
         Route::get('pledges/campaigns', [PledgeCampaignController::class, 'index']);
         Route::get('pledges/members/search', [PledgeController::class, 'searchMembers']);

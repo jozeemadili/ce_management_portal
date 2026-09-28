@@ -17,7 +17,13 @@
     <?php $__env->endSlot(); ?>
 
     <?php $__env->slot('breadcrumb_action_buttons'); ?>
-        <?php if(Route::has('program-attendance.capture')): ?>
+        <?php if($program->classification === 'recurring' && in_array($program->scope, ['global', 'church'])): ?>
+        <li>
+            <a class="btn btn-outline-primary" href="<?php echo e(route('services.checkin', ['service' => $program->id])); ?>">
+                <i class="icofont icofont-qr-code"></i> Service Check-in
+            </a>
+        </li>
+        <?php elseif(Route::has('program-attendance.capture')): ?>
         <li>
             <a class="btn btn-outline-primary" href="<?php echo e(route('program-attendance.capture', $program->id)); ?>">
                 <i class="icofont icofont-check-circled"></i> Take Attendance

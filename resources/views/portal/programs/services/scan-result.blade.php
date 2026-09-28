@@ -12,7 +12,7 @@
     @slot('breadcrumb_title')
         <h3>Check-in</h3>
     @endslot
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Check-in</li>
 @endcomponent
 

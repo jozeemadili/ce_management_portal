@@ -35,7 +35,7 @@
         <li><a class="btn btn-outline-primary" href="{{ route('services.dashboard') }}"><i class="icofont icofont-chart-bar-graph"></i> Dashboard</a></li>
         <li><a class="btn btn-outline-secondary" href="{{ route('services.times') }}"><i class="icofont icofont-clock-time"></i> Service Times</a></li>
     @endslot
-    <li class="breadcrumb-item">Programs & Attendance</li>
+    <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Service Check-in</li>
 @endcomponent
 

@@ -15,6 +15,11 @@
     .checkin-big { font-size: 3.2rem; line-height: 1; margin: 12px 0 6px; }
     .checkin-welcome { font-size: 1.5rem; font-weight: 800; margin: 6px 0; }
     .checkin-note { color: #4b5563; }
+    .checkin-details { background: #f7f9fc; border-radius: 12px; padding: 12px 14px; margin-top: 8px; }
+    .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #e3e8f0; font-size: .9rem; }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-label { color: #6b7280; white-space: nowrap; }
+    .detail-value { font-weight: 600; text-align: right; }
     .gender-choice { display: flex; gap: 10px; }
     .gender-choice label { flex: 1; border: 1px solid #d5dde8; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; font-weight: 600; }
     .gender-choice input { display: none; }
@@ -68,6 +73,21 @@
 									<div class="checkin-big">🕒</div>
 									<p class="checkin-note">{{ $status['message'] }}</p>
 								</div>
+								@if(!empty($details))
+									<div class="checkin-details">
+										@if($program->description)<p class="checkin-note mb-2" style="white-space:pre-line;">{{ $program->description }}</p>@endif
+										@foreach($details as $label => $value)
+											<div class="detail-row">
+												<span class="detail-label">{{ $label }}</span>
+												@if($label === 'Contact phone')
+													<a href="tel:{{ preg_replace('/[^0-9+]/', '', $value) }}" class="detail-value">{{ $value }}</a>
+												@else
+													<span class="detail-value">{{ $value }}</span>
+												@endif
+											</div>
+										@endforeach
+									</div>
+								@endif
 
 							@elseif($step === 'new')
 								<form method="post" action="{{ $base }}/new" class="mt-3">

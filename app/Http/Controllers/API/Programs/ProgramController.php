@@ -179,6 +179,7 @@ class ProgramController extends Controller
             'cell_group_id' => 'nullable|exists:cell_groups,id',
             'organizer' => 'nullable|string|max:255',
             'location' => 'nullable|string|max:255',
+            'contact_phone' => 'nullable|string|max:30',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'sessions' => 'required|array|min:1',

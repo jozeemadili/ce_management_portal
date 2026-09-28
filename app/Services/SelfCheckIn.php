@@ -96,6 +96,42 @@ class SelfCheckIn
         return ['open' => true, 'message' => '', 'occurrence' => $program->occurrenceForDate(now()->toDateString())];
     }
 
+    /**
+     * What to show before the program opens: when, where, which church and
+     * who to call. Keys with no value are left out.
+     *
+     * @return array<string, string>
+     */
+    public function details(Program $program, ?Church $church): array
+    {
+        $church = $church ?? $program->church;
+        $time = fn ($start, $end) => $start ? substr($start, 0, 5) . ($end ? '–' . substr($end, 0, 5) : '') : '';
+
+        if ($program->classification === 'special') {
+            $dates = $program->start_date
+                ? $program->start_date->format('D d M Y')
+                    . ($program->end_date && !$program->end_date->isSameDay($program->start_date) ? ' – ' . $program->end_date->format('D d M Y') : '')
+                : '';
+            $when = trim($dates . ($program->start_time ? ' · ' . $time($program->start_time, $program->end_time) : ''), ' ·');
+        } else {
+            [$start, $end] = $church && $this->isChurchService($program)
+                ? $this->services->timesFor($program, $church)
+                : [$program->start_time, $program->end_time];
+            $days = $program->recurrence_frequency === 'daily' || $program->is_training
+                ? 'Every day'
+                : 'Every ' . collect((array) $program->recurrence_days)->map(fn ($d) => ucfirst($d))->implode(', ');
+            $when = $days . ($start ? ' · ' . $time($start, $end) : '');
+        }
+
+        return array_filter([
+            'When' => $when,
+            'Church' => $church ? ucwords(mb_strtolower($church->name)) : null,
+            'Church address' => optional($church)->physical_location,
+            'Venue' => $program->location,
+            'Contact phone' => $program->contact_phone,
+        ]);
+    }
+
     /** A person by phone (any common format) or email; church members first. */
     public function findPerson(string $identifier, Program $program): ?Member
     {

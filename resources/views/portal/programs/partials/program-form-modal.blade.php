@@ -42,6 +42,11 @@
         <label class="form-label">Location</label>
         <input type="text" name="location" id="{{ $mode }}_location" class="form-control">
     </div>
+    <div class="col-md-6 mt-3">
+        <label class="form-label">Contact Phone</label>
+        <input type="tel" name="contact_phone" id="{{ $mode }}_contact_phone" class="form-control" placeholder="e.g. 0712345678">
+        <small class="text-muted">Shown to attendees, e.g. on the check-in page before the program starts.</small>
+    </div>
     <div class="col-md-12 mt-3">
         <label class="form-label">Banner / Image</label>
         @if($mode === 'edit')

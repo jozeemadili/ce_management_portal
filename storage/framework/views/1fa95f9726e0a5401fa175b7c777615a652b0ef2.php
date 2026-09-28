@@ -11,6 +11,11 @@
     .checkin-big { font-size: 3.2rem; line-height: 1; margin: 12px 0 6px; }
     .checkin-welcome { font-size: 1.5rem; font-weight: 800; margin: 6px 0; }
     .checkin-note { color: #4b5563; }
+    .checkin-details { background: #f7f9fc; border-radius: 12px; padding: 12px 14px; margin-top: 8px; }
+    .detail-row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px dashed #e3e8f0; font-size: .9rem; }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-label { color: #6b7280; white-space: nowrap; }
+    .detail-value { font-weight: 600; text-align: right; }
     .gender-choice { display: flex; gap: 10px; }
     .gender-choice label { flex: 1; border: 1px solid #d5dde8; border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; font-weight: 600; }
     .gender-choice input { display: none; }
@@ -64,6 +69,21 @@
 									<div class="checkin-big">🕒</div>
 									<p class="checkin-note"><?php echo e($status['message']); ?></p>
 								</div>
+								<?php if(!empty($details)): ?>
+									<div class="checkin-details">
+										<?php if($program->description): ?><p class="checkin-note mb-2" style="white-space:pre-line;"><?php echo e($program->description); ?></p><?php endif; ?>
+										<?php $__currentLoopData = $details; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $label => $value): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+											<div class="detail-row">
+												<span class="detail-label"><?php echo e($label); ?></span>
+												<?php if($label === 'Contact phone'): ?>
+													<a href="tel:<?php echo e(preg_replace('/[^0-9+]/', '', $value)); ?>" class="detail-value"><?php echo e($value); ?></a>
+												<?php else: ?>
+													<span class="detail-value"><?php echo e($value); ?></span>
+												<?php endif; ?>
+											</div>
+										<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+									</div>
+								<?php endif; ?>
 
 							<?php elseif($step === 'new'): ?>
 								<form method="post" action="<?php echo e($base); ?>/new" class="mt-3">

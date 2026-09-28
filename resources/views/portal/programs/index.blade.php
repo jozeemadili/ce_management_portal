@@ -186,6 +186,7 @@
                     data-cell="{{ $program->cell_group_id }}"
                     data-organizer="{{ $program->organizer }}"
                     data-location="{{ $program->location }}"
+                    data-contact-phone="{{ $program->contact_phone }}"
                     data-start-date="{{ optional($program->start_date)->format('Y-m-d') }}"
                     data-end-date="{{ optional($program->end_date)->format('Y-m-d') }}"
                     data-sessions="{{ json_encode($program->sessionsForForm()) }}"
@@ -310,6 +311,7 @@ document.querySelectorAll('.edit-program-btn').forEach(btn => {
         document.getElementById('edit_cell').value = this.dataset.cell || '';
         document.getElementById('edit_organizer').value = this.dataset.organizer || '';
         document.getElementById('edit_location').value = this.dataset.location || '';
+        document.getElementById('edit_contact_phone').value = this.dataset.contactPhone || '';
         document.getElementById('edit_start_date').value = this.dataset.startDate || '';
         document.getElementById('edit_end_date').value = this.dataset.endDate || '';
         programSessions.fill('edit', JSON.parse(this.dataset.sessions || '[]'));

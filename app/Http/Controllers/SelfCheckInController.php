@@ -26,8 +26,9 @@ class SelfCheckInController extends Controller
     {
         [$program, $church] = $this->resolve($token, $church);
         $status = $this->selfCheckIn->status($program, $church);
+        $details = $status['open'] ? [] : $this->selfCheckIn->details($program, $church);
 
-        return view('guest.checkin', ['step' => 'identify'] + compact('program', 'church', 'status'));
+        return view('guest.checkin', ['step' => 'identify'] + compact('program', 'church', 'status', 'details'));
     }
 
     public function identify(Request $request, string $token, ?int $church = null)

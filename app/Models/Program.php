@@ -55,7 +55,7 @@ class Program extends Model
     protected $fillable = [
         'name', 'description', 'banner_path', 'category', 'classification',
         'scope', 'church_id', 'department_id', 'cell_group_id',
-        'organizer', 'location', 'start_date', 'end_date', 'start_time', 'end_time',
+        'organizer', 'location', 'contact_phone', 'start_date', 'end_date', 'start_time', 'end_time',
         'is_recurring', 'recurrence_frequency', 'recurrence_days',
         'access_type', 'registration_fee', 'currency', 'qr_enabled',
         'status', 'created_by', 'is_training',

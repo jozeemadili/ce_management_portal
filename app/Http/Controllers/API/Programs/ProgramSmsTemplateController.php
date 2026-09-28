@@ -33,7 +33,8 @@ class ProgramSmsTemplateController extends Controller
             ->get()
             ->groupBy('type');
 
-        $programs = Program::where('classification', 'special')
+        $programs = Program::whereIn('classification', ['special', 'recurring'])
+            ->orderBy('classification')
             ->orderByDesc('start_date')
             ->get(['id', 'name', 'start_date']);
 

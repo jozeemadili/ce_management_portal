@@ -26,12 +26,25 @@ class ProgramOccurrence extends Model
 
     protected $casts = [
         'program_id' => 'int',
+        'church_id' => 'int',
         'occurrence_date' => 'date',
+        'closed_at' => 'datetime',
     ];
 
     protected $fillable = [
-        'program_id', 'occurrence_date', 'start_time', 'end_time', 'status',
+        'program_id', 'church_id', 'occurrence_date', 'start_time', 'end_time', 'status', 'closed_at',
     ];
+
+    public function church()
+    {
+        return $this->belongsTo(Church::class);
+    }
+
+    /** Attendance has been closed (people not checked in marked absent). */
+    public function isClosed(): bool
+    {
+        return $this->closed_at !== null;
+    }
 
     public function program()
     {

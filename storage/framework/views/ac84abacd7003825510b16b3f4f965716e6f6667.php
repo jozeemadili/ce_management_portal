@@ -62,11 +62,17 @@
                     </li>
 
                     <li class="dropdown">
-                        <a class="nav-link menu-title <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*')) ? 'active' : ''); ?>" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
-                        <ul class="nav-submenu menu-content" style="display: <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/programs-sms-templates')) ? 'block' : ''); ?>;">
+                        <a class="nav-link menu-title <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/program-payments*') || request()->is('v1/services*')) ? 'active' : ''); ?>" href="javascript:void(0)"><i data-feather="calendar"></i><span>Programs & Attendance</span></a>
+                        <ul class="nav-submenu menu-content" style="display: <?php echo e((request()->is('v1/programs*') || request()->is('v1/new-souls*') || request()->is('v1/program-reports*') || request()->is('v1/programs-dashboard') || request()->is('v1/programs-settings') || request()->is('v1/programs-sms-templates') || request()->is('v1/services*')) ? 'block' : ''); ?>;">
                             <li><a href="<?php echo e(route('programs.dashboard')); ?>" class="<?php echo e(routeActive('programs.dashboard')); ?>"> - Dashboard</a></li>
                             <li><a href="<?php echo e(route('programs.index')); ?>" class="<?php echo e(routeActive('programs.index')); ?>"> - Programs</a></li>
                             <li><a href="<?php echo e(route('programs.index')); ?>?classification=recurring" class="<?php echo e(request()->is('v1/programs') && request('classification')==='recurring' ? 'active' : ''); ?>"> - Recurring Services</a></li>
+                            <li><a href="<?php echo e(route('services.checkin')); ?>" class="<?php echo e(routeActive('services.checkin')); ?>"> - Service Check-in</a></li>
+                            <li><a href="<?php echo e(route('services.dashboard')); ?>" class="<?php echo e(routeActive('services.dashboard')); ?>"> - Services Dashboard</a></li>
+                            <li><a href="<?php echo e(route('services.times')); ?>" class="<?php echo e(routeActive('services.times')); ?>"> - Service Times</a></li>
+                            <?php if(Auth::user()->member): ?>
+                            <li><a href="<?php echo e(route('services.my-qr')); ?>" class="<?php echo e(routeActive('services.my-qr')); ?>"> - My Check-in QR</a></li>
+                            <?php endif; ?>
                             <li><a href="<?php echo e(route('program-reports.attendance')); ?>" class="<?php echo e(routeActive('program-reports.attendance')); ?>"> - Attendance</a></li>
                             <li><a href="<?php echo e(route('my-programs.browse')); ?>" class="<?php echo e(routeActive('my-programs.browse')); ?>"> - My Registrations</a></li>
                             <li><a href="<?php echo e(route('new-souls.index')); ?>" class="<?php echo e(routeActive('new-souls.index')); ?>"> - New Souls</a></li>

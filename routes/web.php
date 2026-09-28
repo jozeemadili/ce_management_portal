@@ -25,6 +25,8 @@ use App\Http\Controllers\API\Programs\ProgramDashboardController;
 use App\Http\Controllers\API\Programs\ProgramReportController;
 use App\Http\Controllers\API\Programs\ProgramSettingsController;
 use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
+use App\Http\Controllers\API\Programs\ChurchServiceController;
+use App\Http\Controllers\NewSoulFeedbackController;
 
 use App\Http\Controllers\API\Auth\PortalUsersController;
 use App\Http\Controllers\API\Auth\MemberPasswordController;
@@ -48,6 +50,10 @@ Route::post('/forget-password', function(){
 })->name('forget-password');
 
 Route::get('/how-to-use', [PortalUsersController::class, 'howToUse'])->name('how-to-use');
+
+// New soul testimony / feedback - link sent by SMS after a church service (public)
+Route::get('/feedback/{token}', [NewSoulFeedbackController::class, 'show'])->name('feedback.show');
+Route::post('/feedback/{token}', [NewSoulFeedbackController::class, 'store'])->middleware('throttle:10,1')->name('feedback.store');
 
 // Member passwords (two-segment URLs so they are not caught by the "/{id}" route below)
 Route::get('/password/forgot', [MemberPasswordController::class, 'showForgot'])->name('password.forgot');
@@ -206,6 +212,19 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
 
     //Programs & Attendance - Settings
     Route::get('programs-settings', [ProgramSettingsController::class, 'index'])->name('program-settings.index');
+
+    //Programs & Attendance - Church services (per-church times, check-in, dashboard)
+    Route::get('services/times', [ChurchServiceController::class, 'times'])->name('services.times');
+    Route::post('services/times', [ChurchServiceController::class, 'saveTimes'])->name('services.times.save');
+    Route::get('services/check-in', [ChurchServiceController::class, 'checkin'])->name('services.checkin');
+    Route::get('services/check-in/{occurrence}/members', [ChurchServiceController::class, 'searchMembers'])->name('services.members');
+    Route::post('services/check-in/{occurrence}/members/{member}', [ChurchServiceController::class, 'checkInMember'])->name('services.checkin.member');
+    Route::post('services/check-in/{occurrence}/scan', [ChurchServiceController::class, 'scanCheckIn'])->name('services.checkin.scan');
+    Route::post('services/check-in/{occurrence}/new-souls', [ChurchServiceController::class, 'addNewSouls'])->name('services.new-souls');
+    Route::get('services/scan/{token}', [ChurchServiceController::class, 'scanLanding'])->name('services.scan');
+    Route::get('services/dashboard', [ChurchServiceController::class, 'dashboard'])->name('services.dashboard');
+    Route::post('services/occurrences/{occurrence}/followup-sms', [ChurchServiceController::class, 'sendFollowups'])->name('services.followup');
+    Route::get('services/my-qr', [ChurchServiceController::class, 'myQr'])->name('services.my-qr');
 
     //Programs & Attendance - SMS templates + reminder
     Route::get('programs-sms-templates', [ProgramSmsTemplateController::class, 'index'])->name('program-sms.index');

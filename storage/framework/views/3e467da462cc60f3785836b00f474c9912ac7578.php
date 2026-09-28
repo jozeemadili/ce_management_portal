@@ -1,6 +1,7 @@
 <?php $__env->startSection('title','Church Hierarchy'); ?>
 
 <?php $__env->startPush('css'); ?>
+<?php echo $__env->make('portal.churches.partials.select2-styles', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 <style>
     .no-print { }
     .print-only { display: none; }
@@ -77,6 +78,23 @@
 
     ul.org-tree li.org-collapsed > ul { display: none; }
 
+    .org-toggle {
+        position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%);
+        border: 1px solid #d5dde8; background: #fff; border-radius: 20px; padding: 0 9px;
+        font-size: .68rem; line-height: 22px; color: #4b5563; cursor: pointer; z-index: 2;
+    }
+    .org-toggle:hover { background: #f0f3f9; }
+    .org-toggle i { display: inline-block; transition: transform .15s ease; }
+    li.org-collapsed > .org-card .org-toggle i { transform: rotate(-90deg); }
+
+    /* Drag & drop: move a church under a new reporting church */
+    .org-card[draggable="true"] { cursor: grab; }
+    .org-card.org-dragging { opacity: .5; }
+    .org-drag-active .org-card:not(.org-drop-ok):not(.org-dragging) { opacity: .4; }
+    .org-card.org-drop-ok { outline: 2px dashed #1fa971; outline-offset: 3px; }
+    .org-card.org-drop-hover { background: #e6f7ee; transform: scale(1.04); }
+    .org-moving { pointer-events: none; opacity: .6; }
+
     .context-menu {
         position: absolute; display: none; background: #fff; border: none; border-radius: 10px;
         z-index: 1000; width: 190px; box-shadow: 0 8px 24px rgba(0,0,0,.18); overflow: hidden;
@@ -132,6 +150,24 @@
 
 <div class="container-fluid">
 
+<?php if($errors->any()): ?>
+    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+        <div class="alert alert-danger alert-dismissible fade show no-print">
+            <?php echo e($error); ?>
+
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+<?php endif; ?>
+
+<?php if(session('success')): ?>
+    <div class="alert alert-success alert-dismissible fade show no-print">
+        <?php echo e(session('success')); ?>
+
+        <button class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
 <div class="print-only">
     <h3>Church Hierarchy</h3>
     <p class="text-muted">Generated <?php echo e(now()->format('d M Y, H:i')); ?></p>
@@ -167,7 +203,7 @@
 <div class="tree-toolbar no-print">
     <div class="tree-toolbar-hint">
         <i class="icofont icofont-info-circle"></i>
-        Click a card to collapse/expand its branch &middot; Right-click for quick actions
+        Click a card to edit it &middot; Drag a card onto the church it should report to &middot; <i class="icofont icofont-simple-down"></i> shows/hides a branch
     </div>
     <div class="tree-toolbar-actions">
         <button type="button" class="btn btn-sm btn-outline-secondary" id="org-expand-all">
@@ -192,6 +228,7 @@
 
 <div id="contextMenu" class="context-menu no-print">
     <ul>
+        <li onclick="editChurch()"><i class="icofont icofont-edit"></i> Edit</li>
         <li onclick="transferChurch()"><i class="icofont icofont-exchange"></i> Transfer</li>
         <li onclick="viewHistory()"><i class="icofont icofont-history"></i> View History</li>
     </ul>
@@ -201,9 +238,19 @@
 </div>
 </div>
 
+
+<form method="POST" action="<?php echo e(route('churches-transfer')); ?>" id="treeTransferForm" class="d-none">
+    <?php echo csrf_field(); ?>
+    <input type="hidden" name="church_id" id="treeTransferChurch">
+    <input type="hidden" name="parent_church_id" id="treeTransferParent">
+</form>
+
+<?php echo $__env->make('portal.churches.partials.edit-modal', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
+
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startPush('scripts'); ?>
+<script src="<?php echo e(asset('assets/js/select2/select2.full.min.js')); ?>"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     var tree = document.getElementById('org-tree');
@@ -211,15 +258,102 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let selectedNodeId = null;
 
+    /* --------------------------------
+     | CLICK: toggle button collapses a branch, the card opens Edit
+     |---------------------------------*/
     tree.addEventListener('click', function (e) {
-        var card = e.target.closest('.org-card');
-        if (!card) return;
-        var li = card.closest('li');
-        var childUl = li.querySelector(':scope > ul');
-        if (childUl) {
-            li.classList.toggle('org-collapsed');
+        var toggle = e.target.closest('.org-toggle');
+        if (toggle) {
+            toggle.closest('li').classList.toggle('org-collapsed');
+            return;
         }
+        var card = e.target.closest('.org-card[data-church-id]');
+        if (card) openEditChurch(cardData(card));
     });
+
+    function cardData(card) {
+        return {
+            id: card.dataset.churchId,
+            name: card.dataset.name,
+            location: card.dataset.location,
+            designation: card.dataset.designation,
+            parent: card.dataset.parent,
+            head: card.dataset.head
+        };
+    }
+
+    /* --------------------------------
+     | DRAG & DROP: new reporting church = a church exactly one
+     | designation level up (same rule as Transfer)
+     |---------------------------------*/
+    var designationOrder = <?php echo json_encode($designations->pluck('id'), 15, 512) ?>;
+    function level(card) { return designationOrder.indexOf(parseInt(card.dataset.designation, 10)); }
+
+    tree.querySelectorAll('.org-card[data-church-id]').forEach(function (card) {
+        if (level(card) > 0 && card.dataset.parent) card.setAttribute('draggable', 'true');
+    });
+
+    var dragged = null;
+
+    function canDropOn(target) {
+        return dragged && target !== dragged
+            && level(target) === level(dragged) - 1
+            && target.dataset.churchId !== dragged.dataset.parent;
+    }
+
+    function clearDrag() {
+        tree.classList.remove('org-drag-active');
+        tree.querySelectorAll('.org-dragging, .org-drop-ok, .org-drop-hover').forEach(function (c) {
+            c.classList.remove('org-dragging', 'org-drop-ok', 'org-drop-hover');
+        });
+        dragged = null;
+    }
+
+    tree.addEventListener('dragstart', function (e) {
+        var card = e.target.closest('.org-card[draggable="true"]');
+        if (!card) return;
+        dragged = card;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.dataset.churchId);
+        card.classList.add('org-dragging');
+        tree.classList.add('org-drag-active');
+        tree.querySelectorAll('.org-card[data-church-id]').forEach(function (c) {
+            if (canDropOn(c)) c.classList.add('org-drop-ok');
+        });
+    });
+
+    tree.addEventListener('dragover', function (e) {
+        var card = e.target.closest('.org-card.org-drop-ok');
+        if (!card) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        card.classList.add('org-drop-hover');
+    });
+
+    tree.addEventListener('dragleave', function (e) {
+        var card = e.target.closest('.org-card.org-drop-hover');
+        if (card && !card.contains(e.relatedTarget)) card.classList.remove('org-drop-hover');
+    });
+
+    tree.addEventListener('drop', function (e) {
+        var target = e.target.closest('.org-card.org-drop-ok');
+        if (!target || !dragged) return;
+        e.preventDefault();
+
+        var church = dragged, parent = target;
+        clearDrag();
+
+        if (!confirm('Move ' + church.dataset.name.toUpperCase() + ' to report to ' + parent.dataset.name.toUpperCase() + '?\n\nThis is recorded in the church\'s transfer history.')) {
+            return;
+        }
+
+        church.classList.add('org-moving');
+        document.getElementById('treeTransferChurch').value = church.dataset.churchId;
+        document.getElementById('treeTransferParent').value = parent.dataset.churchId;
+        document.getElementById('treeTransferForm').submit();
+    });
+
+    tree.addEventListener('dragend', clearDrag);
 
     document.getElementById('org-expand-all')?.addEventListener('click', function () {
         tree.querySelectorAll('li.org-collapsed').forEach(li => li.classList.remove('org-collapsed'));
@@ -248,6 +382,11 @@ document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function () {
         document.getElementById('contextMenu').style.display = 'none';
     });
+
+    window.editChurch = function () {
+        var card = selectedNodeId && tree.querySelector('.org-card[data-church-id="' + selectedNodeId + '"]');
+        if (card) openEditChurch(cardData(card));
+    };
 
     window.transferChurch = function () {
         if (!selectedNodeId) return;

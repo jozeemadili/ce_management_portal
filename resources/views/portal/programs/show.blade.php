@@ -19,7 +19,13 @@
     @endslot
 
     @slot('breadcrumb_action_buttons')
-        @if(Route::has('program-attendance.capture'))
+        @if($program->classification === 'recurring' && in_array($program->scope, ['global', 'church']))
+        <li>
+            <a class="btn btn-outline-primary" href="{{ route('services.checkin', ['service' => $program->id]) }}">
+                <i class="icofont icofont-qr-code"></i> Service Check-in
+            </a>
+        </li>
+        @elseif(Route::has('program-attendance.capture'))
         <li>
             <a class="btn btn-outline-primary" href="{{ route('program-attendance.capture', $program->id) }}">
                 <i class="icofont icofont-check-circled"></i> Take Attendance

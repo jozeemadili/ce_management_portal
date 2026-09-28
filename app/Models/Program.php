@@ -196,8 +196,10 @@ class Program extends Model
      */
     public function occurrenceForDate(string $date): ProgramOccurrence
     {
+        // church_id NULL: the program-wide occurrence. Church services have
+        // one occurrence per church (see App\Services\ChurchServices).
         return $this->occurrences()->firstOrCreate(
-            ['occurrence_date' => $date],
+            ['occurrence_date' => $date, 'church_id' => null],
             ['start_time' => $this->start_time, 'end_time' => $this->end_time, 'status' => 'scheduled']
         );
     }

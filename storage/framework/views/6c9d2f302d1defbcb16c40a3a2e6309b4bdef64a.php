@@ -4,7 +4,14 @@
     $accent = $designationColors[$church->designation_id] ?? '#2E5AAC';
 ?>
 <li>
-    <div class="org-card" data-church-id="<?php echo e($church->id); ?>" style="border-top-color: <?php echo e($accent); ?>">
+    <div class="org-card" style="border-top-color: <?php echo e($accent); ?>"
+         data-church-id="<?php echo e($church->id); ?>"
+         data-name="<?php echo e($church->name); ?>"
+         data-location="<?php echo e($church->physical_location); ?>"
+         data-designation="<?php echo e($church->designation_id); ?>"
+         data-parent="<?php echo e($church->parent_church_id); ?>"
+         data-head="<?php echo e(optional($church->current_head)->head_of_unit); ?>"
+         title="Click to edit<?php echo e($church->parent_church_id ? ' · drag onto another church to change who it reports to' : ''); ?>">
         <div class="org-card-name"><?php echo e(strtoupper($church->name)); ?></div>
         <span class="org-card-badge" style="color: <?php echo e($accent); ?>; background: <?php echo e($accent); ?>1a">
             <?php echo e(strtoupper($church->church_designation->name ?? '')); ?>
@@ -23,6 +30,12 @@
             <span><i class="icofont icofont-location-pin"></i> <?php echo e(\Illuminate\Support\Str::limit($church->physical_location, 20)); ?></span>
             <span><i class="icofont icofont-people"></i> <?php echo e($church->members_count ?? 0); ?></span>
         </div>
+        <?php if($children->count()): ?>
+            <button type="button" class="org-toggle no-print" title="Show / hide the <?php echo e($children->count()); ?> church(es) under this one">
+                <i class="icofont icofont-simple-down"></i> <?php echo e($children->count()); ?>
+
+            </button>
+        <?php endif; ?>
     </div>
 
     <?php if($children->count()): ?>

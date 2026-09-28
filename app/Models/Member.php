@@ -73,6 +73,7 @@ class Member extends Model
 		'date_of_birth',
 		'notes',
 		'invited_by',
+		'invited_by_member_id',
 		'first_visit_program_id',
 		'first_visit_date',
 		'recorded_by',
@@ -82,6 +83,29 @@ class Member extends Model
 	public function church()
 	{
 		return $this->belongsTo(Church::class);
+	}
+
+	/** The member who brought this new soul to church. */
+	public function invitedByMember()
+	{
+		return $this->belongsTo(Member::class, 'invited_by_member_id');
+	}
+
+	/**
+	 * Code in the member's personal check-in QR, created on first use.
+	 * Random (not the member id) so a QR can't be guessed or forged.
+	 */
+	public function checkinToken(): string
+	{
+		if (!$this->checkin_token) {
+			do {
+				$token = \Illuminate\Support\Str::random(32);
+			} while (static::where('checkin_token', $token)->exists());
+
+			$this->forceFill(['checkin_token' => $token])->save();
+		}
+
+		return $this->checkin_token;
 	}
 
 	public function cell_groups()

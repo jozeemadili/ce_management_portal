@@ -25,6 +25,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+
+        // Church services: open at start time, mark absentees when they end.
+        $schedule->command('services:sync')->everyMinute()->withoutOverlapping(10);
     }
 
     /**

@@ -20,11 +20,13 @@ class ProgramSmsTemplate extends Model
     public const REGISTRATION = 'registration';
     public const PAYMENT = 'payment';
     public const REMINDER = 'reminder';
+    public const NEW_SOUL_FOLLOWUP = 'new_soul_followup';
 
     public const TYPES = [
         self::REGISTRATION => 'Registration successful',
         self::PAYMENT => 'Payment received',
         self::REMINDER => 'Reminder',
+        self::NEW_SOUL_FOLLOWUP => 'New soul follow-up',
     ];
 
     /** When each type is sent - shown on the templates page. */
@@ -32,6 +34,7 @@ class ProgramSmsTemplate extends Model
         self::REGISTRATION => 'Sent automatically when someone is registered (portal, app or Excel upload).',
         self::PAYMENT => 'Sent automatically when a payment is confirmed or recorded by staff.',
         self::REMINDER => 'Sent when staff click "Send Reminder SMS" on the program page.',
+        self::NEW_SOUL_FOLLOWUP => 'Sent from the Services dashboard after a church service, to that service\'s new souls. {link} opens a page where they share a testimony or what blessed them.',
     ];
 
     /** placeholder => [description, example] */
@@ -47,6 +50,8 @@ class ProgramSmsTemplate extends Model
         '{paid}' => ['Total paid so far', 'TZS 20,000'],
         '{balance}' => ['Balance left', 'TZS 30,000'],
         '{payment_amount}' => ['This payment (payment SMS)', 'TZS 20,000'],
+        '{church}' => ['Church name (follow-up SMS)', 'Christ Embassy Mbezi'],
+        '{link}' => ['Testimony / feedback link (follow-up SMS)', 'https://event.christembassytanzania.org/feedback/Ab12Cd34Ef'],
     ];
 
     protected $fillable = ['program_id', 'type', 'body', 'is_active', 'created_by', 'updated_by'];
@@ -90,6 +95,22 @@ class ProgramSmsTemplate extends Model
             '{paid}' => $money($registration->totalPaid()),
             '{balance}' => $money($registration->balance()),
             '{payment_amount}' => $payment ? $money($payment->amount) : '',
+        ]);
+    }
+
+    /** Follow-up SMS to a new soul after a church service. */
+    public function renderForNewSoul(NewSoulFollowup $followup, ProgramOccurrence $occurrence): string
+    {
+        $member = $followup->member;
+
+        return self::fillPlaceholders($this->body, [
+            '{first_name}' => ucfirst(strtolower((string) $member->first_name)),
+            '{full_name}' => ucwords(strtolower(trim($member->first_name . ' ' . $member->last_name))),
+            '{program}' => $occurrence->program->name,
+            '{church}' => ucwords(strtolower((string) optional($occurrence->church)->name)),
+            '{date}' => $occurrence->occurrence_date->format('d M Y'),
+            '{time}' => $occurrence->start_time ? substr($occurrence->start_time, 0, 5) : '',
+            '{link}' => $followup->link(),
         ]);
     }
 

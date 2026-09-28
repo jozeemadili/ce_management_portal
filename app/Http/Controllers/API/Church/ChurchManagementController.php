@@ -377,7 +377,11 @@ public function tree()
     ];
     $stats['without_head'] = $stats['total'] - $stats['with_head'];
 
-    return view('portal.churches.tree', compact('roots', 'byParent', 'designationColors', 'stats'));
+    // For the shared Edit Church modal (click a card) and drag & drop.
+    $designations = ChurchDesignation::orderBy('id')->get();
+    $members = $this->scopedMembers();
+
+    return view('portal.churches.tree', compact('roots', 'byParent', 'designationColors', 'stats', 'designations', 'members'));
 }
 
 public function transferHistory($churchId)

@@ -65,6 +65,7 @@
                 <div class="d-flex gap-2">
                     <a class="btn btn-sm btn-light" href="{{ route('programs.show', $service->id) }}">Details</a>
                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('services.times') }}">Church times</a>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('programs.checkin-poster', $service->id) }}" target="_blank"><i class="icofont icofont-print"></i> QR poster</a>
                 </div>
             </div>
         @empty

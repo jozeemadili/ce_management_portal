@@ -65,6 +65,15 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by('login|' . $request->ip());
         });
 
+        // Self check-in posters: a whole church may share one Wi-Fi IP, so
+        // allow a crowd, but not scripted phone-number guessing.
+        RateLimiter::for('self-checkin', function (Request $request) {
+            return [
+                Limit::perMinute(60)->by('selfcheckin-min|' . $request->ip()),
+                Limit::perHour(600)->by('selfcheckin-hour|' . $request->ip()),
+            ];
+        });
+
         // Forgot/reset password (no email is sent, so keep guessing slow):
         // 5 a minute and 20 an hour per IP.
         RateLimiter::for('password-reset', function (Request $request) {

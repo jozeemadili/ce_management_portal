@@ -27,6 +27,7 @@ use App\Http\Controllers\API\Programs\ProgramSettingsController;
 use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
 use App\Http\Controllers\API\Programs\ChurchServiceController;
 use App\Http\Controllers\NewSoulFeedbackController;
+use App\Http\Controllers\SelfCheckInController;
 
 use App\Http\Controllers\API\Auth\PortalUsersController;
 use App\Http\Controllers\API\Auth\MemberPasswordController;
@@ -50,6 +51,17 @@ Route::post('/forget-password', function(){
 })->name('forget-password');
 
 Route::get('/how-to-use', [PortalUsersController::class, 'howToUse'])->name('how-to-use');
+
+// Self check-in from a printed program QR poster (public, rate-limited)
+// (/checkin/{token} for a program, /checkin/{token}/{church} for a church service)
+Route::get('/checkin/{token}', [SelfCheckInController::class, 'show'])->name('self-checkin.show');
+Route::get('/checkin/{token}/{church}', [SelfCheckInController::class, 'show'])->whereNumber('church')->name('self-checkin.church');
+Route::middleware('throttle:self-checkin')->group(function () {
+    Route::post('/checkin/{token}/new', [SelfCheckInController::class, 'register']);
+    Route::post('/checkin/{token}/{church}/new', [SelfCheckInController::class, 'register'])->whereNumber('church');
+    Route::post('/checkin/{token}', [SelfCheckInController::class, 'identify']);
+    Route::post('/checkin/{token}/{church}', [SelfCheckInController::class, 'identify'])->whereNumber('church');
+});
 
 // New soul testimony / feedback - link sent by SMS after a church service (public)
 Route::get('/feedback/{token}', [NewSoulFeedbackController::class, 'show'])->name('feedback.show');
@@ -177,6 +189,7 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     Route::post('programs', [ProgramController::class, 'store'])->name('programs.store');
     Route::post('programs/{program}/update', [ProgramController::class, 'update'])->name('programs.update');
     Route::post('programs/{program}/status/{status}', [ProgramController::class, 'setStatus'])->name('programs.status');
+    Route::get('programs/{program}/checkin-poster', [SelfCheckInController::class, 'poster'])->name('programs.checkin-poster');
     Route::get('programs/{program}', [ProgramController::class, 'show'])->name('programs.show');
 
     //Programs & Attendance - Recurring Attendance Capture

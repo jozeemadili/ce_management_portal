@@ -195,6 +195,20 @@ class Program extends Model
      * scheduler pre-generates these - they're created the moment they're
      * needed, keeping historical rows untouched if the schedule changes later.
      */
+    /** Code in the self check-in poster QR, created on first use. */
+    public function checkinToken(): string
+    {
+        if (!$this->checkin_token) {
+            do {
+                $token = \Illuminate\Support\Str::random(16);
+            } while (static::where('checkin_token', $token)->exists());
+
+            $this->forceFill(['checkin_token' => $token])->save();
+        }
+
+        return $this->checkin_token;
+    }
+
     public function occurrenceForDate(string $date): ProgramOccurrence
     {
         // church_id NULL: the program-wide occurrence. Church services have

@@ -32,6 +32,11 @@
             </a>
         </li>
         @endif
+        <li>
+            <a class="btn btn-outline-secondary" href="{{ route('programs.checkin-poster', $program->id) }}" target="_blank">
+                <i class="icofont icofont-print"></i> Check-in QR Poster
+            </a>
+        </li>
         @if($program->classification === 'special')
         <li>
             @php $smsCount = $registrations->where('registration_status', 'registered')->count(); @endphp

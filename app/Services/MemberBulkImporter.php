@@ -49,8 +49,16 @@ class MemberBulkImporter
                 $emails[] = $e;
             }
         }
-        $existingByPhone = Member::with('church')->whereIn('phone', array_unique($phones))->get()->keyBy('phone');
-        $existingByEmail = Member::with('church')->whereIn(DB::raw('LOWER(email)'), array_unique($emails))->get()
+        // Stored phones may be 0712.., 255712.., +255712.. or 712..: match all,
+        // keyed by the normalised 0712.. form used for the sheet.
+        $variants = collect($phones)->unique()->flatMap(fn ($p) => Member::phoneVariants($p))->all();
+        $existingByPhone = Member::with('church')->whereIn('phone', $variants ?: ['__none__'])
+            ->where('is_training', false)
+            ->orderByRaw("CASE WHEN member_type = 'member' THEN 0 ELSE 1 END")
+            ->get()
+            ->groupBy(fn ($m) => $this->normalisePhone($m->phone))
+            ->map->first();
+        $existingByEmail = Member::with('church')->whereIn(DB::raw('LOWER(email)'), array_unique($emails) ?: [''])->where('is_training', false)->get()
             ->keyBy(fn ($m) => strtolower($m->email));
 
         // Every imported member gets a login account, so the phone/email
@@ -86,9 +94,9 @@ class MemberBulkImporter
             } elseif ($email && isset($seenEmails[$email])) {
                 $problem = "Same email as row {$seenEmails[$email]} in this file.";
             } elseif ($match = $existingByPhone->get($phone)) {
-                $problem = 'Already registered: ' . $this->describe($match) . ' has this phone.';
+                $problem = $this->alreadyRegistered($match, 'phone');
             } elseif ($email && ($match = $existingByEmail->get($email))) {
-                $problem = 'Already registered: ' . $this->describe($match) . ' has this email.';
+                $problem = $this->alreadyRegistered($match, 'email');
             } elseif ($login = $loginByMobile->get(AccountLogin::normaliseMobile($phone))) {
                 $problem = 'A login account already uses this phone (' . trim($login->first_name . ' ' . $login->last_name) . ').';
             } elseif ($email && ($login = $loginByEmail->get($email))) {
@@ -145,6 +153,13 @@ class MemberBulkImporter
         }
 
         return ['valid' => $valid, 'skipped' => $skipped, 'total' => $total];
+    }
+
+    private function alreadyRegistered(Member $match, string $what): string
+    {
+        return $match->member_type === 'new_soul'
+            ? "This {$what} belongs to first-time visitor " . $match->describe() . ' - add them with "New Member" to make them a member.'
+            : "Already registered: " . $match->describe() . " has this {$what}.";
     }
 
     /**

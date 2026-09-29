@@ -34,16 +34,35 @@ class CreateMember extends Component
                 $mobile = AccountLogin::normaliseMobile($value);
                 if (!$mobile) {
                     $fail('Enter a valid phone number, e.g. 0712345678.');
-                } elseif (User::where('mobile', $mobile)->exists()) {
-                    $fail('A user with this phone number already exists.');
+                } elseif ($existing = $this->existingMemberWithPhone($value)) {
+                    $fail($existing->describe() . ' is already registered as a member with this phone number'
+                        . ((int) $existing->church_id !== (int) $this->church_id ? ' - use Transfer / Edit instead of registering again.' : '.'));
+                } elseif ($user = User::where('mobile', $mobile)->first()) {
+                    $fail('A login account already uses this phone number (' . trim($user->first_name . ' ' . $user->last_name) . ').');
                 }
             }],
-            'email'      => 'nullable|email|unique:users,email',
+            'email'      => ['nullable', 'email', 'unique:users,email', function ($attribute, $value, $fail) {
+                $existing = Member::with('church')->where('member_type', 'member')->where('is_training', false)
+                    ->whereRaw('LOWER(email) = ?', [mb_strtolower(trim($value))])->first();
+                if ($existing) {
+                    $fail($existing->describe() . ' is already registered as a member with this email.');
+                }
+            }],
             'kingschat_username' => 'nullable|string|max:100',
             'church_id'  => 'required|exists:churches,id',
             'designation_ids' => 'required|array|min:1',
             'designation_ids.*' => 'exists:member_designations,id',
         ];
+    }
+
+    /** Set when an existing new soul record was turned into this member. */
+    private ?string $promotedFrom = null;
+
+    /** A church member (not a first-time visitor) with this phone, in any church. */
+    private function existingMemberWithPhone($phone): ?Member
+    {
+        return Member::with('church')->withPhone($phone)
+            ->where('member_type', 'member')->where('is_training', false)->first();
     }
 
     public function save()
@@ -64,9 +83,10 @@ class CreateMember extends Component
             $user = AccountLogin::createMemberUser($this->first_name, $this->last_name, $mobile, $email, Auth::id());
 
             /* -----------------------------
-             | CREATE MEMBER
+             | CREATE MEMBER - or promote the first-time visitor (new
+             | soul) who already has this phone, instead of a duplicate
              |------------------------------*/
-            $member = Member::create([
+            $attributes = [
                 'user_id'   => $user->id,
                 'church_id' => $this->church_id,
                 'first_name'=> $this->first_name,
@@ -74,7 +94,20 @@ class CreateMember extends Component
                 'phone'     => $phone,
                 'email'     => $email,
                 'kingschat_username' => Member::normaliseKingschat($this->kingschat_username),
-            ]);
+                'member_type' => 'member',
+            ];
+
+            $newSoul = Member::withPhone($phone)->where('member_type', 'new_soul')->where('is_training', false)
+                ->whereNull('user_id')->orderBy('id')->first();
+
+            if ($newSoul) {
+                $this->promotedFrom = trim($newSoul->first_name . ' ' . $newSoul->last_name);
+                $attributes['kingschat_username'] = $attributes['kingschat_username'] ?? $newSoul->kingschat_username;
+                $newSoul->update($attributes + ['follow_up_status' => 'became_member']);
+                $member = $newSoul;
+            } else {
+                $member = Member::create($attributes);
+            }
 
             /* -----------------------------
              | ASSIGN DESIGNATIONS
@@ -87,7 +120,8 @@ class CreateMember extends Component
             }
         });
 
-        session()->flash('success', "Member registered. They can log in with phone {$phone}"
+        session()->flash('success', ($this->promotedFrom ? "First-time visitor record found and turned into a member. " : '')
+            . "Member registered. They can log in with phone {$phone}"
             . ($email ? " or {$email}" : '')
             . ' and the initial password ' . AccountLogin::defaultPassword()
             . ' - they will be asked to set their own password.');

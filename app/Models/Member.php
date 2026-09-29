@@ -154,6 +154,32 @@ class Member extends Model
 		return $value === '' ? null : mb_substr($value, 0, 100);
 	}
 
+	/**
+	 * The ways one phone number can be stored in members.phone
+	 * (0712345678, 255712345678, +255712345678, 712345678).
+	 */
+	public static function phoneVariants($phone): array
+	{
+		$mobile = \App\Services\AccountLogin::normaliseMobile($phone);
+
+		return $mobile ? ['0' . $mobile, '255' . $mobile, '+255' . $mobile, (string) $mobile] : [];
+	}
+
+	/** Same phone number, whatever format it was stored in. */
+	public function scopeWithPhone($query, $phone)
+	{
+		return $query->whereIn('phone', self::phoneVariants($phone) ?: ['__none__']);
+	}
+
+	/** "Name (Church)" for messages. */
+	public function describe(): string
+	{
+		$name = trim($this->first_name . ' ' . $this->last_name);
+		$church = optional($this->church)->name;
+
+		return $church ? "{$name} ({$church})" : $name;
+	}
+
 	public function isNewSoul(): bool
 	{
 		return $this->member_type === 'new_soul';

@@ -26,6 +26,7 @@ use App\Http\Controllers\API\Programs\ProgramReportController;
 use App\Http\Controllers\API\Programs\ProgramSettingsController;
 use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
 use App\Http\Controllers\API\Programs\ChurchServiceController;
+use App\Http\Controllers\API\Church\InviteeController;
 use App\Http\Controllers\NewSoulFeedbackController;
 use App\Http\Controllers\SelfCheckInController;
 
@@ -243,6 +244,15 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     Route::get('services/dashboard', [ChurchServiceController::class, 'dashboard'])->name('services.dashboard');
     Route::post('services/occurrences/{occurrence}/followup-sms', [ChurchServiceController::class, 'sendFollowups'])->name('services.followup');
     Route::get('services/my-qr', [ChurchServiceController::class, 'myQr'])->name('services.my-qr');
+    Route::get('services/occurrences/{occurrence}/report', [ChurchServiceController::class, 'report'])->name('services.report');
+    Route::post('services/occurrences/{occurrence}/report/close', [ChurchServiceController::class, 'closeReport'])->name('services.report.close');
+    Route::post('services/occurrences/{occurrence}/report/reopen', [ChurchServiceController::class, 'reopenReport'])->name('services.report.reopen');
+
+    //Church Setup - New Invitees (new souls followed up by their church)
+    Route::get('new-invitees', [InviteeController::class, 'index'])->name('invitees.index');
+    Route::post('new-invitees/{invitee}/update', [InviteeController::class, 'update'])->name('invitees.update');
+    Route::post('new-invitees/{invitee}/assign', [InviteeController::class, 'assign'])->name('invitees.assign');
+    Route::post('new-invitees/{invitee}/make-member', [InviteeController::class, 'makeMember'])->name('invitees.make-member');
 
     //Programs & Attendance - SMS templates + reminder
     Route::get('programs-sms-templates', [ProgramSmsTemplateController::class, 'index'])->name('program-sms.index');

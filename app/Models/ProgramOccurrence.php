@@ -29,11 +29,24 @@ class ProgramOccurrence extends Model
         'church_id' => 'int',
         'occurrence_date' => 'date',
         'closed_at' => 'datetime',
+        'report_closed_at' => 'datetime',
+        'report_summary' => 'array',
     ];
 
     protected $fillable = [
         'program_id', 'church_id', 'occurrence_date', 'start_time', 'end_time', 'status', 'closed_at',
+        'report_closed_at', 'report_closed_by', 'report_summary',
     ];
+
+    public function isReportClosed(): bool
+    {
+        return $this->report_closed_at !== null;
+    }
+
+    public function reportClosedBy()
+    {
+        return $this->belongsTo(User::class, 'report_closed_by');
+    }
 
     public function church()
     {

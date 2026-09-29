@@ -392,7 +392,7 @@ class ChurchServices
      * Records new souls who came to the service (with the member who
      * brought them, if any) and checks them in.
      *
-     * @param  array<int, array{first_name: string, last_name?: ?string, phone?: ?string, gender?: ?string}>  $people
+     * @param  array<int, array{first_name: string, last_name?: ?string, phone?: ?string, email?: ?string, location?: ?string, gender?: ?string}>  $people
      * @return Collection<int, Member>
      */
     public function addNewSouls(ProgramOccurrence $occurrence, array $people, ?Member $broughtBy, ?int $userId): Collection
@@ -406,6 +406,8 @@ class ChurchServices
                     'first_name' => trim($person['first_name']),
                     'last_name' => trim((string) ($person['last_name'] ?? '')) ?: null,
                     'phone' => $phone,
+                    'email' => ($email = mb_strtolower(trim((string) ($person['email'] ?? '')))) !== '' ? $email : null,
+                    'location' => trim((string) ($person['location'] ?? '')) ?: null,
                     'gender' => $person['gender'] ?? null,
                     'invited_by' => $broughtBy ? trim($broughtBy->first_name . ' ' . $broughtBy->last_name) : null,
                     'invited_by_member_id' => optional($broughtBy)->id,

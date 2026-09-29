@@ -53,6 +53,8 @@
                     <div class="col-6"><input class="form-control form-control-sm" name="people[{{ $i }}][first_name]" placeholder="First name{{ $i === 0 ? ' *' : '' }}" {{ $i === 0 ? 'required' : '' }}></div>
                     <div class="col-6"><input class="form-control form-control-sm" name="people[{{ $i }}][last_name]" placeholder="Last name"></div>
                     <div class="col-7"><input class="form-control form-control-sm" name="people[{{ $i }}][phone]" placeholder="Phone"></div>
+                    <div class="col-6 order-last"><input type="email" class="form-control form-control-sm" name="people[{{ $i }}][email]" placeholder="Email"></div>
+                    <div class="col-6 order-last"><input class="form-control form-control-sm" name="people[{{ $i }}][location]" placeholder="Where they live"></div>
                     <div class="col-5">
                         <select class="form-select form-select-sm" name="people[{{ $i }}][gender]">
                             <option value="">Gender</option><option value="male">Male</option><option value="female">Female</option>

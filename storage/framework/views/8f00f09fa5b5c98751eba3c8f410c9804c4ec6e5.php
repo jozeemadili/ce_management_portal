@@ -114,9 +114,12 @@
                                 Check-in open until <?php echo e($w['ends']->format('H:i')); ?> &middot; arriving after <?php echo e($w['late']->format('H:i')); ?> is marked late
                             </small>
                         </div>
-                        <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#newSoulsModal" data-member="" data-member-name="">
-                            <i class="icofont icofont-plus-circle"></i> Walk-in new soul
-                        </button>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-outline-primary btn-sm" href="<?php echo e(route('services.report', $occurrence->id)); ?>"><i class="icofont icofont-listing-box"></i> Report</a>
+                            <button class="btn btn-outline-success btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#newSoulsModal" data-member="" data-member-name="">
+                                <i class="icofont icofont-plus-circle"></i> Walk-in new soul
+                            </button>
+                        </div>
                     </div>
                     <div class="row g-2">
                         <div class="col-6 col-md-3"><div class="count-box"><div class="n" id="cntAttended"><?php echo e($counts['attended']); ?></div><div class="l">Checked in</div></div></div>
@@ -168,7 +171,20 @@
 
                                         <?php if(optional($a->member)->member_type === 'new_soul'): ?><span class="badge-pill badge-status-new ms-1">New soul</span><?php endif; ?>
                                     </div>
-                                    <div class="result-meta"><?php echo e(optional($a->checked_in_at)->format('H:i')); ?> &middot; <?php echo e($a->check_in_method === 'qr' ? 'QR' : 'Manual'); ?></div>
+                                    <div class="result-meta">
+                                        <?php echo e(optional($a->checked_in_at)->format('H:i')); ?> &middot; <?php echo e($a->check_in_method === 'qr' ? 'QR' : 'Manual'); ?>
+
+                                        &middot; <?php echo e($occurrence->program->name); ?>, <?php echo e($occurrence->occurrence_date->format('d M Y')); ?>
+
+                                    </div>
+                                    <div class="result-meta">
+                                        <i class="icofont icofont-location-pin"></i> <?php echo e(optional($a->member)->location ?: '—'); ?>
+
+                                        &middot; <i class="icofont icofont-phone"></i> <?php echo e(optional($a->member)->phone ?: '—'); ?>
+
+                                        &middot; <i class="icofont icofont-email"></i> <?php echo e(optional($a->member)->email ?: '—'); ?>
+
+                                    </div>
                                 </div>
                                 <span class="badge-pill badge-status-<?php echo e($a->attendance_status); ?>"><?php echo e(ucfirst($a->attendance_status)); ?></span>
                             </div>
@@ -256,21 +272,27 @@
         banner.style.display = 'block';
     }
 
-    function addRecent(name, status, time, method, newSoul) {
+    var PROGRAM_LINE = <?php echo json_encode($occurrence->program->name . ', ' . $occurrence->occurrence_date->format('d M Y'), 512) ?>;
+
+    function addRecent(name, status, time, method, newSoul, info) {
+        info = info || {};
         var list = document.getElementById('recentList');
         var empty = document.getElementById('recentEmpty');
         if (empty) empty.remove();
         var row = document.createElement('div');
         row.className = 'result-row';
         row.innerHTML = '<div><div class="result-name">' + esc(name) + (newSoul ? ' <span class="badge-pill badge-status-new ms-1">New soul</span>' : '') + '</div>' +
-            '<div class="result-meta">' + esc(time) + ' &middot; ' + (method === 'qr' ? 'QR' : 'Manual') + '</div></div>' +
+            '<div class="result-meta">' + esc(time) + ' &middot; ' + (method === 'qr' ? 'QR' : 'Manual') + ' &middot; ' + esc(PROGRAM_LINE) + '</div>' +
+            '<div class="result-meta"><i class="icofont icofont-location-pin"></i> ' + esc(info.location || '—') +
+            ' &middot; <i class="icofont icofont-phone"></i> ' + esc(info.phone || '—') +
+            ' &middot; <i class="icofont icofont-email"></i> ' + esc(info.email || '—') + '</div></div>' +
             '<span class="badge-pill badge-status-' + esc(status) + '">' + esc(status.charAt(0).toUpperCase() + status.slice(1)) + '</span>';
         list.prepend(row);
     }
 
     function handleCheckin(res, method) {
         setCounts(res.counts);
-        if (!res.already) addRecent(res.member.name, res.status, res.time, method, res.member.new_soul);
+        if (!res.already) addRecent(res.member.name, res.status, res.time, method, res.member.new_soul, res.member);
         var html = '<strong>' + esc(res.message) + '</strong>';
         if (res.other_church) html += '<br><small>Visiting from another church.</small>';
         if (!res.member.new_soul) {
@@ -362,6 +384,8 @@
             '<div class="col-md-3"><input class="form-control form-control-sm" name="phone" placeholder="Phone (for follow-up SMS)"></div>' +
             '<div class="col-md-2"><select class="form-select form-select-sm" name="gender"><option value="">Gender</option><option value="male">Male</option><option value="female">Female</option></select></div>' +
             '<div class="col-md-1 text-end">' + (i > 0 ? '<button type="button" class="btn btn-sm btn-light js-remove-soul" title="Remove">&times;</button>' : '') + '</div>' +
+            '<div class="col-md-6"><input type="email" class="form-control form-control-sm" name="email" placeholder="Email (optional)"></div>' +
+            '<div class="col-md-6"><input class="form-control form-control-sm" name="location" placeholder="Where they live (area), e.g. Mbezi Beach"></div>' +
             '</div>';
         soulRows.appendChild(div);
     }
@@ -389,7 +413,7 @@
         e.preventDefault();
         var people = Array.prototype.map.call(soulRows.querySelectorAll('.soul-row'), function (row) {
             var get = function (n) { return row.querySelector('[name="' + n + '"]').value.trim(); };
-            return { first_name: get('first_name'), last_name: get('last_name'), phone: get('phone'), gender: get('gender') || null };
+            return { first_name: get('first_name'), last_name: get('last_name'), phone: get('phone'), email: get('email'), location: get('location'), gender: get('gender') || null };
         }).filter(function (p) { return p.first_name; });
         if (!people.length) { document.getElementById('newSoulsError').textContent = 'Enter at least one first name.'; return; }
 
@@ -399,7 +423,7 @@
         post(URLS.souls, { member_id: memberId || null, people: people })
             .then(function (res) {
                 setCounts(res.counts);
-                people.forEach(function (p) { addRecent((p.first_name + ' ' + p.last_name).trim(), 'present', new Date().toTimeString().slice(0, 5), 'manual', true); });
+                people.forEach(function (p) { addRecent((p.first_name + ' ' + p.last_name).trim(), 'present', new Date().toTimeString().slice(0, 5), 'manual', true, p); });
                 showBanner('success', '<strong>' + esc(res.message) + '</strong>');
                 bootstrap.Modal.getInstance(document.getElementById('newSoulsModal')).hide();
             })

@@ -122,7 +122,7 @@
     <table class="table prog-table">
         <thead>
             <tr>
-                <th>Date</th><th>Service</th><th>Church</th><th>Attended</th><th>Late</th><th>Absent</th><th>New souls</th><th>Follow-up</th>
+                <th>Date</th><th>Service</th><th>Church</th><th>Attended</th><th>Late</th><th>Absent</th><th>New souls</th><th>Report</th><th>Follow-up</th>
             </tr>
         </thead>
         <tbody>
@@ -137,6 +137,11 @@
                 <td>{{ $o->stats['late'] }}</td>
                 <td>{{ $o->isClosed() ? $o->stats['absent'] : '—' }}</td>
                 <td>{{ $o->stats['new_souls'] }}</td>
+                <td>
+                    <a class="btn btn-sm {{ $o->isReportClosed() ? 'btn-light' : 'btn-outline-primary' }}" href="{{ route('services.report', $o->id) }}">
+                        {{ $o->isReportClosed() ? 'Closed' : 'Open report' }}
+                    </a>
+                </td>
                 <td>
                     @if($o->followup)
                         <small class="d-block">{{ $o->followup->sent }} SMS sent &middot; {{ $o->followup->replies }} replied</small>

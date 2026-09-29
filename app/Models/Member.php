@@ -61,6 +61,7 @@ class Member extends Model
 		'phone',
 		'email',
 		'kingschat_username',
+		'location',
 		'foundation_clases',
 		'foundation_clases_date',
 		'baptism_status',
@@ -84,6 +85,12 @@ class Member extends Model
 	public function church()
 	{
 		return $this->belongsTo(Church::class);
+	}
+
+	/** Church assignment history (newest first) - see NewSoulAssignment. */
+	public function assignments()
+	{
+		return $this->hasMany(NewSoulAssignment::class)->latest('id');
 	}
 
 	/** The member who brought this new soul to church. */
@@ -208,9 +215,13 @@ class Member extends Model
 		$member = $query->first();
 
 		if ($member) {
-			// Fill in a KingsChat username we didn't have yet; never overwrite one.
-			if (!empty($attributes['kingschat_username']) && empty($member->kingschat_username)) {
-				$member->update(['kingschat_username' => $attributes['kingschat_username']]);
+			// Fill in details we didn't have yet; never overwrite what is there.
+			$missing = collect(['kingschat_username', 'email', 'location'])
+				->filter(fn ($field) => !empty($attributes[$field]) && empty($member->{$field}))
+				->mapWithKeys(fn ($field) => [$field => $attributes[$field]])
+				->all();
+			if ($missing) {
+				$member->update($missing);
 			}
 
 			return $member;

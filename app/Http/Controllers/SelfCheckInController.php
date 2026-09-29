@@ -64,6 +64,9 @@ class SelfCheckInController extends Controller
             'first_name' => 'required|string|max:100',
             'last_name' => 'nullable|string|max:100',
             'gender' => 'required|in:male,female',
+            'location' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:150',
+            'phone' => 'nullable|string|max:30',
         ]);
 
         abort_unless(SelfCheckIn::isValidIdentifier($data['identifier']), 422);

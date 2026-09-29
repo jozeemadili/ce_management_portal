@@ -37,6 +37,7 @@
                             <li><a href="{{route('churches-management')}}" class="{{routeActive('churches-management')}}"> - Churches</a></li>
                             <li><a href="{{route('churches.tree')}}" class="{{routeActive('churches.tree')}}"> - Churches tree</a></li>
                             <li><a href="{{route('member.management')}}" class="{{routeActive('member.management')}}"> - Churches Member</a></li>
+                            <li><a href="{{route('invitees.index')}}" class="{{routeActive('invitees.index')}}"> - New Invitees</a></li>
                             <li><a href="{{route('cell.management')}}" class="{{routeActive('cell.management')}}"> - Cell Management</a></li>
                             <li><a href="{{route('department.management')}}" class="{{routeActive('department.management')}}"> - Department Management</a></li>
 

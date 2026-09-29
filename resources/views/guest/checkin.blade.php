@@ -104,6 +104,21 @@
 										<input class="form-control" name="last_name" value="{{ old('last_name') }}" autocomplete="family-name" />
 									</div>
 									<div class="form-group">
+										<label>Where do you live? <span class="text-muted">(area)</span></label>
+										<input class="form-control" name="location" value="{{ old('location') }}" placeholder="e.g. Mbezi Beach" autocomplete="address-level2" />
+									</div>
+									@if(str_contains($identifier, '@'))
+										<div class="form-group">
+											<label>Phone number <span class="text-muted">(optional)</span></label>
+											<input class="form-control" name="phone" value="{{ old('phone') }}" placeholder="e.g. 0712345678" autocomplete="tel" />
+										</div>
+									@else
+										<div class="form-group">
+											<label>Email <span class="text-muted">(optional)</span></label>
+											<input type="email" class="form-control" name="email" value="{{ old('email') }}" autocomplete="email" />
+										</div>
+									@endif
+									<div class="form-group">
 										<label>Gender</label>
 										<div class="gender-choice">
 											<label><input type="radio" name="gender" value="male" required @checked(old('gender') === 'male')><span>Male</span></label>

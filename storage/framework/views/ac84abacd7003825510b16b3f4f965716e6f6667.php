@@ -38,6 +38,7 @@
                             <li><a href="<?php echo e(route('churches-management')); ?>" class="<?php echo e(routeActive('churches-management')); ?>"> - Churches</a></li>
                             <li><a href="<?php echo e(route('churches.tree')); ?>" class="<?php echo e(routeActive('churches.tree')); ?>"> - Churches tree</a></li>
                             <li><a href="<?php echo e(route('member.management')); ?>" class="<?php echo e(routeActive('member.management')); ?>"> - Churches Member</a></li>
+                            <li><a href="<?php echo e(route('invitees.index')); ?>" class="<?php echo e(routeActive('invitees.index')); ?>"> - New Invitees</a></li>
                             <li><a href="<?php echo e(route('cell.management')); ?>" class="<?php echo e(routeActive('cell.management')); ?>"> - Cell Management</a></li>
                             <li><a href="<?php echo e(route('department.management')); ?>" class="<?php echo e(routeActive('department.management')); ?>"> - Department Management</a></li>
 

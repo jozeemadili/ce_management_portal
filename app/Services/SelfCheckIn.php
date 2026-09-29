@@ -213,25 +213,26 @@ class SelfCheckIn
         }
 
         $identifier = trim($data['identifier']);
+        $byEmail = str_contains($identifier, '@');
+        $extraEmail = mb_strtolower(trim((string) ($data['email'] ?? '')));
+        $extraPhone = AccountLogin::normaliseMobile($data['phone'] ?? null);
         $person = [
             'first_name' => trim($data['first_name']),
             'last_name' => trim((string) ($data['last_name'] ?? '')) ?: null,
             'gender' => $data['gender'] ?? null,
-            'phone' => str_contains($identifier, '@') ? null : '0' . AccountLogin::normaliseMobile($identifier),
+            'phone' => $byEmail ? ($extraPhone ? '0' . $extraPhone : null) : '0' . AccountLogin::normaliseMobile($identifier),
+            'email' => $byEmail ? mb_strtolower($identifier) : ($extraEmail !== '' ? $extraEmail : null),
+            'location' => trim((string) ($data['location'] ?? '')) ?: null,
         ];
 
         if ($this->isChurchService($program)) {
             $soul = $this->services->addNewSouls($status['occurrence'], [$person], null, null)->first();
-            if (str_contains($identifier, '@')) {
-                $soul->update(['email' => mb_strtolower($identifier)]);
-            }
 
             return $this->result(true, '', now()->format('H:i')) + ['member' => $soul];
         }
 
         $churchId = optional($church)->id ?? $program->church_id ?? Church::whereNull('parent_church_id')->value('id');
         $soul = Member::findOrCreateNewSoul($person + [
-            'email' => str_contains($identifier, '@') ? mb_strtolower($identifier) : null,
             'first_visit_program_id' => $program->id,
             'first_visit_date' => now()->toDateString(),
             'is_training' => (bool) $program->is_training,

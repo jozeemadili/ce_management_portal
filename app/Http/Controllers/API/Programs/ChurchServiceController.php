@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\Programs;
 
 use App\Http\Controllers\Concerns\AuthorizesPrograms;
+use App\Http\Controllers\Concerns\ScopesChurches;
 use App\Http\Controllers\Controller;
 use App\Models\Church;
 use App\Models\Member;
@@ -14,6 +15,7 @@ use App\Models\ProgramSession;
 use App\Models\ProgramOccurrence;
 use App\Models\ServiceChurchTime;
 use App\Services\ChurchServices;
+use App\Services\InviteeManager;
 use App\Services\NewSoulFollowupSms;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -32,7 +34,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ChurchServiceController extends Controller
 {
-    use AuthorizesPrograms;
+    use AuthorizesPrograms, ScopesChurches;
 
     public function __construct(private ChurchServices $services)
     {
@@ -420,6 +422,8 @@ class ChurchServiceController extends Controller
             'people.*.first_name' => 'required|string|max:100',
             'people.*.last_name' => 'nullable|string|max:100',
             'people.*.phone' => 'nullable|string|max:30',
+            'people.*.email' => 'nullable|email|max:150',
+            'people.*.location' => 'nullable|string|max:255',
             'people.*.gender' => 'nullable|in:male,female',
         ]);
 
@@ -539,6 +543,49 @@ class ChurchServiceController extends Controller
     }
 
     /* =================================================================
+     | SERVICE REPORT (per church, per date): numbers, check-ins, new
+     | invitees to assign, then close the report to freeze the numbers
+     |=================================================================*/
+
+    public function report(ProgramOccurrence $occurrence, InviteeManager $invitees)
+    {
+        $this->authorizeProgram('PROGRAM_REPORTS_VIEW');
+        $this->assertVisible($occurrence);
+
+        $occurrence->load(['program', 'church', 'reportClosedBy']);
+        $counts = $occurrence->isReportClosed() ? $occurrence->report_summary : $this->services->counts($occurrence);
+        $checkIns = ProgramAttendance::with('member')
+            ->where('occurrence_id', $occurrence->id)
+            ->whereIn('attendance_status', ['present', 'late'])
+            ->orderBy('checked_in_at')
+            ->get();
+        $inviteeList = $invitees->inviteesOf($occurrence);
+        $allChurches = Church::where('status', 'ACTIVE')->orderBy('name')->get(['id', 'name', 'physical_location']);
+
+        return view('portal.programs.services.report', compact('occurrence', 'counts', 'checkIns', 'inviteeList', 'allChurches'));
+    }
+
+    public function closeReport(ProgramOccurrence $occurrence, InviteeManager $invitees)
+    {
+        $this->authorizeProgram('PROGRAMS_EDIT');
+        $this->assertVisible($occurrence);
+
+        $summary = $invitees->closeReport($occurrence->load('program', 'church'), Auth::id());
+
+        return back()->with('success', "Report closed: {$summary['attended']} attended, {$summary['late']} late, {$summary['absent']} absent, {$summary['new_souls']} new soul(s).");
+    }
+
+    public function reopenReport(ProgramOccurrence $occurrence, InviteeManager $invitees)
+    {
+        $this->authorizeProgram('PROGRAMS_EDIT');
+        $this->assertVisible($occurrence);
+
+        $invitees->reopenReport($occurrence, Auth::id());
+
+        return back()->with('success', 'Report reopened.');
+    }
+
+    /* =================================================================
      | MY CHECK-IN QR
      |=================================================================*/
 
@@ -591,12 +638,16 @@ class ChurchServiceController extends Controller
                 'ends' => $current->window['ends']->format('H:i'),
                 'late_after' => $current->window['late']->format('H:i'),
                 'counts' => $this->services->counts($occurrence),
+                'program_date' => $occurrence->occurrence_date->format('d M Y'),
                 'recent' => $this->recentCheckIns($occurrence)->map(fn ($a) => [
                     'name' => trim(optional($a->member)->first_name . ' ' . optional($a->member)->last_name),
                     'status' => $a->attendance_status,
                     'time' => optional($a->checked_in_at)->format('H:i'),
                     'method' => $a->check_in_method,
                     'new_soul' => optional($a->member)->member_type === 'new_soul',
+                    'phone' => optional($a->member)->phone,
+                    'email' => optional($a->member)->email,
+                    'location' => optional($a->member)->location,
                 ])->values(),
             ];
         }
@@ -645,7 +696,10 @@ class ChurchServiceController extends Controller
         $name = trim($member->first_name . ' ' . $member->last_name);
 
         return response()->json([
-            'member' => ['id' => $member->id, 'name' => $name, 'new_soul' => $member->member_type === 'new_soul', 'church_id' => $member->church_id],
+            'member' => [
+                'id' => $member->id, 'name' => $name, 'new_soul' => $member->member_type === 'new_soul', 'church_id' => $member->church_id,
+                'phone' => $member->phone, 'email' => $member->email, 'location' => $member->location,
+            ],
             'status' => $attendance->attendance_status,
             'time' => optional($attendance->checked_in_at)->format('H:i'),
             'already' => $already,
@@ -685,31 +739,5 @@ class ChurchServiceController extends Controller
             ->orderByDesc('checked_in_at')
             ->limit(15)
             ->get();
-    }
-
-    /**
-     * Churches the user may work with: their own church and every church
-     * under it; the top-level church (or a user without a member record)
-     * sees all active churches.
-     */
-    private function visibleChurches(): Collection
-    {
-        $all = Church::where('status', 'ACTIVE')->orderBy('name')->get();
-        $member = Auth::user()->member;
-        $own = $member ? $all->firstWhere('id', $member->church_id) : null;
-
-        if (!$own || is_null($own->parent_church_id)) {
-            return $all;
-        }
-
-        $byParent = $all->groupBy('parent_church_id');
-        $ids = [$own->id];
-        for ($i = 0; $i < count($ids); $i++) {
-            foreach ($byParent->get($ids[$i], collect()) as $child) {
-                $ids[] = $child->id;
-            }
-        }
-
-        return $all->whereIn('id', $ids)->values();
     }
 }

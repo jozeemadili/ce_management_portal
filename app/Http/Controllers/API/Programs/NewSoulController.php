@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Church;
 use App\Models\Member;
 use App\Models\ProgramAuditLog;
+use App\Services\InviteeManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -47,7 +48,7 @@ class NewSoulController extends Controller
     {
         $churchIds = $this->scopedChurchIds();
 
-        $query = Member::newSouls()->with(['church', 'firstVisitProgram']);
+        $query = Member::newSouls()->with(['church', 'firstVisitProgram', 'assignments.fromChurch', 'assignments.toChurch', 'assignments.assignedBy']);
 
         if (!is_null($churchIds)) {
             $query->whereIn('church_id', $churchIds);
@@ -85,7 +86,9 @@ class NewSoulController extends Controller
             'connected' => (clone $base)->where('follow_up_status', 'connected_to_cell')->count(),
         ];
 
-        return view('portal.programs.new-souls.index', compact('visitors', 'stats'));
+        $allChurches = Church::where('status', 'ACTIVE')->orderBy('name')->get(['id', 'name', 'physical_location']);
+
+        return view('portal.programs.new-souls.index', compact('visitors', 'stats', 'allChurches'));
     }
 
     public function updateStatus(Request $request, Member $visitor)
@@ -99,10 +102,16 @@ class NewSoulController extends Controller
 
         $old = $visitor->toArray();
 
-        $visitor->follow_up_status = $data['status'];
-        if ($data['status'] === 'became_member') {
-            $visitor->member_type = 'member';
+        if ($data['status'] === 'became_member' && $visitor->member_type === 'new_soul') {
+            // Same as "Make member" on New Invitees: designation + login.
+            if (!empty($data['notes'])) {
+                $visitor->update(['notes' => trim(($visitor->notes ? $visitor->notes . "\n" : '') . $data['notes'])]);
+            }
+
+            return back()->with('success', app(InviteeManager::class)->makeMember($visitor, Auth::id()));
         }
+
+        $visitor->follow_up_status = $data['status'];
         if (!empty($data['notes'])) {
             $visitor->notes = trim(($visitor->notes ? $visitor->notes . "\n" : '') . $data['notes']);
         }
@@ -121,24 +130,44 @@ class NewSoulController extends Controller
      * member still counts under their original acquisition date and their
      * became_member funnel stage.
      */
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $this->authorizeProgram('NEW_SOULS_VIEW');
 
+        // Also opened from Church Setup (route new-invitees.dashboard): there it
+        // is church-focused - pick a church (default: your own) and follow up
+        // its assigned new souls from the worklist.
+        $churchView = $request->routeIs('invitees.dashboard');
+
         $churchIds = $this->scopedChurchIds();
-        $base = Member::whereNotNull('first_visit_date');
+        $churches = Church::where('status', 'ACTIVE')
+            ->when(!is_null($churchIds), fn ($q) => $q->whereIn('id', $churchIds))
+            ->orderBy('name')->get(['id', 'name']);
+        $selectedChurch = $request->filled('church')
+            ? $churches->firstWhere('id', (int) $request->church)
+            : ($churchView ? $churches->firstWhere('id', optional(Auth::user()->member)->church_id) : null);
+        if ($selectedChurch) {
+            $churchIds = collect([$selectedChurch->id]);
+        }
+
+        // Everyone who came as a new soul: still one, or promoted since (has a
+        // first visit date). Some new souls (e.g. from program registration)
+        // have no first visit date - their "first seen" is when they were added.
+        $base = Member::where('is_training', false)
+            ->where(fn ($q) => $q->whereNotNull('first_visit_date')->orWhere('member_type', 'new_soul'));
         if (!is_null($churchIds)) {
             $base->whereIn('church_id', $churchIds);
         }
 
+        $firstSeen = 'COALESCE(first_visit_date, CAST(created_at AS DATE))';
         $today = now()->toDateString();
         $weekStart = now()->startOfWeek()->toDateString();
         $monthStart = now()->startOfMonth()->toDateString();
 
         $counts = [
-            'today' => (clone $base)->whereDate('first_visit_date', $today)->count(),
-            'week' => (clone $base)->whereDate('first_visit_date', '>=', $weekStart)->count(),
-            'month' => (clone $base)->whereDate('first_visit_date', '>=', $monthStart)->count(),
+            'today' => (clone $base)->whereRaw("{$firstSeen} = ?", [$today])->count(),
+            'week' => (clone $base)->whereRaw("{$firstSeen} >= ?", [$weekStart])->count(),
+            'month' => (clone $base)->whereRaw("{$firstSeen} >= ?", [$monthStart])->count(),
             'total' => (clone $base)->count(),
         ];
 
@@ -162,6 +191,18 @@ class NewSoulController extends Controller
             $funnel[$status] = (clone $base)->where('follow_up_status', $status)->count();
         }
 
-        return view('portal.programs.new-souls.dashboard', compact('counts', 'byProgram', 'byChurch', 'funnel'));
+        // Worklist: new souls still being followed up, longest waiting first.
+        $worklist = Member::newSouls()
+            ->with(['church', 'firstVisitProgram', 'assignments.fromChurch', 'assignments.toChurch', 'assignments.assignedBy'])
+            ->when(!is_null($churchIds), fn ($q) => $q->whereIn('church_id', $churchIds))
+            ->whereNotIn('follow_up_status', ['became_member', 'closed'])
+            ->orderBy('first_visit_date')->orderBy('id')
+            ->limit(25)
+            ->get();
+        $allChurches = Church::where('status', 'ACTIVE')->orderBy('name')->get(['id', 'name', 'physical_location']);
+
+        return view('portal.programs.new-souls.dashboard', compact(
+            'counts', 'byProgram', 'byChurch', 'funnel', 'worklist', 'churches', 'selectedChurch', 'churchView', 'allChurches'
+        ));
     }
 }

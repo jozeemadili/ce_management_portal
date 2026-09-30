@@ -23,16 +23,46 @@
     @endslot
     @slot('breadcrumb_action_buttons')
         <li>
-            <a class="btn btn-outline-primary" href="{{ route('new-souls.index') }}">
-                <i class="icofont icofont-listing-box"></i> New Souls List
+            <a class="btn btn-outline-primary" href="{{ $churchView ? route('invitees.index') : route('new-souls.index') }}">
+                <i class="icofont icofont-listing-box"></i> {{ $churchView ? 'New Invitees List' : 'New Souls List' }}
             </a>
         </li>
     @endslot
-    <li class="breadcrumb-item"><a href="{{ route('new-souls.index') }}">New Souls</a></li>
-    <li class="breadcrumb-item active">Dashboard</li>
+    @if($churchView)
+        <li class="breadcrumb-item">Church Setup</li>
+        <li class="breadcrumb-item active">New Souls Dashboard</li>
+    @else
+        <li class="breadcrumb-item"><a href="{{ route('new-souls.index') }}">New Souls</a></li>
+        <li class="breadcrumb-item active">Dashboard</li>
+    @endif
 @endcomponent
 
 <div class="container-fluid">
+
+@if ($errors->any())
+    @foreach ($errors->all() as $error)
+        <div class="alert alert-danger alert-dismissible fade show">{{ $error }}<button class="btn-close" data-bs-dismiss="alert"></button></div>
+    @endforeach
+@endif
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show">{{ session('success') }}<button class="btn-close" data-bs-dismiss="alert"></button></div>
+@endif
+
+<form method="GET" class="prog-filter-bar row g-2 align-items-end">
+    <div class="col-md-5">
+        <label class="form-label">Church</label>
+        <select name="church" class="form-select" onchange="this.form.submit()">
+            <option value="">All my churches</option>
+            @foreach($churches as $c)
+                <option value="{{ $c->id }}" @selected($selectedChurch && $selectedChurch->id === $c->id)>{{ strtoupper($c->name) }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-7 text-muted" style="font-size:.85rem;">
+        {{ $selectedChurch ? 'New souls assigned to ' . strtoupper($selectedChurch->name) . '.' : 'New souls across all your churches.' }}
+        Follow them up below until they become members.
+    </div>
+</form>
 
 <div class="row mb-3">
     <div class="col-xl-3 col-sm-6 mb-3 mb-xl-0">
@@ -119,6 +149,47 @@
             </div>
         </div>
     </div>
+</div>
+
+<div class="card prog-card mt-1">
+<div class="card-body">
+    <p class="modal-section-label">Follow-up worklist ({{ $worklist->count() }})</p>
+    <p class="text-muted" style="font-size:.85rem;">New souls still being followed up, longest waiting first. Update their status as you go; choose <strong>Became Member</strong> when they join (they get a login).</p>
+    @if($worklist->isEmpty())
+        <div class="prog-empty py-3"><i class="icofont icofont-check-circled"></i>Everyone is followed up. 🎉</div>
+    @else
+    <div class="table-responsive">
+    <table class="table prog-table">
+        <thead><tr><th>New soul</th><th>First visit</th><th>Follow-up status</th><th>Church (assign)</th></tr></thead>
+        <tbody>
+        @foreach($worklist as $v)
+            <tr>
+                <td>
+                    <strong>{{ trim($v->first_name . ' ' . $v->last_name) }}</strong>
+                    <div class="text-muted" style="font-size:.75rem;">{{ $v->phone ?: '—' }}@if($v->location) &middot; {{ $v->location }}@endif</div>
+                </td>
+                <td>{{ optional($v->first_visit_date)->format('d M Y') }}<div class="text-muted" style="font-size:.75rem;">{{ optional($v->first_visit_date)->diffForHumans() }} &middot; {{ optional($v->firstVisitProgram)->name }}</div></td>
+                <td>
+                    <form method="POST" action="{{ route('new-souls.status', $v->id) }}" class="d-flex gap-1 flex-wrap"
+                          onsubmit="return this.status.value !== 'became_member' || confirm('Make {{ addslashes($v->first_name) }} a member?')">
+                        @csrf
+                        <select name="status" class="form-select form-select-sm" style="max-width:190px;">
+                            @foreach(['new'=>'New','contacted'=>'Contacted','follow_up'=>'Follow-Up In Progress','foundation_classes'=>'Foundation Classes','connected_to_cell'=>'Connected to Cell','became_member'=>'Became Member','closed'=>'Closed'] as $val => $label)
+                                <option value="{{ $val }}" @selected($v->follow_up_status === $val)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <input name="notes" class="form-control form-control-sm" style="max-width:170px;" placeholder="Note (optional)">
+                        <button class="btn btn-sm btn-primary">Save</button>
+                    </form>
+                </td>
+                <td>@include('portal.churches.invitees.partials.assign', ['invitee' => $v, 'occurrence' => null])</td>
+            </tr>
+        @endforeach
+        </tbody>
+    </table>
+    </div>
+    @endif
+</div>
 </div>
 
 </div>

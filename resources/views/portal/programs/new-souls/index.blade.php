@@ -90,16 +90,18 @@
         @if($visitors->count())
         <div class="table-responsive">
         <table class="table prog-table align-middle">
-        <thead><tr><th>Name</th><th>Phone</th><th>Church</th><th>First Visit</th><th>Program</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+        <thead><tr><th>Name</th><th>Contact</th><th>First Visit</th><th>Program</th><th>Status</th><th>Church (assign)</th><th class="text-end">Action</th></tr></thead>
         <tbody>
         @foreach($visitors as $v)
         <tr>
-            <td class="fw-semibold">{{ $v->first_name }} {{ $v->last_name }}</td>
-            <td>{{ $v->phone ?? '—' }}</td>
-            <td>{{ optional($v->church)->name ?? '—' }}</td>
+            <td class="fw-semibold">{{ $v->first_name }} {{ $v->last_name }}
+                @if($v->location)<div class="text-muted fw-normal" style="font-size:.75rem;"><i class="icofont icofont-location-pin"></i> {{ $v->location }}</div>@endif
+            </td>
+            <td style="font-size:.85rem;">{{ $v->phone ?? '—' }}@if($v->email)<br>{{ $v->email }}@endif</td>
             <td>{{ optional($v->first_visit_date)->format('d M Y') ?? '—' }}</td>
             <td>{{ optional($v->firstVisitProgram)->name ?? '—' }}</td>
             <td><span class="badge-pill badge-status-{{ $v->follow_up_status }}">{{ ucfirst(str_replace('_',' ',$v->follow_up_status)) }}</span></td>
+            <td>@include('portal.churches.invitees.partials.assign', ['invitee' => $v, 'occurrence' => null])</td>
             <td class="text-end">
                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statusModal{{ $v->id }}">
                     <i class="icofont icofont-edit"></i> Update Status

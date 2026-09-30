@@ -250,6 +250,7 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
 
     //Church Setup - New Invitees (new souls followed up by their church)
     Route::get('new-invitees', [InviteeController::class, 'index'])->name('invitees.index');
+    Route::get('new-invitees/dashboard', [NewSoulController::class, 'dashboard'])->name('invitees.dashboard');
     Route::post('new-invitees/{invitee}/update', [InviteeController::class, 'update'])->name('invitees.update');
     Route::post('new-invitees/{invitee}/assign', [InviteeController::class, 'assign'])->name('invitees.assign');
     Route::post('new-invitees/{invitee}/make-member', [InviteeController::class, 'makeMember'])->name('invitees.make-member');

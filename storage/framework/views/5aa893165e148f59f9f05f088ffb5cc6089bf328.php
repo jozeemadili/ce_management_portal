@@ -89,16 +89,19 @@
         <?php if($visitors->count()): ?>
         <div class="table-responsive">
         <table class="table prog-table align-middle">
-        <thead><tr><th>Name</th><th>Phone</th><th>Church</th><th>First Visit</th><th>Program</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+        <thead><tr><th>Name</th><th>Contact</th><th>First Visit</th><th>Program</th><th>Status</th><th>Church (assign)</th><th class="text-end">Action</th></tr></thead>
         <tbody>
         <?php $__currentLoopData = $visitors; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $v): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
         <tr>
-            <td class="fw-semibold"><?php echo e($v->first_name); ?> <?php echo e($v->last_name); ?></td>
-            <td><?php echo e($v->phone ?? '—'); ?></td>
-            <td><?php echo e(optional($v->church)->name ?? '—'); ?></td>
+            <td class="fw-semibold"><?php echo e($v->first_name); ?> <?php echo e($v->last_name); ?>
+
+                <?php if($v->location): ?><div class="text-muted fw-normal" style="font-size:.75rem;"><i class="icofont icofont-location-pin"></i> <?php echo e($v->location); ?></div><?php endif; ?>
+            </td>
+            <td style="font-size:.85rem;"><?php echo e($v->phone ?? '—'); ?><?php if($v->email): ?><br><?php echo e($v->email); ?><?php endif; ?></td>
             <td><?php echo e(optional($v->first_visit_date)->format('d M Y') ?? '—'); ?></td>
             <td><?php echo e(optional($v->firstVisitProgram)->name ?? '—'); ?></td>
             <td><span class="badge-pill badge-status-<?php echo e($v->follow_up_status); ?>"><?php echo e(ucfirst(str_replace('_',' ',$v->follow_up_status))); ?></span></td>
+            <td><?php echo $__env->make('portal.churches.invitees.partials.assign', ['invitee' => $v, 'occurrence' => null], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?></td>
             <td class="text-end">
                 <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statusModal<?php echo e($v->id); ?>">
                     <i class="icofont icofont-edit"></i> Update Status

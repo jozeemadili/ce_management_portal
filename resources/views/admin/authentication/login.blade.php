@@ -26,7 +26,7 @@
 							  
 	                        <h6>{{ App\TIRAClient\Scripts\Classes\Utils::timeGreeting() }} !</h6>
 	                        <div class="form-group">
-	                            <label>Email or Phone Number</label>
+	                            <label>Email or Phone Number !!</label>
 	                            <div class="input-group">
 	                                <span class="input-group-text"><i class="icon-user"></i></span>
 	                                <input class="form-control" type="text" name="email" value="{{ old('email') }}" required autocomplete="username" placeholder="e.g. 0712345678 or name@example.com" />

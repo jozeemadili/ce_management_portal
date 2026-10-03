@@ -28,8 +28,8 @@ class ProgramAttendanceController extends Controller
         // roll once promoted to member_type=member.
         $base = Member::where('member_type', 'member');
 
-        if ($program->scope === 'church' && $program->church_id) {
-            return $base->where('church_id', $program->church_id);
+        if ($program->scope === 'church' && $program->churchIds()) {
+            return $base->whereIn('church_id', $program->churchIds());
         }
 
         if ($program->scope === 'department' && $program->department_id) {

@@ -47,7 +47,8 @@ class ProgramDashboardController extends Controller
         $query = Program::where('is_training', false);
         if (!is_null($churchIds)) {
             $query->where(function ($q) use ($churchIds) {
-                $q->where('scope', 'global')->orWhereIn('church_id', $churchIds);
+                $q->where('scope', 'global')->orWhereIn('church_id', $churchIds)
+                    ->orWhereHas('churches', fn ($c) => $c->whereIn('churches.id', $churchIds));
             });
         }
 

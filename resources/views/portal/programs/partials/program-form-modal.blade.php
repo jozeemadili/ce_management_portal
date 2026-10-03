@@ -148,13 +148,17 @@
         </select>
     </div>
     <div class="col-md-8" id="{{ $mode }}_church_wrap">
-        <label class="form-label">Church / Branch</label>
-        <select name="church_id" id="{{ $mode }}_church" class="form-control">
-            <option value="">-- Select Church --</option>
+        <label class="form-label">Church(es) <span class="text-muted">&mdash; tick every church holding this program together</span></label>
+        <input type="search" class="form-control form-control-sm mb-1 church-pick-search" data-target="{{ $mode }}_churches" placeholder="Search churches...">
+        <div id="{{ $mode }}_churches" class="church-pick" style="max-height:170px;overflow-y:auto;border:1px solid #e2e6ee;border-radius:8px;padding:6px 10px;">
             @foreach($churches as $church)
-                <option value="{{ $church->id }}">{{ strtoupper($church->name) }}</option>
+                <div class="form-check church-pick-item">
+                    <input class="form-check-input" type="checkbox" name="church_ids[]" value="{{ $church->id }}" id="{{ $mode }}_church_{{ $church->id }}">
+                    <label class="form-check-label" for="{{ $mode }}_church_{{ $church->id }}">{{ strtoupper($church->name) }}</label>
+                </div>
             @endforeach
-        </select>
+        </div>
+        <small class="text-muted"><span class="church-pick-count" data-target="{{ $mode }}_churches">0</span> selected. The first one is shown as the main church.</small>
     </div>
     <div class="col-md-8" id="{{ $mode }}_department_wrap">
         <label class="form-label">Department</label>

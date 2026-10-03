@@ -131,7 +131,8 @@ class ProgramPaymentController extends Controller
         $payments = ProgramPayment::with(['registration.program', 'registration.member.church', 'registration.pricedDesignation', 'recorder', 'reviewer'])
             ->where('status', $status)
             ->when(!is_null($churchIds), fn ($q) => $q->whereHas('registration.program', fn ($p) => $p->where(function ($x) use ($churchIds) {
-                $x->where('scope', 'global')->orWhereIn('church_id', $churchIds);
+                $x->where('scope', 'global')->orWhereIn('church_id', $churchIds)
+                    ->orWhereHas('churches', fn ($c) => $c->whereIn('churches.id', $churchIds));
             })))
             ->orderBy($status === 'pending' ? 'created_at' : 'reviewed_at', $status === 'pending' ? 'asc' : 'desc')
             ->paginate(20)

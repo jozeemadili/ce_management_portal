@@ -12,6 +12,24 @@
 
         <p class="modal-section-label">Personal Details</p>
         <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">Title</label>
+                <select class="form-select" wire:model.defer="title_id">
+                    <option value="">-- None --</option>
+                    <?php $__currentLoopData = $titles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $title): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($title->id); ?>"><?php echo e($title->name); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </select>
+                <?php $__errorArgs = ['title_id'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> <small class="text-danger"><?php echo e($message); ?></small> <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+            </div>
+            <div class="col-md-8 mb-3"></div>
             <div class="col-md-6 mb-3">
                 <label class="form-label">First Name</label>
                 <input type="text" class="form-control" wire:model.defer="first_name">

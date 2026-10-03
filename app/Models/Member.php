@@ -56,6 +56,7 @@ class Member extends Model
 	protected $fillable = [
 		'user_id',
 		'church_id',
+		'title_id',
 		'first_name',
 		'last_name',
 		'phone',
@@ -85,6 +86,18 @@ class Member extends Model
 	public function church()
 	{
 		return $this->belongsTo(Church::class);
+	}
+
+	/** Brother, Sister, Deacon... */
+	public function title()
+	{
+		return $this->belongsTo(MemberTitle::class, 'title_id');
+	}
+
+	/** "Brother John Mushi" (title when set). */
+	public function titledName(): string
+	{
+		return trim(optional($this->title)->name . ' ' . $this->first_name . ' ' . $this->last_name);
 	}
 
 	/** Church assignment history (newest first) - see NewSoulAssignment. */

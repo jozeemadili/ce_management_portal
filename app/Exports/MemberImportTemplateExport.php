@@ -16,6 +16,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles, WithColumnWidths, WithTitle
 {
     public const HEADINGS = [
+        'Title',
         'First Name',
         'Last Name',
         'Phone',
@@ -39,7 +40,7 @@ class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles,
     public function array(): array
     {
         return [
-            ['John', 'Mushi', '0712345678', 'john@example.com', 'male', '1990-05-14', 'yes', '2024-03-10', 'yes', '2024-06-02', 'married', '2018-12-01', 'johnmushi'],
+            ['Brother', 'John', 'Mushi', '0712345678', 'john@example.com', 'male', '1990-05-14', 'yes', '2024-03-10', 'yes', '2024-06-02', 'married', '2018-12-01', 'johnmushi'],
         ];
     }
 
@@ -50,7 +51,7 @@ class MemberImportTemplateExport implements FromArray, WithHeadings, WithStyles,
 
     public function columnWidths(): array
     {
-        return array_combine(range('A', 'M'), array_fill(0, 13, 20));
+        return array_combine(range('A', 'N'), array_fill(0, 14, 20));
     }
 
     public function title(): string

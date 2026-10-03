@@ -42,6 +42,11 @@
         <label class="form-label">Location</label>
         <input type="text" name="location" id="<?php echo e($mode); ?>_location" class="form-control">
     </div>
+    <div class="col-md-6 mt-3">
+        <label class="form-label">Contact Phone</label>
+        <input type="tel" name="contact_phone" id="<?php echo e($mode); ?>_contact_phone" class="form-control" placeholder="e.g. 0712345678">
+        <small class="text-muted">Shown to attendees, e.g. on the check-in page before the program starts.</small>
+    </div>
     <div class="col-md-12 mt-3">
         <label class="form-label">Banner / Image</label>
         <?php if($mode === 'edit'): ?>
@@ -141,13 +146,17 @@
         </select>
     </div>
     <div class="col-md-8" id="<?php echo e($mode); ?>_church_wrap">
-        <label class="form-label">Church / Branch</label>
-        <select name="church_id" id="<?php echo e($mode); ?>_church" class="form-control">
-            <option value="">-- Select Church --</option>
+        <label class="form-label">Church(es) <span class="text-muted">&mdash; tick every church holding this program together</span></label>
+        <input type="search" class="form-control form-control-sm mb-1 church-pick-search" data-target="<?php echo e($mode); ?>_churches" placeholder="Search churches...">
+        <div id="<?php echo e($mode); ?>_churches" class="church-pick" style="max-height:170px;overflow-y:auto;border:1px solid #e2e6ee;border-radius:8px;padding:6px 10px;">
             <?php $__currentLoopData = $churches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $church): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                <option value="<?php echo e($church->id); ?>"><?php echo e(strtoupper($church->name)); ?></option>
+                <div class="form-check church-pick-item">
+                    <input class="form-check-input" type="checkbox" name="church_ids[]" value="<?php echo e($church->id); ?>" id="<?php echo e($mode); ?>_church_<?php echo e($church->id); ?>">
+                    <label class="form-check-label" for="<?php echo e($mode); ?>_church_<?php echo e($church->id); ?>"><?php echo e(strtoupper($church->name)); ?></label>
+                </div>
             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-        </select>
+        </div>
+        <small class="text-muted"><span class="church-pick-count" data-target="<?php echo e($mode); ?>_churches">0</span> selected. The first one is shown as the main church.</small>
     </div>
     <div class="col-md-8" id="<?php echo e($mode); ?>_department_wrap">
         <label class="form-label">Department</label>

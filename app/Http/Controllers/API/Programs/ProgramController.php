@@ -53,11 +53,12 @@ class ProgramController extends Controller
     {
         $churchIds = $this->scopedChurchIds();
 
-        $query = Program::with(['church', 'department', 'cellGroup', 'creator', 'sessions', 'designationPrices'])->withCount(['registrations', 'attendances']);
+        $query = Program::with(['church', 'churches', 'department', 'cellGroup', 'creator', 'sessions', 'designationPrices'])->withCount(['registrations', 'attendances']);
 
         if (!is_null($churchIds)) {
             $query->where(function ($q) use ($churchIds) {
-                $q->where('scope', 'global')->orWhereIn('church_id', $churchIds);
+                $q->where('scope', 'global')->orWhereIn('church_id', $churchIds)
+                    ->orWhereHas('churches', fn ($c) => $c->whereIn('churches.id', $churchIds));
             });
         }
 
@@ -117,7 +118,7 @@ class ProgramController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_CREATE');
 
-        [$data, $sessions, $prices] = $this->validateProgram($request);
+        [$data, $sessions, $prices, $churchIds] = $this->validateProgram($request);
         $data['created_by'] = Auth::id();
 
         if ($request->hasFile('banner')) {
@@ -125,6 +126,7 @@ class ProgramController extends Controller
         }
 
         $program = Program::create($data);
+        $program->churches()->sync($churchIds);
         $this->syncSessions($program, $sessions);
         $this->syncPrices($program, $prices);
 
@@ -144,7 +146,7 @@ class ProgramController extends Controller
     {
         $this->authorizeProgram('PROGRAMS_EDIT');
 
-        [$data, $sessions, $prices] = $this->validateProgram($request);
+        [$data, $sessions, $prices, $churchIds] = $this->validateProgram($request);
         $old = $program->toArray();
 
         if ($request->hasFile('banner')) {
@@ -155,6 +157,7 @@ class ProgramController extends Controller
         }
 
         $program->update($data);
+        $program->churches()->sync($churchIds);
         $this->syncSessions($program, $sessions);
         $this->syncPrices($program, $prices);
 
@@ -164,7 +167,7 @@ class ProgramController extends Controller
     }
 
     /**
-     * @return array{0: array, 1: array, 2: array} program attributes, sessions, designation prices
+     * @return array{0: array, 1: array, 2: array, 3: array} program attributes, sessions, designation prices, church ids
      */
     private function validateProgram(Request $request): array
     {
@@ -175,6 +178,8 @@ class ProgramController extends Controller
             'classification' => 'required|in:recurring,special',
             'scope' => 'required|in:global,church,department,cell',
             'church_id' => 'nullable|exists:churches,id',
+            'church_ids' => 'nullable|array',
+            'church_ids.*' => 'integer|exists:churches,id',
             'department_id' => 'nullable|exists:departments,id',
             'cell_group_id' => 'nullable|exists:cell_groups,id',
             'organizer' => 'nullable|string|max:255',
@@ -236,7 +241,16 @@ class ProgramController extends Controller
         }
         $data['registration_fee'] = $prices ? max($prices) : 0;
         unset($data['sessions'], $data['prices']);
-        $data['church_id'] = $data['scope'] === 'church' ? $data['church_id'] : null;
+        // Church scope: one or more churches hold it together; church_id
+        // keeps the first as the main church.
+        $churchIds = $data['scope'] === 'church'
+            ? collect($data['church_ids'] ?? [])->push($data['church_id'] ?? null)->filter()->map(fn ($id) => (int) $id)->unique()->values()->all()
+            : [];
+        if ($data['scope'] === 'church' && !$churchIds) {
+            throw ValidationException::withMessages(['church_ids' => 'Choose at least one church for a church program.']);
+        }
+        $data['church_id'] = $churchIds[0] ?? null;
+        unset($data['church_ids']);
         $data['department_id'] = $data['scope'] === 'department' ? $data['department_id'] : null;
         $data['cell_group_id'] = $data['scope'] === 'cell' ? $data['cell_group_id'] : null;
         $data['is_recurring'] = $data['classification'] === 'recurring';
@@ -249,7 +263,7 @@ class ProgramController extends Controller
 
         unset($data['banner']);
 
-        return [$data, $sessions->all(), $prices];
+        return [$data, $sessions->all(), $prices, $churchIds];
     }
 
     /**

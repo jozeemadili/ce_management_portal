@@ -153,6 +153,11 @@
                 <span><i class="icofont icofont-location-pin"></i> <?php echo e($program->location ?? '—'); ?></span>
                 <span><i class="icofont icofont-people"></i> <?php echo e($program->registrations_count ?? 0); ?> reg.</span>
             </div>
+            <?php if($program->scope === 'church'): ?>
+            <div class="program-card-meta">
+                <span><i class="icofont icofont-building-alt"></i> <?php echo e(\Illuminate\Support\Str::limit($program->churchNames(), 70)); ?></span>
+            </div>
+            <?php endif; ?>
             <?php if($program->classification === 'recurring'): ?>
             <div class="program-card-meta">
                 <span><i class="icofont icofont-refresh"></i> <?php echo e(ucfirst($program->recurrence_frequency ?? '—')); ?><?php if($program->recurrence_days): ?> &middot; <?php echo e(collect($program->recurrence_days)->map(fn($d)=>ucfirst($d))->implode(', ')); ?> <?php endif; ?></span>
@@ -182,10 +187,12 @@
                     data-classification="<?php echo e($program->classification); ?>"
                     data-scope="<?php echo e($program->scope); ?>"
                     data-church="<?php echo e($program->church_id); ?>"
+                    data-churches='<?php echo json_encode($program->churchIds(), 15, 512) ?>'
                     data-department="<?php echo e($program->department_id); ?>"
                     data-cell="<?php echo e($program->cell_group_id); ?>"
                     data-organizer="<?php echo e($program->organizer); ?>"
                     data-location="<?php echo e($program->location); ?>"
+                    data-contact-phone="<?php echo e($program->contact_phone); ?>"
                     data-start-date="<?php echo e(optional($program->start_date)->format('Y-m-d')); ?>"
                     data-end-date="<?php echo e(optional($program->end_date)->format('Y-m-d')); ?>"
                     data-sessions="<?php echo e(json_encode($program->sessionsForForm())); ?>"
@@ -278,6 +285,22 @@ const programSessions = (function () {
     return { add, fill };
 })();
 
+// Church tickboxes: search filter + "N selected" counter.
+function updateChurchCounts() {
+    document.querySelectorAll('.church-pick-count').forEach(el => {
+        el.textContent = document.querySelectorAll('#' + el.dataset.target + ' input:checked').length;
+    });
+}
+document.addEventListener('change', e => { if (e.target.matches('.church-pick input')) updateChurchCounts(); });
+document.querySelectorAll('.church-pick-search').forEach(input => {
+    input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        document.querySelectorAll('#' + input.dataset.target + ' .church-pick-item').forEach(item => {
+            item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+});
+
 function progToggle(triggerId, wrapId, testFn) {
     const trigger = document.getElementById(triggerId);
     const wrap = document.getElementById(wrapId);
@@ -306,11 +329,14 @@ document.querySelectorAll('.edit-program-btn').forEach(btn => {
         document.getElementById('edit_category').value = this.dataset.category;
         document.getElementById('edit_classification').value = this.dataset.classification;
         document.getElementById('edit_scope').value = this.dataset.scope;
-        document.getElementById('edit_church').value = this.dataset.church || '';
+        const picked = JSON.parse(this.dataset.churches || '[]').map(String);
+        document.querySelectorAll('#edit_churches input[type=checkbox]').forEach(cb => { cb.checked = picked.includes(cb.value); });
+        updateChurchCounts();
         document.getElementById('edit_department').value = this.dataset.department || '';
         document.getElementById('edit_cell').value = this.dataset.cell || '';
         document.getElementById('edit_organizer').value = this.dataset.organizer || '';
         document.getElementById('edit_location').value = this.dataset.location || '';
+        document.getElementById('edit_contact_phone').value = this.dataset.contactPhone || '';
         document.getElementById('edit_start_date').value = this.dataset.startDate || '';
         document.getElementById('edit_end_date').value = this.dataset.endDate || '';
         programSessions.fill('edit', JSON.parse(this.dataset.sessions || '[]'));

@@ -265,7 +265,7 @@
                     <td>
                         <div class="member-name-cell">
                             <div class="member-avatar">{{ strtoupper(substr($Member->first_name ?? '?', 0, 1)) }}{{ strtoupper(substr($Member->last_name ?? '', 0, 1)) }}</div>
-                            <span class="fw-semibold">{{ strtoupper(trim($Member->first_name . ' ' . $Member->last_name)) }}</span>
+                            <span class="fw-semibold">@if($Member->title)<span class="text-muted fw-normal">{{ $Member->title->name }}</span> @endif{{ strtoupper(trim($Member->first_name . ' ' . $Member->last_name)) }}</span>
                         </div>
                     </td>
 
@@ -386,7 +386,7 @@
                         </li>
                         <li class="mb-2">
                             Fill one member per row. <strong>First Name</strong>, <strong>Last Name</strong> and
-                            <strong>Phone</strong> are required. Optional: Email, Gender (male/female), Date of Birth,
+                            <strong>Phone</strong> are required. Optional: Title ({{ $titles->pluck('name')->implode(', ') }}), Email, Gender (male/female), Date of Birth,
                             Foundation Classes (yes/no) + date, Baptism Status (yes/no) + date,
                             Marriage Status (married/single) + date, KingsChat Username. Dates as <code>YYYY-MM-DD</code>.
                         </li>
@@ -470,7 +470,7 @@
 
                     <div class="col-md-6">
                         <strong>Full Name:</strong><br>
-                        {{ $Member->first_name }} {{ $Member->last_name }}
+                        {{ $Member->titledName() }}
                     </div>
 
                     <div class="col-md-6">
@@ -632,6 +632,16 @@
                         {{-- ================= PROFILE TAB ================= --}}
                         <div class="tab-pane fade show active" id="profile{{ $Member->id }}">
                             <div class="row g-3">
+
+                                <div class="col-md-12">
+                                    <label class="form-label">Title</label>
+                                    <select name="title_id" class="form-select" style="max-width:260px;">
+                                        <option value="">-- None --</option>
+                                        @foreach($titles as $title)
+                                            <option value="{{ $title->id }}" @selected((int) $Member->title_id === $title->id)>{{ $title->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>

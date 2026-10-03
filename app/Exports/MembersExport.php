@@ -30,6 +30,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
     {
         return [
             '#',
+            'Title',
             'Full Name',
             'Phone',
             'Email',
@@ -52,6 +53,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
 
         return [
             $row,
+            optional($member->title)->name,
             trim($member->first_name . ' ' . $member->last_name),
             $member->phone,
             $member->email,
@@ -76,24 +78,25 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
     {
         return [
             'A' => 5,
-            'B' => 26,
-            'C' => 16,
-            'D' => 26,
-            'E' => 20,
-            'F' => 26,
-            'G' => 24,
-            'H' => 22,
+            'B' => 12,
+            'C' => 26,
+            'D' => 16,
+            'E' => 26,
+            'F' => 20,
+            'G' => 26,
+            'H' => 24,
             'I' => 22,
-            'J' => 16,
-            'K' => 14,
+            'J' => 22,
+            'K' => 16,
             'L' => 14,
             'M' => 14,
+            'N' => 14,
         ];
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:M1')->applyFromArray([
+        $sheet->getStyle('A1:N1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -109,7 +112,7 @@ class MembersExport implements FromCollection, WithHeadings, WithMapping, WithSt
             ],
         ]);
 
-        $sheet->getStyle('A1:M1')->getBorders()->getAllBorders()
+        $sheet->getStyle('A1:N1')->getBorders()->getAllBorders()
             ->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
 
         $highestRow = $sheet->getHighestRow();

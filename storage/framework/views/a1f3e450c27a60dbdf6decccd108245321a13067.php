@@ -265,7 +265,7 @@
                     <td>
                         <div class="member-name-cell">
                             <div class="member-avatar"><?php echo e(strtoupper(substr($Member->first_name ?? '?', 0, 1))); ?><?php echo e(strtoupper(substr($Member->last_name ?? '', 0, 1))); ?></div>
-                            <span class="fw-semibold"><?php echo e(strtoupper(trim($Member->first_name . ' ' . $Member->last_name))); ?></span>
+                            <span class="fw-semibold"><?php if($Member->title): ?><span class="text-muted fw-normal"><?php echo e($Member->title->name); ?></span> <?php endif; ?><?php echo e(strtoupper(trim($Member->first_name . ' ' . $Member->last_name))); ?></span>
                         </div>
                     </td>
 
@@ -348,15 +348,15 @@
                 <?php
 if (! isset($_instance)) {
     $html = \Livewire\Livewire::mount('members.create-member')->html();
-} elseif ($_instance->childHasBeenRendered('6qmqqgz')) {
-    $componentId = $_instance->getRenderedChildComponentId('6qmqqgz');
-    $componentTag = $_instance->getRenderedChildComponentTagName('6qmqqgz');
+} elseif ($_instance->childHasBeenRendered('BGf1bID')) {
+    $componentId = $_instance->getRenderedChildComponentId('BGf1bID');
+    $componentTag = $_instance->getRenderedChildComponentTagName('BGf1bID');
     $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
-    $_instance->preserveRenderedChild('6qmqqgz');
+    $_instance->preserveRenderedChild('BGf1bID');
 } else {
     $response = \Livewire\Livewire::mount('members.create-member');
     $html = $response->html();
-    $_instance->logRenderedChild('6qmqqgz', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+    $_instance->logRenderedChild('BGf1bID', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
 }
 echo $html;
 ?>
@@ -401,7 +401,7 @@ echo $html;
                         </li>
                         <li class="mb-2">
                             Fill one member per row. <strong>First Name</strong>, <strong>Last Name</strong> and
-                            <strong>Phone</strong> are required. Optional: Email, Gender (male/female), Date of Birth,
+                            <strong>Phone</strong> are required. Optional: Title (<?php echo e($titles->pluck('name')->implode(', ')); ?>), Email, Gender (male/female), Date of Birth,
                             Foundation Classes (yes/no) + date, Baptism Status (yes/no) + date,
                             Marriage Status (married/single) + date, KingsChat Username. Dates as <code>YYYY-MM-DD</code>.
                         </li>
@@ -486,7 +486,7 @@ echo $html;
 
                     <div class="col-md-6">
                         <strong>Full Name:</strong><br>
-                        <?php echo e($Member->first_name); ?> <?php echo e($Member->last_name); ?>
+                        <?php echo e($Member->titledName()); ?>
 
                     </div>
 
@@ -662,6 +662,16 @@ echo $html;
                         
                         <div class="tab-pane fade show active" id="profile<?php echo e($Member->id); ?>">
                             <div class="row g-3">
+
+                                <div class="col-md-12">
+                                    <label class="form-label">Title</label>
+                                    <select name="title_id" class="form-select" style="max-width:260px;">
+                                        <option value="">-- None --</option>
+                                        <?php $__currentLoopData = $titles; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $title): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <option value="<?php echo e($title->id); ?>" <?php if((int) $Member->title_id === $title->id): echo 'selected'; endif; ?>><?php echo e($title->name); ?></option>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </select>
+                                </div>
 
                                 <div class="col-md-6">
                                     <label class="form-label">First Name</label>

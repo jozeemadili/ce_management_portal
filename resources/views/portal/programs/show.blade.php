@@ -187,7 +187,7 @@
                         <table class="table prog-table align-middle">
                             <tr><td class="text-muted" width="220">Organizer</td><td>{{ $program->organizer ?? '—' }}</td></tr>
                             <tr><td class="text-muted">Contact Phone</td><td>@if($program->contact_phone)<a href="tel:{{ $program->contact_phone }}">{{ $program->contact_phone }}</a>@else — @endif</td></tr>
-                            <tr><td class="text-muted">Church</td><td>{{ optional($program->church)->name ?? ($program->scope === 'global' ? 'Global' : '—') }}</td></tr>
+                            <tr><td class="text-muted">{{ $program->scope === 'church' && count($program->churchIds()) > 1 ? 'Churches' : 'Church' }}</td><td>{{ in_array($program->scope, ['global', 'church']) ? $program->churchNames() : '—' }}</td></tr>
                             <tr><td class="text-muted">Department</td><td>{{ optional($program->department)->name ?? '—' }}</td></tr>
                             <tr><td class="text-muted">Cell Group</td><td>{{ optional($program->cellGroup)->name ?? '—' }}</td></tr>
                             <tr><td class="text-muted">QR/Barcode Check-in</td><td>{{ $program->qrAvailable() ? 'Enabled (per session)' : 'Not enabled' }}</td></tr>

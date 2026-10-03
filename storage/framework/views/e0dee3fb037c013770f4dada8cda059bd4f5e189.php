@@ -30,6 +30,11 @@
             </a>
         </li>
         <?php endif; ?>
+        <li>
+            <a class="btn btn-outline-secondary" href="<?php echo e(route('programs.checkin-poster', $program->id)); ?>" target="_blank">
+                <i class="icofont icofont-print"></i> Check-in QR Poster
+            </a>
+        </li>
         <?php if($program->classification === 'special'): ?>
         <li>
             <?php $smsCount = $registrations->where('registration_status', 'registered')->count(); ?>
@@ -185,7 +190,8 @@
                         <?php endif; ?>
                         <table class="table prog-table align-middle">
                             <tr><td class="text-muted" width="220">Organizer</td><td><?php echo e($program->organizer ?? '—'); ?></td></tr>
-                            <tr><td class="text-muted">Church</td><td><?php echo e(optional($program->church)->name ?? ($program->scope === 'global' ? 'Global' : '—')); ?></td></tr>
+                            <tr><td class="text-muted">Contact Phone</td><td><?php if($program->contact_phone): ?><a href="tel:<?php echo e($program->contact_phone); ?>"><?php echo e($program->contact_phone); ?></a><?php else: ?> — <?php endif; ?></td></tr>
+                            <tr><td class="text-muted"><?php echo e($program->scope === 'church' && count($program->churchIds()) > 1 ? 'Churches' : 'Church'); ?></td><td><?php echo e(in_array($program->scope, ['global', 'church']) ? $program->churchNames() : '—'); ?></td></tr>
                             <tr><td class="text-muted">Department</td><td><?php echo e(optional($program->department)->name ?? '—'); ?></td></tr>
                             <tr><td class="text-muted">Cell Group</td><td><?php echo e(optional($program->cellGroup)->name ?? '—'); ?></td></tr>
                             <tr><td class="text-muted">QR/Barcode Check-in</td><td><?php echo e($program->qrAvailable() ? 'Enabled (per session)' : 'Not enabled'); ?></td></tr>

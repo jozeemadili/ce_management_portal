@@ -41,6 +41,7 @@ class MemberManagementController extends Controller
         }
 
         $query = Member::with([
+            'title',
             'church',
             'member_roles.member_designation',
             'cell_groups',
@@ -114,6 +115,7 @@ class MemberManagementController extends Controller
             'departments'  => $departments,
             'stats'        => $stats,
             'uploadChurch' => $this->uploaderChurch(),
+            'titles'       => \App\Models\MemberTitle::active()->get(),
         ]);
     }
 
@@ -145,6 +147,7 @@ class MemberManagementController extends Controller
             'marriage_dates',
         ]) + [
             'kingschat_username' => Member::normaliseKingschat($request->input('kingschat_username')),
+            'title_id' => \App\Models\MemberTitle::whereKey($request->input('title_id'))->value('id'),
         ]);
 
         $member->member_roles()->delete();

@@ -56,7 +56,7 @@
                         <i class="icofont icofont-calendar"></i>
                         {{ $service->recurrence_frequency === 'daily' ? 'Every day' : collect($service->recurrence_days)->map(fn ($d) => ucfirst($d))->implode(', ') }}
                         &middot; default {{ substr($service->start_time, 0, 5) }}&ndash;{{ substr($service->end_time, 0, 5) }}
-                        &middot; {{ $service->scope === 'global' ? 'All churches' : 'One church' }}
+                        &middot; {{ \Illuminate\Support\Str::limit($service->churchNames(), 60) }}
                         @if($customTimes->get($service->id))
                             &middot; {{ $customTimes->get($service->id) }} church(es) with their own time
                         @endif

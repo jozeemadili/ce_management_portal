@@ -47,7 +47,7 @@ class ChurchServices
      */
     public function services(bool $withTraining = true): Collection
     {
-        return Program::where('classification', 'recurring')
+        return Program::with('churches')->where('classification', 'recurring')
             ->when(!$withTraining, fn ($q) => $q->where('is_training', false))
             ->orderBy('start_time')
             ->get()
@@ -145,7 +145,7 @@ class ChurchServices
 
     public function heldAt(Program $service, Church $church): bool
     {
-        return $service->scope === 'global' || (int) $service->church_id === (int) $church->id;
+        return $service->isHeldAtChurch((int) $church->id);
     }
 
     public function isServiceDay(Program $service, Carbon $date): bool

@@ -153,6 +153,11 @@
                 <span><i class="icofont icofont-location-pin"></i> {{ $program->location ?? '—' }}</span>
                 <span><i class="icofont icofont-people"></i> {{ $program->registrations_count ?? 0 }} reg.</span>
             </div>
+            @if($program->scope === 'church')
+            <div class="program-card-meta">
+                <span><i class="icofont icofont-building-alt"></i> {{ \Illuminate\Support\Str::limit($program->churchNames(), 70) }}</span>
+            </div>
+            @endif
             @if($program->classification === 'recurring')
             <div class="program-card-meta">
                 <span><i class="icofont icofont-refresh"></i> {{ ucfirst($program->recurrence_frequency ?? '—') }}@if($program->recurrence_days) &middot; {{ collect($program->recurrence_days)->map(fn($d)=>ucfirst($d))->implode(', ') }} @endif</span>
@@ -182,6 +187,7 @@
                     data-classification="{{ $program->classification }}"
                     data-scope="{{ $program->scope }}"
                     data-church="{{ $program->church_id }}"
+                    data-churches='@json($program->churchIds())'
                     data-department="{{ $program->department_id }}"
                     data-cell="{{ $program->cell_group_id }}"
                     data-organizer="{{ $program->organizer }}"
@@ -278,6 +284,22 @@ const programSessions = (function () {
     return { add, fill };
 })();
 
+// Church tickboxes: search filter + "N selected" counter.
+function updateChurchCounts() {
+    document.querySelectorAll('.church-pick-count').forEach(el => {
+        el.textContent = document.querySelectorAll('#' + el.dataset.target + ' input:checked').length;
+    });
+}
+document.addEventListener('change', e => { if (e.target.matches('.church-pick input')) updateChurchCounts(); });
+document.querySelectorAll('.church-pick-search').forEach(input => {
+    input.addEventListener('input', () => {
+        const q = input.value.trim().toLowerCase();
+        document.querySelectorAll('#' + input.dataset.target + ' .church-pick-item').forEach(item => {
+            item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+});
+
 function progToggle(triggerId, wrapId, testFn) {
     const trigger = document.getElementById(triggerId);
     const wrap = document.getElementById(wrapId);
@@ -306,7 +328,9 @@ document.querySelectorAll('.edit-program-btn').forEach(btn => {
         document.getElementById('edit_category').value = this.dataset.category;
         document.getElementById('edit_classification').value = this.dataset.classification;
         document.getElementById('edit_scope').value = this.dataset.scope;
-        document.getElementById('edit_church').value = this.dataset.church || '';
+        const picked = JSON.parse(this.dataset.churches || '[]').map(String);
+        document.querySelectorAll('#edit_churches input[type=checkbox]').forEach(cb => { cb.checked = picked.includes(cb.value); });
+        updateChurchCounts();
         document.getElementById('edit_department').value = this.dataset.department || '';
         document.getElementById('edit_cell').value = this.dataset.cell || '';
         document.getElementById('edit_organizer').value = this.dataset.organizer || '';

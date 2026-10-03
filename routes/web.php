@@ -27,6 +27,7 @@ use App\Http\Controllers\API\Programs\ProgramSettingsController;
 use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
 use App\Http\Controllers\API\Programs\ChurchServiceController;
 use App\Http\Controllers\API\Church\InviteeController;
+use App\Http\Controllers\API\Church\MemberTitleController;
 use App\Http\Controllers\NewSoulFeedbackController;
 use App\Http\Controllers\SelfCheckInController;
 
@@ -249,6 +250,12 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     Route::post('services/occurrences/{occurrence}/report/reopen', [ChurchServiceController::class, 'reopenReport'])->name('services.report.reopen');
 
     //Church Setup - New Invitees (new souls followed up by their church)
+    //Church Setup - Member titles (Brother, Sister, Deacon...)
+    Route::get('member-titles', [MemberTitleController::class, 'index'])->name('member-titles.index');
+    Route::post('member-titles', [MemberTitleController::class, 'store'])->name('member-titles.store');
+    Route::post('member-titles/{title}/update', [MemberTitleController::class, 'update'])->name('member-titles.update');
+    Route::post('member-titles/{title}/delete', [MemberTitleController::class, 'destroy'])->name('member-titles.destroy');
+
     Route::get('new-invitees', [InviteeController::class, 'index'])->name('invitees.index');
     Route::get('new-invitees/dashboard', [NewSoulController::class, 'dashboard'])->name('invitees.dashboard');
     Route::post('new-invitees/{invitee}/update', [InviteeController::class, 'update'])->name('invitees.update');

@@ -6,6 +6,7 @@ use App\Models\Church;
 use App\Models\Member;
 use App\Models\MemberDesignation;
 use App\Models\MemberRole;
+use App\Models\MemberTitle;
 use App\Models\User;
 use App\Services\Concerns\ReadsSpreadsheetRows;
 use Illuminate\Support\Facades\DB;
@@ -103,6 +104,17 @@ class MemberBulkImporter
                 $problem = 'A login account already uses this email (' . trim($login->first_name . ' ' . $login->last_name) . ').';
             }
 
+            // Title: blank is fine; anything else must be on the titles list.
+            $titleId = null;
+            if (!$problem && !$this->isEmpty($row['title'] ?? null)) {
+                $title = MemberTitle::match((string) $row['title']);
+                if (!$title) {
+                    $problem = 'Title "' . $row['title'] . '" is not on the list (' . MemberTitle::active()->pluck('name')->implode(', ') . ').';
+                } else {
+                    $titleId = $title->id;
+                }
+            }
+
             $dates = [];
             if (!$problem) {
                 foreach ([
@@ -136,6 +148,7 @@ class MemberBulkImporter
             }
 
             $valid[] = [
+                'title_id' => $titleId,
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'phone' => $phone,

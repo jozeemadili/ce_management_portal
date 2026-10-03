@@ -93,7 +93,7 @@ class SelfCheckInController extends Controller
 
         if ($isService) {
             $churches = $program->scope === 'church'
-                ? Church::whereKey($program->church_id)->get()
+                ? Church::whereIn('id', $program->churchIds())->orderBy('name')->get()
                 : Church::where('status', 'ACTIVE')->orderBy('name')->get();
             $church = $churches->firstWhere('id', (int) $request->get('church', optional(auth()->user()->member)->church_id))
                 ?? $churches->first();

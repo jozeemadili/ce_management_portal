@@ -85,7 +85,7 @@
                     @foreach($services as $service)
                         @php $o = $overrides->get($service->id . '-' . $church->id); @endphp
                         <td>
-                            @if($service->scope === 'church' && (int) $service->church_id !== (int) $church->id)
+                            @if(!$service->isHeldAtChurch((int) $church->id))
                                 <span class="text-muted">&mdash;</span>
                             @else
                                 <div class="time-pair">

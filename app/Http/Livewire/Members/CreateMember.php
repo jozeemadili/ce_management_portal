@@ -17,6 +17,7 @@ use App\Services\AccountLogin;
 
 class CreateMember extends Component
 {
+    public $title_id;
     public $first_name;
     public $last_name;
     public $phone;
@@ -28,6 +29,7 @@ class CreateMember extends Component
     public function rules()
     {
         return [
+            'title_id'   => 'nullable|exists:member_titles,id',
             'first_name' => 'required|string',
             'last_name'  => 'required|string',
             'phone'      => ['required', 'string', function ($attribute, $value, $fail) {
@@ -87,6 +89,7 @@ class CreateMember extends Component
              | soul) who already has this phone, instead of a duplicate
              |------------------------------*/
             $attributes = [
+                'title_id'  => $this->title_id ?: null,
                 'user_id'   => $user->id,
                 'church_id' => $this->church_id,
                 'first_name'=> $this->first_name,
@@ -164,6 +167,7 @@ public function render()
     return view('livewire.members.create-member', [
         'churches' => $churches,
         'designations' => MemberDesignation::orderBy('name')->get(),
+        'titles' => \App\Models\MemberTitle::active()->get(),
     ]);
 }
 

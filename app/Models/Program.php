@@ -61,9 +61,59 @@ class Program extends Model
         'status', 'created_by', 'is_training',
     ];
 
+    /** The main (first) church of a church-scoped program. */
     public function church()
     {
         return $this->belongsTo(Church::class);
+    }
+
+    /** All churches holding a church-scoped program (program_churches). */
+    public function churches()
+    {
+        return $this->belongsToMany(Church::class, 'program_churches')->withTimestamps()->orderBy('name');
+    }
+
+    /** Ids of the churches holding this church-scoped program. */
+    public function churchIds(): array
+    {
+        $ids = $this->relationLoaded('churches')
+            ? $this->churches->pluck('id')->all()
+            : $this->churches()->pluck('churches.id')->all();
+
+        return $ids ?: array_filter([$this->church_id]);
+    }
+
+    /** Is this program held at that church (global programs: everywhere)? */
+    public function isHeldAtChurch(int $churchId): bool
+    {
+        return $this->scope === 'global'
+            || ($this->scope === 'church' && in_array($churchId, array_map('intval', $this->churchIds()), true));
+    }
+
+    /** Church names for display ("All churches" for global). */
+    public function churchNames(): string
+    {
+        if ($this->scope === 'global') {
+            return 'All churches';
+        }
+        $names = $this->churches->pluck('name');
+
+        return $names->isNotEmpty() ? $names->implode(', ') : (string) optional($this->church)->name;
+    }
+
+    /**
+     * Programs held at any of $churchIds: global ones, and church-scoped
+     * ones whose main church or one of whose churches is among them.
+     */
+    public function scopeHeldAtChurches($query, $churchIds)
+    {
+        $churchIds = collect($churchIds)->all();
+
+        return $query->where(function ($q) use ($churchIds) {
+            $q->where('scope', 'global')
+              ->orWhereIn('church_id', $churchIds)
+              ->orWhereHas('churches', fn ($c) => $c->whereIn('churches.id', $churchIds));
+        });
     }
 
     public function department()
@@ -232,7 +282,8 @@ class Program extends Model
         return $query->where(function ($q) use ($member, $departmentIds, $cellIds) {
             $q->where('scope', 'global')
               ->orWhere(function ($q2) use ($member) {
-                  $q2->where('scope', 'church')->where('church_id', $member->church_id);
+                  $q2->where('scope', 'church')->where(fn ($q3) => $q3->where('church_id', $member->church_id)
+                      ->orWhereHas('churches', fn ($c) => $c->where('churches.id', $member->church_id)));
               })
               ->orWhere(function ($q2) use ($departmentIds) {
                   $q2->where('scope', 'department')->whereIn('department_id', $departmentIds);

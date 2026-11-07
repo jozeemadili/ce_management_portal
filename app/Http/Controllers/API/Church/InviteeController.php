@@ -13,7 +13,6 @@ use App\Models\ProgramOccurrence;
 use App\Services\InviteeManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Church Setup > New Invitees: new souls assigned to the user's churches.
@@ -95,27 +94,14 @@ class InviteeController extends Controller
             'note' => 'nullable|string|max:1000',
         ]);
 
-        $old = $invitee->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()];
-        $note = trim((string) ($data['note'] ?? ''));
-        if ($note !== '') {
-            $data['notes'] = trim(($invitee->notes ? $invitee->notes . "\n" : '') . now()->format('d M Y') . ' - ' . $note);
-        }
-
         // Ticked classes => their date (blank date = today).
         $classes = collect($data['classes'] ?? [])
             ->filter(fn ($c) => !empty($c['done']))
             ->map(fn ($c) => $c['date'] ?? null)
             ->all();
-        $status = $data['follow_up_status'];
 
-        $becameMember = DB::transaction(function () use ($invitee, $data, $classes, $status) {
-            $invitee->update(collect($data)->except(['note', 'classes', 'cell_group_id', 'follow_up_status'])->all());
-
-            return $this->invitees->recordProgress($invitee, $classes, $data['cell_group_id'] ?? null, $status, Auth::id());
-        });
-
-        ProgramAuditLog::record('new_soul.follow_up_updated', $invitee, $old,
-            $invitee->fresh()->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()]);
+        $becameMember = $this->invitees->updateFollowUp($invitee, $data, $classes, $data['cell_group_id'] ?? null,
+            $data['follow_up_status'], $data['note'] ?? null, Auth::id());
 
         return back()->with('success', $becameMember ?? $invitee->first_name . "'s follow-up was updated.");
     }

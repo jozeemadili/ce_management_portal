@@ -74,6 +74,36 @@ class InviteeManager
      * @return string what happened, for the flash message
      */
     /**
+     * Saves a follow-up (portal and mobile app): contact details, baptism,
+     * a dated note, then the progress (classes, cell, status).
+     *
+     * @param  array<string, mixed>  $fields  location, phone, email, baptism_status, baptism_date
+     * @param  array<int, string|null>  $classes  done class number => date
+     * @return string|null message when they became a member
+     */
+    public function updateFollowUp(Member $invitee, array $fields, array $classes, ?int $cellGroupId, string $status, ?string $note, ?int $userId): ?string
+    {
+        $old = $invitee->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()];
+
+        $fields = array_intersect_key($fields, array_flip(['location', 'phone', 'email', 'baptism_status', 'baptism_date']));
+        $note = trim((string) $note);
+        if ($note !== '') {
+            $fields['notes'] = trim(($invitee->notes ? $invitee->notes . "\n" : '') . now()->format('d M Y') . ' - ' . $note);
+        }
+
+        $becameMember = DB::transaction(function () use ($invitee, $fields, $classes, $cellGroupId, $status, $userId) {
+            $invitee->update($fields);
+
+            return $this->recordProgress($invitee, $classes, $cellGroupId, $status, $userId);
+        });
+
+        ProgramAuditLog::record('new_soul.follow_up_updated', $invitee, $old,
+            $invitee->fresh()->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()]);
+
+        return $becameMember;
+    }
+
+    /**
      * Follow-up progress of a new soul: the Foundation School classes done
      * (class number => date, missing = not done), and their cell group.
      *

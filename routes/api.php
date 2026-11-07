@@ -50,6 +50,17 @@ Route::prefix('v1')->group(function () {
         Route::post('services/occurrences/{occurrence}/scan', [ChurchServiceController::class, 'scanCheckIn']);
         Route::post('services/occurrences/{occurrence}/new-souls', [ChurchServiceController::class, 'addNewSouls']);
 
+        // Follow-up of new souls: status, cell, foundation classes, baptism.
+        Route::get('invitees', [\App\Http\Controllers\API\Mobile\InviteeController::class, 'index']);
+        Route::get('invitees/{invitee}', [\App\Http\Controllers\API\Mobile\InviteeController::class, 'show']);
+        Route::post('invitees/{invitee}/follow-up', [\App\Http\Controllers\API\Mobile\InviteeController::class, 'update']);
+        Route::post('invitees/{invitee}/make-member', [\App\Http\Controllers\API\Mobile\InviteeController::class, 'makeMember']);
+
+        // My extra phone numbers.
+        Route::get('me/phones', [\App\Http\Controllers\API\Mobile\MyPhonesController::class, 'index']);
+        Route::post('me/phones', [\App\Http\Controllers\API\Mobile\MyPhonesController::class, 'store']);
+        Route::delete('me/phones/{phone}', [\App\Http\Controllers\API\Mobile\MyPhonesController::class, 'destroy']);
+
         Route::get('pledges/campaigns', [PledgeCampaignController::class, 'index']);
         Route::get('pledges/members/search', [PledgeController::class, 'searchMembers']);
         Route::post('pledges', [PledgeController::class, 'store']);

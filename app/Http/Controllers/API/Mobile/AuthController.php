@@ -163,6 +163,7 @@ class AuthController extends Controller
                 'kingschat_username' => $member->kingschat_username,
                 'church_id' => $member->church_id,
                 'church' => optional($member->church)->name,
+                'phones' => $member->phones()->orderBy('id')->pluck('phone'),
             ] : null,
         ];
     }

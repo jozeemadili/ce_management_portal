@@ -426,6 +426,7 @@ class ChurchServiceController extends Controller
             'people.*.email' => 'nullable|email|max:150',
             'people.*.location' => 'nullable|string|max:255',
             'people.*.gender' => 'nullable|in:male,female',
+            'people.*.invited_by' => 'nullable|string|max:255',
         ]);
 
         $broughtBy = isset($data['member_id']) ? Member::find($data['member_id']) : null;

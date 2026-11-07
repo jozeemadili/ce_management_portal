@@ -294,6 +294,7 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed', 'me
     Route::get('security/access-control', [AccessControlController::class, 'index'])->name('access-control.index');
     Route::get('security/access-control/users', [AccessControlController::class, 'users'])->name('access-control.users');
     Route::post('security/access-control/{user}', [AccessControlController::class, 'save'])->name('access-control.save');
+    Route::post('security/access-control/{user}/super-admin', [AccessControlController::class, 'superAdmin'])->name('access-control.super-admin');
 
     //Security
     Route::get('security/users', [PortalUsersController::class, 'get'])->name('portal-users');

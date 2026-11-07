@@ -58,7 +58,7 @@
         <p class="text-muted mt-2 mb-0" style="font-size:.82rem;">
             Search by name, phone or email. Users see only the menus ticked for them, and can't open the pages of other menus.
             The same menus apply in the <strong>mobile app</strong> (marked 📱 App).
-            Everyone has <strong>Summary</strong> and <strong>Your Profile</strong>; ADMIN users see everything.
+            Everyone has <strong>Summary</strong> and <strong>Your Profile</strong>; <strong>super admins</strong> see everything and give menus to others.
         </p>
     </div>
     </div>
@@ -75,8 +75,13 @@
             <div class="text-muted" style="font-size:.85rem;">Nobody has been given menus yet.</div>
         @endforelse
         @if($admins->isNotEmpty())
-            <p class="modal-section-label mt-3 mb-1">Admins (see everything)</p>
-            <div style="font-size:.85rem;">{{ $admins->map(fn ($a) => trim($a->first_name . ' ' . $a->last_name))->implode(', ') }}</div>
+            <p class="modal-section-label mt-3 mb-1">Super admins (see everything)</p>
+            @foreach($admins as $a)
+                <div class="ac-user-row {{ $selected && $selected->id === $a->id ? 'active' : '' }}">
+                    <a href="{{ route('access-control.index', ['user' => $a->id]) }}">{{ trim($a->first_name . ' ' . $a->last_name) }}</a>
+                    <span class="ac-pill" style="background:#e6f7ee;color:#0f9d58;">Super admin</span>
+                </div>
+            @endforeach
         @endif
     </div>
     </div>
@@ -107,6 +112,20 @@
             </form>
             @endunless
         </div>
+
+        @if($iAmAdmin)
+            <form method="POST" action="{{ route('access-control.super-admin', $selected->id) }}" class="mb-3"
+                  onsubmit="return confirm('{{ $selected->role === 'ADMIN' ? 'Remove super admin from' : 'Make' }} {{ addslashes(trim($selected->first_name . ' ' . $selected->last_name)) }}{{ $selected->role === 'ADMIN' ? '?' : ' super admin? They will see every menu and can give menus to others.' }}')">
+                @csrf
+                <input type="hidden" name="make" value="{{ $selected->role === 'ADMIN' ? 0 : 1 }}">
+                @if($selected->role === 'ADMIN')
+                    <span class="badge bg-success me-2">Super admin</span>
+                    <button class="btn btn-sm btn-outline-danger">Remove super admin</button>
+                @else
+                    <button class="btn btn-sm btn-outline-success"><i class="icofont icofont-crown"></i> Make super admin</button>
+                @endif
+            </form>
+        @endif
 
         @if($locked)
             <div class="alert alert-info">{{ $locked }}</div>

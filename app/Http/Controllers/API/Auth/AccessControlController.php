@@ -119,6 +119,32 @@ class AccessControlController extends Controller
     }
 
     /**
+     * Super admin (role ADMIN): sees every menu on the portal and the app and
+     * gives menus to others. Only a super admin can give or take it away,
+     * and the last super admin can't be removed.
+     */
+    public function superAdmin(Request $request, User $user)
+    {
+        abort_unless($this->access->isAdmin(Auth::user()), 403, 'Only a super admin can do this.');
+
+        $make = $request->boolean('make');
+        $name = trim($user->first_name . ' ' . $user->last_name);
+
+        if (!$make && $this->access->isAdmin($user) && User::where('role', 'ADMIN')->count() <= 1) {
+            return back()->withErrors(['menus' => "{$name} is the only super admin. Make someone else super admin first."]);
+        }
+
+        $old = ['role' => $user->role];
+        $user->update(['role' => $make ? 'ADMIN' : 'Customer Admin']);
+        $this->access->forget($user);
+        ProgramAuditLog::record('access.super_admin_' . ($make ? 'given' : 'removed'), $user, $old, ['role' => $user->role]);
+
+        return redirect()->route('access-control.index', ['user' => $user->id])->with('success', $make
+            ? "{$name} is now super admin: sees every menu and can give menus to others."
+            : "{$name} is no longer super admin and now sees only the menus ticked below.");
+    }
+
+    /**
      * Menus this user may give to others: the sub-menus they have, and a
      * whole main menu only if they have every one of its sub-menus (having
      * one sub-menu shows the main menu header but must not let them give
@@ -141,7 +167,7 @@ class AccessControlController extends Controller
     private function lockReason(User $user): ?string
     {
         if ($this->access->isAdmin($user)) {
-            return trim($user->first_name . ' ' . $user->last_name) . ' is an ADMIN and always sees every menu.';
+            return trim($user->first_name . ' ' . $user->last_name) . ' is a super admin and always sees every menu on the portal and in the app.';
         }
         if ((int) $user->id === (int) Auth::id() && !$this->access->isAdmin(Auth::user())) {
             return 'You can\'t change your own access. Ask an administrator.';
@@ -155,6 +181,6 @@ class AccessControlController extends Controller
         return trim($u->first_name . ' ' . $u->last_name)
             . ($u->mobile ? ' · 0' . $u->mobile : '')
             . ($u->email ? ' · ' . $u->email : '')
-            . ($u->role === 'ADMIN' ? ' · ADMIN' : '');
+            . ($u->role === 'ADMIN' ? ' · Super admin' : '');
     }
 }

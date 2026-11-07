@@ -41,7 +41,7 @@
                 <label class="form-label">Status</label>
                 <select name="status" class="form-control">
                     <option value="">-- All --</option>
-                    @foreach(['present'=>'Present','absent'=>'Absent','late'=>'Late','excused'=>'Excused'] as $val=>$label)
+                    @foreach(['present'=>'Present','absent'=>'Absent'] as $val=>$label)
                         <option value="{{ $val }}" @selected(request('status')===$val)>{{ $label }}</option>
                     @endforeach
                 </select>
@@ -84,7 +84,7 @@
             <td class="fw-semibold">{{ $att->attendeeName() }}</td>
             <td>{{ $att->isNewSoul() ? 'Visitor' : 'Member' }}</td>
             <td>{{ optional(optional($att->member)->church)->name ?? '—' }}</td>
-            <td><span class="badge-pill badge-status-{{ $att->attendance_status }}">{{ ucfirst($att->attendance_status) }}</span></td>
+            <td><span class="badge-pill badge-status-{{ $att->isPresent() ? 'present' : 'absent' }}">{{ $att->statusLabel() }}</span></td>
             <td><span class="badge-pill badge-method-{{ $att->check_in_method }}">{{ $att->check_in_method === 'qr' ? 'QR Scan' : 'Manual' }}</span></td>
         </tr>
         @endforeach

@@ -107,14 +107,28 @@ class ProgramAttendanceController extends Controller
 
         $occurrence = $program->occurrenceForDate($data['date']);
 
+        $existing = ProgramAttendance::where('occurrence_id', $occurrence->id)
+            ->whereIn('member_id', array_keys($data['attendance'] ?? []))
+            ->get()
+            ->keyBy('member_id');
+
         foreach ($data['attendance'] ?? [] as $memberId => $status) {
+            $row = $existing->get($memberId);
+            $isPresent = in_array($status, ProgramAttendance::PRESENT_STATUSES, true);
+
+            // Unchanged (still present / still absent): keep the real check-in
+            // time and method (e.g. a QR check-in) instead of overwriting them.
+            if ($row && $row->isPresent() === $isPresent) {
+                continue;
+            }
+
             ProgramAttendance::updateOrCreate(
                 ['occurrence_id' => $occurrence->id, 'member_id' => $memberId],
                 [
                     'program_id' => $program->id,
                     'attendance_status' => $status,
                     'check_in_method' => 'manual',
-                    'checked_in_at' => now(),
+                    'checked_in_at' => $isPresent ? now() : null,
                     'recorded_by' => Auth::id(),
                 ]
             );

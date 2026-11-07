@@ -45,7 +45,7 @@ class ProgramAttendanceExport implements FromCollection, WithHeadings, WithMappi
             $att->attendeeName(),
             $att->isNewSoul() ? 'Visitor' : 'Member',
             optional(optional($att->member)->church)->name ?? '—',
-            ucfirst($att->attendance_status),
+            $att->statusLabel(),
             $att->check_in_method === 'qr' ? 'QR Scan' : 'Manual',
         ];
     }

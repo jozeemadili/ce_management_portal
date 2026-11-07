@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\CellGroup;
 use App\Models\Church;
 use App\Models\Member;
+use App\Models\MemberFoundationClass;
 use App\Models\MemberDesignation;
 use App\Models\MemberRole;
 use App\Models\NewSoulAssignment;
@@ -71,6 +73,74 @@ class InviteeManager
      *
      * @return string what happened, for the flash message
      */
+    /**
+     * Follow-up progress of a new soul: the Foundation School classes done
+     * (class number => date, missing = not done), and their cell group.
+     *
+     * The status follows the progress: in a cell -> "Connected to cell",
+     * else any class done -> "Foundation classes" (a manual "Closed" is kept).
+     * Finishing all MemberFoundationClass::TOTAL classes makes them a member.
+     *
+     * @param  array<int, string|null>  $classes
+     * @return string|null message when they became a member
+     */
+    public function recordProgress(Member $invitee, array $classes, ?int $cellGroupId, string $status, ?int $userId): ?string
+    {
+        if ($cellGroupId) {
+            $cell = CellGroup::findOrFail($cellGroupId);
+            if ((int) $cell->church_id !== (int) $invitee->church_id) {
+                throw ValidationException::withMessages(['cell_group_id' => 'Choose a cell group of ' . optional($invitee->church)->name . '.']);
+            }
+        } elseif ($status === 'connected_to_cell') {
+            throw ValidationException::withMessages(['cell_group_id' => 'Choose the cell group they were connected to.']);
+        }
+
+        return DB::transaction(function () use ($invitee, $classes, $cellGroupId, $status, $userId) {
+            // Foundation classes: keep ticked ones (with their date), remove unticked.
+            $done = collect($classes)
+                ->filter(fn ($date, $no) => $no >= 1 && $no <= MemberFoundationClass::TOTAL)
+                ->map(fn ($date) => $date ?: now()->toDateString());
+            MemberFoundationClass::where('member_id', $invitee->id)->whereNotIn('class_no', $done->keys()->all() ?: [0])->delete();
+            foreach ($done as $no => $date) {
+                MemberFoundationClass::updateOrCreate(
+                    ['member_id' => $invitee->id, 'class_no' => $no],
+                    ['completed_on' => $date, 'recorded_by' => $userId]
+                );
+            }
+
+            // Cell group: one cell per person; keep their role if it is the same cell.
+            $inCell = $invitee->cell_groups()->exists();
+            if ($cellGroupId) {
+                $current = $invitee->cell_groups()->pluck('cell_groups.id')->all();
+                if ($current !== [$cellGroupId]) {
+                    $invitee->cell_groups()->sync([$cellGroupId => ['role' => 'CELL_MEMBER']]);
+                }
+                $inCell = true;
+            }
+
+            if ($status !== 'closed') {
+                if ($inCell) {
+                    $status = 'connected_to_cell';
+                } elseif ($done->isNotEmpty() && in_array($status, ['new', 'contacted', 'follow_up'], true)) {
+                    $status = 'foundation_classes';
+                }
+            }
+
+            $finished = $done->count() >= MemberFoundationClass::TOTAL;
+            $invitee->update(array_filter([
+                'follow_up_status' => $status,
+                'foundation_clases' => $finished ? 'yes' : null,
+                'foundation_clases_date' => $finished ? $done->max() : null,
+            ]));
+
+            if ($finished && $invitee->member_type !== 'member') {
+                return 'Completed all ' . MemberFoundationClass::TOTAL . ' foundation classes. ' . $this->makeMember($invitee->fresh(), $userId);
+            }
+
+            return null;
+        });
+    }
+
     public function makeMember(Member $invitee, ?int $userId): string
     {
         if ($invitee->member_type === 'member') {

@@ -34,17 +34,20 @@
     <p class="modal-section-label"><i class="icofont icofont-users"></i> Cell Members</p>
 
     @foreach($members as $index => $row)
-    <div class="row g-2 align-items-center mb-2">
+    <div class="row g-2 align-items-center mb-2" wire:key="row-{{ $row['key'] }}">
 
-        <div class="col-md-6">
-            <select class="form-control" wire:model="members.{{ $index }}.member_id">
-                <option value="">-- Select Member --</option>
-                @foreach($churchMembers as $m)
-                    <option value="{{ $m->id }}">
-                        {{ $m->first_name }} {{ $m->last_name }} ({{ $m->phone }})
-                    </option>
-                @endforeach
-            </select>
+        <div class="col-md-6" wire:key="member-pick-{{ $row['key'] }}">
+            <div wire:ignore>
+                <select class="form-control cell-member-select" data-row-key="{{ $row['key'] }}">
+                    <option value="">-- Select Member --</option>
+                    @foreach($churchMembers as $m)
+                        <option value="{{ $m->id }}" @selected((string) $row['member_id'] === (string) $m->id)>
+                            {{ $m->first_name }} {{ $m->last_name }} ({{ $m->phone }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @error('members.' . $index . '.member_id') <small class="text-danger">Choose a member.</small> @enderror
         </div>
 
         <div class="col-md-4">

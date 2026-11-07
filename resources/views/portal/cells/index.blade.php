@@ -440,14 +440,33 @@
             });
         }
 
-        // Church filter on the main listing (plain page select, init once).
-        // Note: deliberately NOT applied inside the New Cell Group modal - that
-        // form is a Livewire component whose member rows re-render on every
-        // add/remove/validation round-trip. Select2 wraps a <select> with extra
-        // DOM Livewire doesn't know about, and Livewire's morphdom diff against
-        // that untracked markup can break the component's click handlers
-        // entirely (e.g. "Add Member" appearing to do nothing).
+        // Church filter on the main listing.
         initSelect2In(document, '.cell-church-select', { placeholder: 'Search for a church...' });
+
+        // Member pickers in the New Cell Group form (Livewire). Each picker sits
+        // in a wire:ignore block so Livewire leaves Select2's markup alone; the
+        // chosen member is sent back with setMember(rowKey, id).
+        function initMemberPickers() {
+            $('.cell-member-select').not('.select2-hidden-accessible').each(function () {
+                var $el = $(this);
+                $el.select2({
+                    width: '100%',
+                    allowClear: true,
+                    placeholder: 'Search by name or phone...',
+                    dropdownParent: $('#newCellModal')
+                }).on('change', function () {
+                    var root = this.closest('[wire\\:id]');
+                    if (root && window.livewire) {
+                        window.livewire.find(root.getAttribute('wire:id')).call('setMember', $el.data('row-key'), $el.val() || '');
+                    }
+                });
+            });
+        }
+        initMemberPickers();
+        document.addEventListener('livewire:load', function () {
+            initMemberPickers();
+            window.Livewire.hook('message.processed', initMemberPickers);
+        });
     })();
 </script>
 @endpush

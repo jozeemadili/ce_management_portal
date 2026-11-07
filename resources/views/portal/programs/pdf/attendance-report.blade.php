@@ -74,10 +74,8 @@
 
     <div class="summary-row">
         <div class="summary-box"><div class="num">{{ $summary['total'] }}</div><div class="lbl">Total</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['present'] }}</div><div class="lbl">Present</div></div>
+        <div class="summary-box"><div class="num">{{ $summary['present'] }}</div><div class="lbl">Present{{ $summary['late'] ? ' (' . $summary['late'] . ' late)' : '' }}</div></div>
         <div class="summary-box"><div class="num">{{ $summary['absent'] }}</div><div class="lbl">Absent</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['late'] }}</div><div class="lbl">Late</div></div>
-        <div class="summary-box"><div class="num">{{ $summary['excused'] }}</div><div class="lbl">Excused</div></div>
     </div>
 
     <table class="attendees">
@@ -100,7 +98,7 @@
                 <td>{{ optional($att->session)->name ?? '—' }}@if($att->checked_in_at) ({{ $att->checked_in_at->format('H:i') }})@endif</td>
                 <td>{{ $att->isNewSoul() ? 'Visitor' : 'Member' }}</td>
                 <td>{{ optional(optional($att->member)->church)->name ?? '—' }}</td>
-                <td>{{ ucfirst($att->attendance_status) }}</td>
+                <td>{{ $att->statusLabel() }}</td>
                 <td>{{ $att->check_in_method === 'qr' ? 'QR Scan' : 'Manual' }}</td>
             </tr>
         @empty

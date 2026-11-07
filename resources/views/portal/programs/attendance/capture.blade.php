@@ -88,8 +88,9 @@
             <td>{{ $member->phone ?? '—' }}</td>
             <td>
                 <div class="btn-group att-status-group member-status" data-member="{{ $member->id }}">
-                    @foreach(['present'=>'Present','absent'=>'Absent','late'=>'Late','excused'=>'Excused'] as $val => $label)
-                    <button type="button" class="btn btn-outline-secondary status-btn {{ $current === $val ? 'active-'.$val : '' }}" data-value="{{ $val }}">{{ $label }}</button>
+                    @php $shown = in_array($current, ['present', 'late'], true) ? 'present' : (in_array($current, ['absent', 'excused'], true) ? 'absent' : null); @endphp
+                    @foreach(['present'=>'Present','absent'=>'Absent'] as $val => $label)
+                    <button type="button" class="btn btn-outline-secondary status-btn {{ $shown === $val ? 'active-'.$val : '' }}" data-value="{{ $val }}">{{ $label }}{{ $val === 'present' && $current === 'late' ? ' (late)' : '' }}</button>
                     @endforeach
                 </div>
                 <input type="hidden" name="attendance[{{ $member->id }}]" class="status-input" value="{{ $current }}">

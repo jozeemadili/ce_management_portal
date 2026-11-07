@@ -183,6 +183,7 @@ class MemberMerger
             $moved['roles'] = $this->movePivot('member_roles', 'designation_id', $dup->id, $keep->id);
             $moved['cells'] = $this->movePivot('cell_group_members', 'cell_group_id', $dup->id, $keep->id);
             $moved['departments'] = $this->movePivot('department_members', 'department_id', $dup->id, $keep->id);
+            $moved['foundation_classes'] = $this->movePivot('member_foundation_classes', 'class_no', $dup->id, $keep->id);
 
             // 4. Registrations: one per program; payments follow the registration kept.
             $moved['registrations'] = 0;

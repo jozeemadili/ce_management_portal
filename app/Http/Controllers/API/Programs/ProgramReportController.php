@@ -126,8 +126,11 @@ class ProgramReportController extends Controller
             $query->where('program_id', $request->program_id);
         }
 
-        if ($request->filled('status')) {
-            $query->where('attendance_status', $request->status);
+        // Two statuses in reports: Present (incl. late), Absent (incl. excused).
+        if ($request->status === 'present') {
+            $query->whereIn('attendance_status', ProgramAttendance::PRESENT_STATUSES);
+        } elseif ($request->status === 'absent') {
+            $query->whereIn('attendance_status', ProgramAttendance::ABSENT_STATUSES);
         }
 
         if ($request->filled('from')) {
@@ -216,10 +219,9 @@ class ProgramReportController extends Controller
             : null;
 
         $summary = [
-            'present' => $attendances->where('attendance_status', 'present')->count(),
-            'absent' => $attendances->where('attendance_status', 'absent')->count(),
+            'present' => $attendances->whereIn('attendance_status', ProgramAttendance::PRESENT_STATUSES)->count(),
+            'absent' => $attendances->whereIn('attendance_status', ProgramAttendance::ABSENT_STATUSES)->count(),
             'late' => $attendances->where('attendance_status', 'late')->count(),
-            'excused' => $attendances->where('attendance_status', 'excused')->count(),
             'total' => $attendances->count(),
         ];
 

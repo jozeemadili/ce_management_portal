@@ -42,18 +42,28 @@ class CreateCellGroup extends Component
         $this->church_id = $this->church->id;
 
         // Start with one member row
+        $this->addMember();
+    }
+
+    public function addMember()
+    {
+        // "key" keeps each row's searchable picker (Select2, wire:ignore) tied
+        // to its row when rows above it are removed.
         $this->members[] = [
+            'key' => uniqid('row'),
             'member_id' => '',
             'role' => '',
         ];
     }
 
-    public function addMember()
+    /** Called by the searchable member picker. */
+    public function setMember($key, $memberId)
     {
-        $this->members[] = [
-            'member_id' => '',
-            'role' => '',
-        ];
+        foreach ($this->members as $i => $row) {
+            if (($row['key'] ?? null) === $key) {
+                $this->members[$i]['member_id'] = $memberId;
+            }
+        }
     }
 
     public function removeMember($index)

@@ -9,6 +9,9 @@
     .step-pill { display: inline-block; font-size: .7rem; font-weight: 600; border-radius: 20px; padding: 2px 9px; margin: 1px 2px 1px 0; }
     .step-yes { background: #e6f7ee; color: #0f9d58; }
     .step-no { background: #eef0f3; color: #6b7280; }
+    .fc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+    .fc-item { border: 1px solid #e3e8f0; border-radius: 10px; padding: 8px 10px; }
+    .fc-item.fc-done { background: #e6f7ee; border-color: #b7e4c7; }
 </style>
 @endpush
 
@@ -99,7 +102,9 @@
             <td>
                 <span class="badge-pill badge-status-{{ $invitee->follow_up_status ?? 'new' }}">{{ \App\Http\Controllers\API\Church\InviteeController::STATUSES[$invitee->follow_up_status ?? 'new'] ?? ucfirst($invitee->follow_up_status) }}</span>
                 <div class="mt-1">
-                    <span class="step-pill {{ $invitee->foundation_clases === 'yes' ? 'step-yes' : 'step-no' }}">Foundation {{ $invitee->foundation_clases === 'yes' ? '✓' : '—' }}</span>
+                    @php $fcDone = $invitee->foundationClasses->count(); $fcAll = $invitee->foundation_clases === 'yes' || $fcDone >= \App\Models\MemberFoundationClass::TOTAL; @endphp
+                    <span class="step-pill {{ $fcAll ? 'step-yes' : 'step-no' }}">Foundation {{ $fcAll ? '✓' : $fcDone . '/' . \App\Models\MemberFoundationClass::TOTAL }}</span>
+                    @if($cell = $invitee->cell_groups->first())<span class="step-pill step-yes">Cell: {{ strtoupper($cell->name) }}</span>@endif
                     <span class="step-pill {{ $invitee->baptism_status === 'yes' ? 'step-yes' : 'step-no' }}">Baptism {{ $invitee->baptism_status === 'yes' ? '✓' : '—' }}</span>
                 </div>
             </td>
@@ -145,14 +150,40 @@
                     <div class="col-md-6"><label class="form-label">Phone</label><input name="phone" class="form-control" value="{{ $invitee->phone }}"></div>
                     <div class="col-md-6"><label class="form-label">Email</label><input type="email" name="email" class="form-control" value="{{ $invitee->email }}"></div>
                     <div class="col-md-6">
-                        <label class="form-label">Foundation classes</label>
-                        <select name="foundation_clases" class="form-select">
-                            <option value="">Not yet</option>
-                            <option value="yes" @selected($invitee->foundation_clases === 'yes')>Yes - completed</option>
-                            <option value="no" @selected($invitee->foundation_clases === 'no')>No</option>
+                        <label class="form-label">Cell group</label>
+                        @php $myCell = $invitee->cell_groups->first(); $cells = $cellsByChurch->get($invitee->church_id, collect()); @endphp
+                        <select name="cell_group_id" class="form-select">
+                            <option value="">{{ $cells->isEmpty() ? 'No cell groups in ' . optional($invitee->church)->name . ' yet' : 'Not in a cell yet' }}</option>
+                            @foreach($cells as $cell)
+                                <option value="{{ $cell->id }}" @selected(optional($myCell)->id === $cell->id)>{{ strtoupper($cell->name) }}</option>
+                            @endforeach
                         </select>
+                        <div class="inv-meta mt-1">Choosing a cell sets the status to <em>Connected to cell</em>.</div>
                     </div>
-                    <div class="col-md-6"><label class="form-label">Foundation classes date</label><input type="date" name="foundation_clases_date" class="form-control" value="{{ optional($invitee->foundation_clases_date)->format('Y-m-d') }}"></div>
+                    <div class="col-12">
+                        @php $doneClasses = $invitee->foundationClasses->keyBy('class_no'); $total = \App\Models\MemberFoundationClass::TOTAL; @endphp
+                        <label class="form-label mb-1">
+                            Foundation classes
+                            <span class="step-pill {{ $doneClasses->count() >= $total ? 'step-yes' : 'step-no' }}">{{ $doneClasses->count() }}/{{ $total }} done</span>
+                        </label>
+                        <div class="inv-meta mb-2">
+                            Tick each class they have completed and its date. Finishing all {{ $total }} makes them a full member of the church.
+                            @if($invitee->foundation_clases === 'yes' && $doneClasses->isEmpty())<br><strong>Marked as completed earlier{{ $invitee->foundation_clases_date ? ' (' . $invitee->foundation_clases_date->format('d M Y') . ')' : '' }}.</strong>@endif
+                        </div>
+                        <div class="fc-grid">
+                            @for($no = 1; $no <= $total; $no++)
+                                @php $c = $doneClasses->get($no); @endphp
+                                <div class="fc-item {{ $c ? 'fc-done' : '' }}">
+                                    <label class="form-check mb-1">
+                                        <input class="form-check-input fc-tick" type="checkbox" name="classes[{{ $no }}][done]" value="1" @checked($c)>
+                                        <span class="form-check-label fw-semibold">Class {{ $no }}</span>
+                                    </label>
+                                    <input type="date" class="form-control form-control-sm fc-date" name="classes[{{ $no }}][date]" max="{{ now()->toDateString() }}"
+                                           value="{{ $c && $c->completed_on ? $c->completed_on->format('Y-m-d') : '' }}">
+                                </div>
+                            @endfor
+                        </div>
+                    </div>
                     <div class="col-md-6">
                         <label class="form-label">Baptism</label>
                         <select name="baptism_status" class="form-select">
@@ -180,3 +211,19 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+// Ticking a class fills today's date; picking a date ticks the class.
+document.querySelectorAll('.fc-item').forEach(function (item) {
+    var tick = item.querySelector('.fc-tick'), date = item.querySelector('.fc-date');
+    tick.addEventListener('change', function () {
+        if (tick.checked && !date.value) date.value = new Date().toLocaleDateString('en-CA');
+        item.classList.toggle('fc-done', tick.checked);
+    });
+    date.addEventListener('change', function () {
+        if (date.value) { tick.checked = true; item.classList.add('fc-done'); }
+    });
+});
+</script>
+@endpush

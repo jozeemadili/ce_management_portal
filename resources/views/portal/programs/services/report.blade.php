@@ -130,7 +130,7 @@
         <tbody>
         @foreach($checkIns as $a)
             <tr>
-                <td>{{ optional($a->checked_in_at)->format('H:i') }}</td>
+                <td>{{ optional($a->checked_in_at)->format('H:i') ?? '—' }}</td>
                 <td>{{ trim(optional($a->member)->first_name . ' ' . optional($a->member)->last_name) }}
                     @if(optional($a->member)->member_type === 'new_soul')<span class="badge-pill badge-status-new ms-1">New soul</span>@endif</td>
                 <td><span class="badge-pill badge-status-{{ $a->attendance_status }}">{{ ucfirst($a->attendance_status) }}</span></td>

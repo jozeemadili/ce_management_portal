@@ -82,6 +82,22 @@ class ProgramAttendance extends Model
         return 'Unknown';
     }
 
+    /** Reports show two statuses: late counts as present, excused as absent. */
+    public const PRESENT_STATUSES = ['present', 'late'];
+    public const ABSENT_STATUSES = ['absent', 'excused'];
+
+    public function isPresent(): bool
+    {
+        return in_array($this->attendance_status, self::PRESENT_STATUSES, true);
+    }
+
+    /** "Present", "Present (late)", "Absent" or "Absent (excused)". */
+    public function statusLabel(): string
+    {
+        return ($this->isPresent() ? 'Present' : 'Absent')
+            . (in_array($this->attendance_status, ['late', 'excused'], true) ? ' (' . $this->attendance_status . ')' : '');
+    }
+
     public function isNewSoul(): bool
     {
         return $this->member && $this->member->member_type === 'new_soul';

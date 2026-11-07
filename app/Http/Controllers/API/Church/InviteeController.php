@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Church;
 use App\Http\Controllers\Concerns\AuthorizesPrograms;
 use App\Http\Controllers\Concerns\ScopesChurches;
 use App\Http\Controllers\Controller;
+use App\Models\CellGroup;
 use App\Models\Church;
 use App\Models\Member;
 use App\Models\ProgramAuditLog;
@@ -12,6 +13,7 @@ use App\Models\ProgramOccurrence;
 use App\Services\InviteeManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Church Setup > New Invitees: new souls assigned to the user's churches.
@@ -46,7 +48,7 @@ class InviteeController extends Controller
         $base = Member::newSouls()->whereIn('church_id', $churchIds);
 
         $invitees = (clone $base)
-            ->with(['church', 'firstVisitProgram', 'invitedByMember', 'assignments.fromChurch', 'assignments.toChurch', 'assignments.assignedBy'])
+            ->with(['church', 'firstVisitProgram', 'foundationClasses', 'cell_groups', 'invitedByMember', 'assignments.fromChurch', 'assignments.toChurch', 'assignments.assignedBy'])
             ->when($request->filled('church'), fn ($q) => $q->where('church_id', (int) $request->church))
             ->when($request->filled('status'), fn ($q) => $q->where('follow_up_status', $request->status))
             ->when($request->get('assigned') === 'no', fn ($q) => $q->doesntHave('assignments'))
@@ -68,8 +70,10 @@ class InviteeController extends Controller
         ];
 
         $allChurches = Church::where('status', 'ACTIVE')->orderBy('name')->get(['id', 'name', 'physical_location']);
+        $cellsByChurch = CellGroup::whereIn('church_id', $invitees->pluck('church_id')->unique())
+            ->orderBy('name')->get(['id', 'church_id', 'name'])->groupBy('church_id');
 
-        return view('portal.churches.invitees.index', compact('invitees', 'stats', 'churches', 'allChurches'));
+        return view('portal.churches.invitees.index', compact('invitees', 'stats', 'churches', 'allChurches', 'cellsByChurch'));
     }
 
     public function update(Request $request, Member $invitee)
@@ -79,8 +83,10 @@ class InviteeController extends Controller
 
         $data = $request->validate([
             'follow_up_status' => 'required|in:' . implode(',', array_keys(self::STATUSES)),
-            'foundation_clases' => 'nullable|in:yes,no',
-            'foundation_clases_date' => 'nullable|date',
+            'classes' => 'nullable|array',
+            'classes.*.done' => 'nullable|in:1',
+            'classes.*.date' => 'nullable|date|before_or_equal:today',
+            'cell_group_id' => 'nullable|integer|exists:cell_groups,id',
             'baptism_status' => 'nullable|in:yes,no',
             'baptism_date' => 'nullable|date',
             'location' => 'nullable|string|max:255',
@@ -89,17 +95,29 @@ class InviteeController extends Controller
             'note' => 'nullable|string|max:1000',
         ]);
 
-        $old = $invitee->toArray();
+        $old = $invitee->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()];
         $note = trim((string) ($data['note'] ?? ''));
-        unset($data['note']);
         if ($note !== '') {
             $data['notes'] = trim(($invitee->notes ? $invitee->notes . "\n" : '') . now()->format('d M Y') . ' - ' . $note);
         }
 
-        $invitee->update($data);
-        ProgramAuditLog::record('new_soul.follow_up_updated', $invitee, $old, $invitee->toArray());
+        // Ticked classes => their date (blank date = today).
+        $classes = collect($data['classes'] ?? [])
+            ->filter(fn ($c) => !empty($c['done']))
+            ->map(fn ($c) => $c['date'] ?? null)
+            ->all();
+        $status = $data['follow_up_status'];
 
-        return back()->with('success', $invitee->first_name . "'s follow-up was updated.");
+        $becameMember = DB::transaction(function () use ($invitee, $data, $classes, $status) {
+            $invitee->update(collect($data)->except(['note', 'classes', 'cell_group_id', 'follow_up_status'])->all());
+
+            return $this->invitees->recordProgress($invitee, $classes, $data['cell_group_id'] ?? null, $status, Auth::id());
+        });
+
+        ProgramAuditLog::record('new_soul.follow_up_updated', $invitee, $old,
+            $invitee->fresh()->toArray() + ['foundation_classes' => $invitee->foundationClasses()->pluck('class_no')->all()]);
+
+        return back()->with('success', $becameMember ?? $invitee->first_name . "'s follow-up was updated.");
     }
 
     public function assign(Request $request, Member $invitee)

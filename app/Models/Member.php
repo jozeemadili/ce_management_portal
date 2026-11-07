@@ -129,6 +129,11 @@ class Member extends Model
 		return $this->checkin_token;
 	}
 
+	public function foundationClasses()
+	{
+		return $this->hasMany(MemberFoundationClass::class)->orderBy('class_no');
+	}
+
 	public function cell_groups()
 	{
 		return $this->belongsToMany(CellGroup::class, 'cell_group_members')

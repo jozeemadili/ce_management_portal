@@ -274,6 +274,9 @@
                             <?php if($Member->phone): ?>
                                 <div><i class="icofont icofont-phone"></i> <?php echo e($Member->phone); ?></div>
                             <?php endif; ?>
+                            <?php $__currentLoopData = $Member->phones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $extra): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <div><i class="icofont icofont-phone"></i> <?php echo e($extra->phone); ?><?php if($extra->label): ?> <span class="text-muted">(<?php echo e($extra->label); ?>)</span><?php endif; ?></div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             <?php if($Member->email): ?>
                                 <div><i class="icofont icofont-email"></i> <?php echo e($Member->email); ?></div>
                             <?php endif; ?>
@@ -348,15 +351,15 @@
                 <?php
 if (! isset($_instance)) {
     $html = \Livewire\Livewire::mount('members.create-member')->html();
-} elseif ($_instance->childHasBeenRendered('BGf1bID')) {
-    $componentId = $_instance->getRenderedChildComponentId('BGf1bID');
-    $componentTag = $_instance->getRenderedChildComponentTagName('BGf1bID');
+} elseif ($_instance->childHasBeenRendered('Qmqo0Vk')) {
+    $componentId = $_instance->getRenderedChildComponentId('Qmqo0Vk');
+    $componentTag = $_instance->getRenderedChildComponentTagName('Qmqo0Vk');
     $html = \Livewire\Livewire::dummyMount($componentId, $componentTag);
-    $_instance->preserveRenderedChild('BGf1bID');
+    $_instance->preserveRenderedChild('Qmqo0Vk');
 } else {
     $response = \Livewire\Livewire::mount('members.create-member');
     $html = $response->html();
-    $_instance->logRenderedChild('BGf1bID', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
+    $_instance->logRenderedChild('Qmqo0Vk', $response->id(), \Livewire\Livewire::getRootElementTagName($html));
 }
 echo $html;
 ?>
@@ -498,8 +501,27 @@ echo $html;
 
                     <div class="col-md-6">
                         <strong>Phone:</strong><br>
-                        <?php echo e($Member->phone ?? 'N/A'); ?>
+                        <?php echo e($Member->phone ?? 'N/A'); ?> <span class="text-muted" style="font-size:.75rem;">(main)</span>
+                    </div>
 
+                    <div class="col-12">
+                        <strong>Other phone numbers:</strong>
+                        <?php $__empty_1 = true; $__currentLoopData = $Member->phones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $extra): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span><?php echo e($extra->phone); ?><?php if($extra->label): ?> <span class="text-muted">(<?php echo e($extra->label); ?>)</span><?php endif; ?></span>
+                                <form method="POST" action="<?php echo e(route('members.phones.remove', [$Member->id, $extra->id])); ?>" onsubmit="return confirm('Remove <?php echo e($extra->phone); ?>?')">
+                                    <?php echo csrf_field(); ?> <button class="btn btn-sm btn-link text-danger p-0">Remove</button>
+                                </form>
+                            </div>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <span class="text-muted">None</span>
+                        <?php endif; ?>
+                        <form method="POST" action="<?php echo e(route('members.phones.add', $Member->id)); ?>" class="d-flex gap-2 mt-2 flex-wrap">
+                            <?php echo csrf_field(); ?>
+                            <input name="phone" class="form-control form-control-sm" style="max-width:170px;" placeholder="e.g. 0755123456" required>
+                            <input name="label" class="form-control form-control-sm" style="max-width:150px;" placeholder="Label (optional)">
+                            <button class="btn btn-sm btn-outline-primary">Add number</button>
+                        </form>
                     </div>
 
                     <div class="col-md-6">

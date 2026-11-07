@@ -71,6 +71,31 @@
 	                        </form>
 	                    </div>
 	                </div>
+	                @php $me = Auth::user()->member; @endphp
+	                @if($me)
+	                <div class="card">
+	                    <div class="card-body">
+	                        <h5 class="mb-1">My phone numbers</h5>
+	                        <p class="text-muted" style="font-size:.85rem;">Add every number you use, so check-in and registration recognise you whichever one you give. You can log in with any of them.</p>
+	                        @if(session('success'))<div class="alert alert-success py-2">{{ session('success') }}</div>@endif
+	                        <div class="mb-2"><strong>{{ $me->phone ?: '—' }}</strong> <span class="text-muted" style="font-size:.8rem;">(main)</span></div>
+	                        @foreach($me->phones as $extra)
+	                            <div class="d-flex align-items-center gap-2 mb-1">
+	                                <span>{{ $extra->phone }}@if($extra->label) <span class="text-muted">({{ $extra->label }})</span>@endif</span>
+	                                <form method="POST" action="{{ route('members.phones.remove', [$me->id, $extra->id]) }}" onsubmit="return confirm('Remove {{ $extra->phone }}?')">
+	                                    @csrf <button class="btn btn-sm btn-link text-danger p-0">Remove</button>
+	                                </form>
+	                            </div>
+	                        @endforeach
+	                        <form method="POST" action="{{ route('members.phones.add', $me->id) }}" class="d-flex gap-2 mt-2 flex-wrap">
+	                            @csrf
+	                            <input name="phone" class="form-control" style="max-width:180px;" placeholder="e.g. 0755123456" required>
+	                            <input name="label" class="form-control" style="max-width:150px;" placeholder="Label (optional)">
+	                            <button class="btn btn-outline-primary">Add number</button>
+	                        </form>
+	                    </div>
+	                </div>
+	                @endif
 	            </div>
 	            <div class="col-xl-7">
                 <div class="card">

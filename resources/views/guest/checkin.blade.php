@@ -25,7 +25,48 @@
     .gender-choice input { display: none; }
     .gender-choice input:checked + span { color: #2e5aac; }
     .gender-choice label:has(input:checked) { border-color: #2e5aac; background: #eef4ff; }
+    .brought-box { border-top: 1px dashed #e3e8f0; padding-top: 12px; }
+    .brought-row { background: #f7f9fc; border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+(function () {
+    var toggle = document.getElementById('broughtToggle');
+    var form = document.getElementById('broughtForm');
+    if (!toggle || !form) return;
+    var rows = document.getElementById('broughtRows');
+    var tpl = document.getElementById('broughtRowTpl');
+
+    function renumber() {
+        rows.querySelectorAll('.brought-row').forEach(function (row, i) {
+            row.querySelector('.brought-num').textContent = 'Person ' + (i + 1);
+            row.querySelector('.brought-remove').style.display = i === 0 ? 'none' : '';
+            row.querySelectorAll('[data-name]').forEach(function (input) {
+                input.name = 'people[' + i + '][' + input.dataset.name + ']';
+            });
+        });
+    }
+    function addRow() {
+        rows.appendChild(tpl.content.cloneNode(true));
+        renumber();
+    }
+    toggle.addEventListener('click', function () {
+        form.style.display = '';
+        toggle.style.display = 'none';
+        if (!rows.children.length) addRow();
+        rows.querySelector('input').focus();
+    });
+    document.getElementById('broughtAdd').addEventListener('click', addRow);
+    rows.addEventListener('click', function (e) {
+        if (e.target.classList.contains('brought-remove')) {
+            e.target.closest('.brought-row').remove();
+            renumber();
+        }
+    });
+})();
+</script>
 @endpush
 
 @section('content')
@@ -65,8 +106,86 @@
 										<div class="checkin-welcome" style="font-size:1.2rem;">{{ $firstName ? 'Hello, ' . $firstName . '.' : 'Hello.' }}</div>
 										<p class="checkin-note">{{ $result['message'] }}</p>
 									@endif
-									<a href="{{ $base }}" class="btn btn-light w-100 mt-2">Check in someone else</a>
 								</div>
+
+								@if(!empty($broughtToken))
+									<div class="brought-box mt-3">
+										<button type="button" class="btn btn-outline-success w-100" id="broughtToggle">🙌 Did you come with a new soul?</button>
+										<form method="post" action="{{ $base }}/brought" id="broughtForm" class="mt-3" style="display:none;">
+											@csrf
+											<input type="hidden" name="by" value="{{ $broughtToken }}">
+											<p class="checkin-note" style="font-size:.9rem;">Add each person you came with &mdash; we'll check them in and welcome them as your invitees.</p>
+											<div id="broughtRows"></div>
+											<button type="button" class="btn btn-link p-0 mb-2" id="broughtAdd">+ Add another person</button>
+											<button class="btn btn-success w-100" type="submit">Check them in</button>
+										</form>
+									</div>
+									<template id="broughtRowTpl">
+										<div class="brought-row">
+											<div class="d-flex justify-content-between align-items-center mb-1">
+												<strong class="brought-num" style="font-size:.85rem;"></strong>
+												<button type="button" class="btn btn-sm btn-link text-danger p-0 brought-remove">Remove</button>
+											</div>
+											<input class="form-control mb-2" data-name="first_name" placeholder="First name *" required>
+											<input class="form-control mb-2" data-name="last_name" placeholder="Last name">
+											<input class="form-control mb-2" data-name="phone" placeholder="Phone number" inputmode="tel">
+											<input class="form-control mb-2" data-name="location" placeholder="Where they live (area)">
+											<select class="form-select mb-2" data-name="gender">
+												<option value="">Gender</option><option value="male">Male</option><option value="female">Female</option>
+											</select>
+										</div>
+									</template>
+								@endif
+								<a href="{{ $base }}" class="btn btn-light w-100 mt-3">Check in someone else</a>
+
+							@elseif($step === 'brought')
+								<div class="checkin-hero mt-3">
+									@if(!empty($result['checked_in']))
+										<div class="checkin-big">🎉</div>
+										<div class="checkin-welcome">Thank you, {{ $firstName }}!</div>
+										<p class="checkin-note">
+											{{ collect($result['checked_in'])->join(', ', ' and ') }}
+											{{ count($result['checked_in']) === 1 ? 'is' : 'are' }} checked in &mdash; welcome! We are so glad you brought them.
+										</p>
+									@endif
+									@if(!$result['ok'])
+										<div class="checkin-big">⚠️</div>
+										<p class="checkin-note">{{ $result['message'] }}</p>
+									@endif
+									@foreach($result['problems'] ?? [] as $problem)
+										<p class="checkin-note text-warning">{{ $problem }}</p>
+									@endforeach
+								</div>
+
+								@if(!empty($broughtToken))
+									<div class="brought-box mt-3">
+										<button type="button" class="btn btn-outline-success w-100" id="broughtToggle">🙌 Add more people you came with</button>
+										<form method="post" action="{{ $base }}/brought" id="broughtForm" class="mt-3" style="display:none;">
+											@csrf
+											<input type="hidden" name="by" value="{{ $broughtToken }}">
+											<p class="checkin-note" style="font-size:.9rem;">Add each person you came with &mdash; we'll check them in and welcome them as your invitees.</p>
+											<div id="broughtRows"></div>
+											<button type="button" class="btn btn-link p-0 mb-2" id="broughtAdd">+ Add another person</button>
+											<button class="btn btn-success w-100" type="submit">Check them in</button>
+										</form>
+									</div>
+									<template id="broughtRowTpl">
+										<div class="brought-row">
+											<div class="d-flex justify-content-between align-items-center mb-1">
+												<strong class="brought-num" style="font-size:.85rem;"></strong>
+												<button type="button" class="btn btn-sm btn-link text-danger p-0 brought-remove">Remove</button>
+											</div>
+											<input class="form-control mb-2" data-name="first_name" placeholder="First name *" required>
+											<input class="form-control mb-2" data-name="last_name" placeholder="Last name">
+											<input class="form-control mb-2" data-name="phone" placeholder="Phone number" inputmode="tel">
+											<input class="form-control mb-2" data-name="location" placeholder="Where they live (area)">
+											<select class="form-select mb-2" data-name="gender">
+												<option value="">Gender</option><option value="male">Male</option><option value="female">Female</option>
+											</select>
+										</div>
+									</template>
+								@endif
+								<a href="{{ $base }}" class="btn btn-light w-100 mt-3">Check in someone else</a>
 
 							@elseif(!$status['open'])
 								<div class="checkin-hero mt-3">
@@ -118,6 +237,11 @@
 											<input type="email" class="form-control" name="email" value="{{ old('email') }}" autocomplete="email" />
 										</div>
 									@endif
+									<div class="form-group">
+										<label>Who invited you? <span class="text-muted">(optional)</span></label>
+										<input class="form-control" name="invited_by" value="{{ old('invited_by') }}" placeholder="Their phone number or name" />
+										<small class="text-muted">Their phone number lets us thank the right person.</small>
+									</div>
 									<div class="form-group">
 										<label>Gender</label>
 										<div class="gender-choice">

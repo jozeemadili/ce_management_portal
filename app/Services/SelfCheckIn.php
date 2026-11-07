@@ -157,6 +157,7 @@ class SelfCheckIn
 
         return $query->where(function ($q) use ($mobile, $userIds) {
             $q->whereIn('phone', ['0' . $mobile, '255' . $mobile, '+255' . $mobile, (string) $mobile])
+              ->orWhereHas('phones', fn ($p) => $p->where('phone', '0' . $mobile))
               ->orWhereIn('user_id', $userIds);
         })->first();
     }
@@ -225,8 +226,13 @@ class SelfCheckIn
             'location' => trim((string) ($data['location'] ?? '')) ?: null,
         ];
 
+        // "Who invited you?" - a phone number links the member; else a name.
+        [$inviter, $inviterName] = $this->resolveInviter($data['invited_by'] ?? null, $program);
+        $person['invited_by'] = $inviter ? trim($inviter->first_name . ' ' . $inviter->last_name) : $inviterName;
+        $person['invited_by_member_id'] = optional($inviter)->id;
+
         if ($this->isChurchService($program)) {
-            $soul = $this->services->addNewSouls($status['occurrence'], [$person], null, null)->first();
+            $soul = $this->services->addNewSouls($status['occurrence'], [$person], $inviter, null)->first();
 
             return $this->result(true, '', now()->format('H:i')) + ['member' => $soul];
         }
@@ -245,6 +251,87 @@ class SelfCheckIn
             : $this->markPresent($status['occurrence'], $soul);
 
         return $result + ['member' => $soul];
+    }
+
+    /**
+     * People a checked-in member came with: each is recorded as a new soul
+     * invited by $broughtBy (or matched to their existing record by phone)
+     * and checked in with the program's rules.
+     *
+     * @param  array<int, array{first_name: string, last_name?: ?string, phone?: ?string, location?: ?string, gender?: ?string}>  $people
+     * @return array{ok: bool, message: string, checked_in: array<int, string>, problems: array<int, string>}
+     */
+    public function registerBroughtSouls(Program $program, ?Church $church, Member $broughtBy, array $people): array
+    {
+        $status = $this->status($program, $church);
+        if (!$status['open']) {
+            return ['ok' => false, 'message' => $status['message'], 'checked_in' => [], 'problems' => []];
+        }
+
+        $inviterName = trim($broughtBy->first_name . ' ' . $broughtBy->last_name);
+        $people = array_map(function ($p) use ($broughtBy, $inviterName) {
+            $mobile = AccountLogin::normaliseMobile($p['phone'] ?? null);
+
+            return [
+                'first_name' => trim($p['first_name']),
+                'last_name' => trim((string) ($p['last_name'] ?? '')) ?: null,
+                'phone' => $mobile ? '0' . $mobile : null,
+                'location' => trim((string) ($p['location'] ?? '')) ?: null,
+                'gender' => in_array($p['gender'] ?? null, ['male', 'female'], true) ? $p['gender'] : null,
+                'invited_by' => $inviterName,
+                'invited_by_member_id' => $broughtBy->id,
+            ];
+        }, $people);
+
+        $checkedIn = [];
+        $problems = [];
+
+        if ($this->isChurchService($program)) {
+            foreach ($this->services->addNewSouls($status['occurrence'], $people, $broughtBy, null) as $soul) {
+                $checkedIn[] = trim($soul->first_name . ' ' . $soul->last_name);
+            }
+
+            return ['ok' => true, 'message' => '', 'checked_in' => $checkedIn, 'problems' => []];
+        }
+
+        $churchId = optional($church)->id ?? $broughtBy->church_id ?? $program->church_id;
+        foreach ($people as $person) {
+            $soul = Member::findOrCreateNewSoul($person + [
+                'first_visit_program_id' => $program->id,
+                'first_visit_date' => now()->toDateString(),
+                'is_training' => (bool) $program->is_training,
+            ], $churchId, null);
+            ProgramAuditLog::record($soul->wasRecentlyCreated ? 'new_soul.created' : 'new_soul.returned', $soul, null, [
+                'source' => 'self_checkin', 'program_id' => $program->id, 'brought_by' => $broughtBy->id,
+            ]);
+
+            $result = $program->classification === 'special'
+                ? $this->checkInToSpecial($program, $soul)
+                : $this->markPresent($status['occurrence'], $soul);
+
+            $name = trim($soul->first_name . ' ' . $soul->last_name);
+            $result['ok'] ? $checkedIn[] = $name : $problems[] = "{$name}: {$result['message']}";
+        }
+
+        return ['ok' => true, 'message' => '', 'checked_in' => $checkedIn, 'problems' => $problems];
+    }
+
+    /**
+     * "Who invited you?": a phone number finds the member (returned as
+     * [member, null]); anything else is kept as a name ([null, name]).
+     */
+    private function resolveInviter(?string $value, Program $program): array
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return [null, null];
+        }
+
+        $member = AccountLogin::normaliseMobile($value) || str_contains($value, '@')
+            ? $this->findPerson($value, $program)
+            : null;
+
+        return $member ? [$member, null] : [null, mb_substr($value, 0, 255)];
     }
 
     private function checkInToSpecial(Program $program, Member $member): array

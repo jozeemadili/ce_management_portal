@@ -409,7 +409,8 @@ class ChurchServices
                     'email' => ($email = mb_strtolower(trim((string) ($person['email'] ?? '')))) !== '' ? $email : null,
                     'location' => trim((string) ($person['location'] ?? '')) ?: null,
                     'gender' => $person['gender'] ?? null,
-                    'invited_by' => $broughtBy ? trim($broughtBy->first_name . ' ' . $broughtBy->last_name) : null,
+                    // Brought by a checked-in member, else an inviter named on the form.
+                    'invited_by' => $broughtBy ? trim($broughtBy->first_name . ' ' . $broughtBy->last_name) : (trim((string) ($person['invited_by'] ?? '')) ?: null),
                     'invited_by_member_id' => optional($broughtBy)->id,
                     'first_visit_program_id' => $occurrence->program_id,
                     'first_visit_date' => $occurrence->occurrence_date->toDateString(),

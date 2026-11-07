@@ -274,6 +274,9 @@
                             @if($Member->phone)
                                 <div><i class="icofont icofont-phone"></i> {{ $Member->phone }}</div>
                             @endif
+                            @foreach($Member->phones as $extra)
+                                <div><i class="icofont icofont-phone"></i> {{ $extra->phone }}@if($extra->label) <span class="text-muted">({{ $extra->label }})</span>@endif</div>
+                            @endforeach
                             @if($Member->email)
                                 <div><i class="icofont icofont-email"></i> {{ $Member->email }}</div>
                             @endif
@@ -480,7 +483,27 @@
 
                     <div class="col-md-6">
                         <strong>Phone:</strong><br>
-                        {{ $Member->phone ?? 'N/A' }}
+                        {{ $Member->phone ?? 'N/A' }} <span class="text-muted" style="font-size:.75rem;">(main)</span>
+                    </div>
+
+                    <div class="col-12">
+                        <strong>Other phone numbers:</strong>
+                        @forelse($Member->phones as $extra)
+                            <div class="d-flex align-items-center gap-2 mt-1">
+                                <span>{{ $extra->phone }}@if($extra->label) <span class="text-muted">({{ $extra->label }})</span>@endif</span>
+                                <form method="POST" action="{{ route('members.phones.remove', [$Member->id, $extra->id]) }}" onsubmit="return confirm('Remove {{ $extra->phone }}?')">
+                                    @csrf <button class="btn btn-sm btn-link text-danger p-0">Remove</button>
+                                </form>
+                            </div>
+                        @empty
+                            <span class="text-muted">None</span>
+                        @endforelse
+                        <form method="POST" action="{{ route('members.phones.add', $Member->id) }}" class="d-flex gap-2 mt-2 flex-wrap">
+                            @csrf
+                            <input name="phone" class="form-control form-control-sm" style="max-width:170px;" placeholder="e.g. 0755123456" required>
+                            <input name="label" class="form-control form-control-sm" style="max-width:150px;" placeholder="Label (optional)">
+                            <button class="btn btn-sm btn-outline-primary">Add number</button>
+                        </form>
                     </div>
 
                     <div class="col-md-6">

@@ -41,6 +41,12 @@ $message = $__bag->first($__errorArgs[0]); ?> <small class="text-danger"><?php e
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>
+                <?php if($errors->has('first_name') && str_contains($errors->first('first_name'), 'already registered')): ?>
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" id="differentPerson" wire:model.defer="different_person">
+                        <label class="form-check-label" for="differentPerson" style="font-size:.85rem;">Different person &mdash; register anyway</label>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <div class="col-md-6 mb-3">

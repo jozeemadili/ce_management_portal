@@ -42,6 +42,7 @@ class MemberManagementController extends Controller
 
         $query = Member::with([
             'title',
+            'phones',
             'church',
             'member_roles.member_designation',
             'cell_groups',

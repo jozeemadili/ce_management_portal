@@ -322,7 +322,8 @@ class ChurchServiceController extends Controller
                       ->orWhereRaw('LOWER(last_name) LIKE ?', [$like])
                       ->orWhereRaw("LOWER(CONCAT(first_name, ' ', last_name)) LIKE ?", [$like]);
                     if (strlen($digits) >= 3) {
-                        $w->orWhere('phone', 'like', '%' . $digits . '%');
+                        $w->orWhere('phone', 'like', '%' . $digits . '%')
+                          ->orWhereHas('phones', fn ($p) => $p->where('phone', 'like', '%' . $digits . '%'));
                     }
                 });
             })

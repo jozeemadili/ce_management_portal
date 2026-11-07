@@ -26,6 +26,12 @@
                 <label class="form-label">First Name</label>
                 <input type="text" class="form-control" wire:model.defer="first_name">
                 @error('first_name') <small class="text-danger">{{ $message }}</small> @enderror
+                @if($errors->has('first_name') && str_contains($errors->first('first_name'), 'already registered'))
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" id="differentPerson" wire:model.defer="different_person">
+                        <label class="form-check-label" for="differentPerson" style="font-size:.85rem;">Different person &mdash; register anyway</label>
+                    </div>
+                @endif
             </div>
 
             <div class="col-md-6 mb-3">

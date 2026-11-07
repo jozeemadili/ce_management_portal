@@ -28,6 +28,7 @@ use App\Http\Controllers\API\Programs\ProgramSmsTemplateController;
 use App\Http\Controllers\API\Programs\ChurchServiceController;
 use App\Http\Controllers\API\Church\InviteeController;
 use App\Http\Controllers\API\Church\MemberTitleController;
+use App\Http\Controllers\API\Church\DuplicateMemberController;
 use App\Http\Controllers\NewSoulFeedbackController;
 use App\Http\Controllers\SelfCheckInController;
 
@@ -60,6 +61,8 @@ Route::get('/checkin/{token}', [SelfCheckInController::class, 'show'])->name('se
 Route::get('/checkin/{token}/{church}', [SelfCheckInController::class, 'show'])->whereNumber('church')->name('self-checkin.church');
 Route::middleware('throttle:self-checkin')->group(function () {
     Route::post('/checkin/{token}/new', [SelfCheckInController::class, 'register']);
+    Route::post('/checkin/{token}/brought', [SelfCheckInController::class, 'brought']);
+    Route::post('/checkin/{token}/{church}/brought', [SelfCheckInController::class, 'brought'])->whereNumber('church');
     Route::post('/checkin/{token}/{church}/new', [SelfCheckInController::class, 'register'])->whereNumber('church');
     Route::post('/checkin/{token}', [SelfCheckInController::class, 'identify']);
     Route::post('/checkin/{token}/{church}', [SelfCheckInController::class, 'identify'])->whereNumber('church');
@@ -250,6 +253,13 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     Route::post('services/occurrences/{occurrence}/report/reopen', [ChurchServiceController::class, 'reopenReport'])->name('services.report.reopen');
 
     //Church Setup - New Invitees (new souls followed up by their church)
+    //Church Setup - Duplicate members + extra phone numbers
+    Route::get('duplicate-members', [DuplicateMemberController::class, 'index'])->name('duplicates.index');
+    Route::post('duplicate-members/merge', [DuplicateMemberController::class, 'merge'])->name('duplicates.merge');
+    Route::post('duplicate-members/ignore', [DuplicateMemberController::class, 'ignore'])->name('duplicates.ignore');
+    Route::post('members/{member}/phones', [DuplicateMemberController::class, 'addPhone'])->name('members.phones.add');
+    Route::post('members/{member}/phones/{phone}/delete', [DuplicateMemberController::class, 'removePhone'])->name('members.phones.remove');
+
     //Church Setup - Member titles (Brother, Sister, Deacon...)
     Route::get('member-titles', [MemberTitleController::class, 'index'])->name('member-titles.index');
     Route::post('member-titles', [MemberTitleController::class, 'store'])->name('member-titles.store');

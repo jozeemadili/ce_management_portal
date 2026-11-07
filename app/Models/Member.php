@@ -188,7 +188,40 @@ class Member extends Model
 	/** Same phone number, whatever format it was stored in. */
 	public function scopeWithPhone($query, $phone)
 	{
-		return $query->whereIn('phone', self::phoneVariants($phone) ?: ['__none__']);
+		$normalised = self::normalisedPhone($phone);
+
+		// Main number (any stored format) or one of the extra numbers.
+		return $query->where(function ($q) use ($phone, $normalised) {
+			$q->whereIn('phone', self::phoneVariants($phone) ?: ['__none__'])
+			  ->orWhereHas('phones', fn ($p) => $p->where('phone', $normalised ?? '__none__'));
+		});
+	}
+
+	/** 0712345678 form of a phone number, or null when it isn't one. */
+	public static function normalisedPhone($phone): ?string
+	{
+		$mobile = \App\Services\AccountLogin::normaliseMobile($phone);
+
+		return $mobile ? '0' . $mobile : null;
+	}
+
+	public function user()
+	{
+		return $this->belongsTo(User::class);
+	}
+
+	/** Extra phone numbers (members.phone is the main one). */
+	public function phones()
+	{
+		return $this->hasMany(MemberPhone::class)->orderBy('id');
+	}
+
+	/** Main + extra numbers, normalised, without repeats. */
+	public function allPhones(): array
+	{
+		return collect([self::normalisedPhone($this->phone) ?? $this->phone])
+			->merge($this->phones->pluck('phone'))
+			->filter()->unique()->values()->all();
 	}
 
 	/** "Name (Church)" for messages. */
@@ -218,7 +251,9 @@ class Member extends Model
 		$query = static::query();
 
 		if (!empty($attributes['phone'])) {
-			$query->where('phone', $attributes['phone']);
+			// Any format of the number, main or extra.
+			$query->withPhone($attributes['phone'])
+				  ->orderByRaw("CASE WHEN member_type = 'member' THEN 0 ELSE 1 END");
 		} else {
 			$query->where('first_name', $attributes['first_name'])
 				  ->where('last_name', $attributes['last_name'] ?? null)

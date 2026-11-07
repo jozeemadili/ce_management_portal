@@ -7,6 +7,7 @@ use App\Models\Church;
 use App\Models\Program;
 use App\Services\SelfCheckIn;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 
 /**
  * Self check-in from a printed QR poster: public pages (no login) behind
@@ -67,6 +68,7 @@ class SelfCheckInController extends Controller
             'location' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:150',
             'phone' => 'nullable|string|max:30',
+            'invited_by' => 'nullable|string|max:120',
         ]);
 
         abort_unless(SelfCheckIn::isValidIdentifier($data['identifier']), 422);
@@ -79,6 +81,45 @@ class SelfCheckInController extends Controller
         $result = $this->selfCheckIn->registerNewSoul($program, $church, $data);
 
         return $this->done($program, $church, $result['member'], $result, true);
+    }
+
+    /**
+     * "Did you come with a new soul?" - people the person who just checked
+     * in brought along. Who brought them comes from the signed token issued
+     * on the welcome page (valid 30 minutes), never from a plain id.
+     */
+    public function brought(Request $request, string $token, ?int $church = null)
+    {
+        [$program, $church] = $this->resolve($token, $church);
+
+        // Forms carry a spare empty row.
+        $request->merge(['people' => array_values(array_filter(
+            (array) $request->input('people', []),
+            fn ($p) => is_array($p) && trim((string) ($p['first_name'] ?? '')) !== ''
+        ))]);
+
+        $data = $request->validate([
+            'by' => 'required|string',
+            'people' => 'required|array|min:1|max:10',
+            'people.*.first_name' => 'required|string|max:100',
+            'people.*.last_name' => 'nullable|string|max:100',
+            'people.*.phone' => 'nullable|string|max:30',
+            'people.*.location' => 'nullable|string|max:255',
+            'people.*.gender' => 'nullable|in:male,female',
+        ], ['people.required' => 'Enter at least one first name.']);
+
+        $broughtBy = $this->memberFromToken($data['by'], $program, $church);
+        abort_unless($broughtBy, 403, 'This page has expired. Please check in again.');
+
+        $result = $this->selfCheckIn->registerBroughtSouls($program, $church, $broughtBy, $data['people']);
+
+        return view('guest.checkin', [
+            'step' => 'brought',
+            'result' => $result,
+            'firstName' => ucfirst(mb_strtolower($broughtBy->first_name)),
+            'broughtToken' => $data['by'],
+            'status' => ['open' => true, 'message' => ''],
+        ] + compact('program', 'church'));
     }
 
     /* ---------------- staff: printable poster ---------------- */
@@ -126,7 +167,32 @@ class SelfCheckInController extends Controller
             'result' => $result,
             'isNew' => $isNew,
             'firstName' => $member ? ucfirst(mb_strtolower($member->first_name)) : '',
+            // Lets them add the people they came with (see brought()).
+            'broughtToken' => $member && $result['ok'] ? $this->tokenFor($member, $program, $church) : null,
             'status' => ['open' => true, 'message' => ''],
         ] + compact('program', 'church'));
+    }
+
+    private function tokenFor(\App\Models\Member $member, Program $program, ?Church $church): string
+    {
+        return Crypt::encryptString(json_encode([
+            'm' => $member->id, 'p' => $program->id, 'c' => optional($church)->id, 'exp' => now()->addMinutes(30)->timestamp,
+        ]));
+    }
+
+    private function memberFromToken(string $token, Program $program, ?Church $church): ?\App\Models\Member
+    {
+        try {
+            $data = json_decode(Crypt::decryptString($token), true);
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $valid = is_array($data)
+            && ($data['p'] ?? null) === $program->id
+            && ($data['c'] ?? null) === optional($church)->id
+            && ($data['exp'] ?? 0) >= now()->timestamp;
+
+        return $valid ? \App\Models\Member::find($data['m'] ?? 0) : null;
     }
 }

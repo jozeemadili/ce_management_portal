@@ -53,12 +53,17 @@ class MemberBulkImporter
         // Stored phones may be 0712.., 255712.., +255712.. or 712..: match all,
         // keyed by the normalised 0712.. form used for the sheet.
         $variants = collect($phones)->unique()->flatMap(fn ($p) => Member::phoneVariants($p))->all();
-        $existingByPhone = Member::with('church')->whereIn('phone', $variants ?: ['__none__'])
+        $normalised = collect($phones)->map(fn ($p) => Member::normalisedPhone($p))->filter()->unique()->all();
+        $existingByPhone = Member::with(['church', 'phones'])
+            ->where(fn ($q) => $q->whereIn('phone', $variants ?: ['__none__'])
+                ->orWhereHas('phones', fn ($p) => $p->whereIn('phone', $normalised ?: ['__none__'])))
             ->where('is_training', false)
             ->orderByRaw("CASE WHEN member_type = 'member' THEN 0 ELSE 1 END")
             ->get()
-            ->groupBy(fn ($m) => $this->normalisePhone($m->phone))
-            ->map->first();
+            // Index each person under every number they have.
+            ->flatMap(fn ($m) => collect($m->allPhones())->mapWithKeys(fn ($p) => [$p => $m]))
+            ->all();
+        $existingByPhone = collect($existingByPhone);
         $existingByEmail = Member::with('church')->whereIn(DB::raw('LOWER(email)'), array_unique($emails) ?: [''])->where('is_training', false)->get()
             ->keyBy(fn ($m) => strtolower($m->email));
 

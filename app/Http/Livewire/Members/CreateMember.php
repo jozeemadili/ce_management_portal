@@ -18,6 +18,7 @@ use App\Services\AccountLogin;
 class CreateMember extends Component
 {
     public $title_id;
+    public $different_person = false; // confirmed: same name, different person
     public $first_name;
     public $last_name;
     public $phone;
@@ -70,6 +71,24 @@ class CreateMember extends Component
     public function save()
     {
         $this->validate();
+
+        // Same name already registered (e.g. the same person with another
+        // phone)? Ask before creating a second record.
+        if (!$this->different_person) {
+            $sameName = Member::with(['church', 'phones'])
+                ->where('member_type', 'member')->where('is_training', false)
+                ->whereRaw('LOWER(TRIM(first_name)) = ?', [mb_strtolower(trim($this->first_name))])
+                ->whereRaw('LOWER(TRIM(last_name)) = ?', [mb_strtolower(trim($this->last_name))])
+                ->first();
+            if ($sameName) {
+                $this->addError('first_name', $sameName->describe() . ' is already registered (phone ' . (implode(', ', $sameName->allPhones()) ?: 'none')
+                    . '). If this is the same person, add the new number to their profile instead (Member Management > View). '
+                    . 'If it is a different person, tick "Different person" below and save again.');
+                $this->dispatchBrowserEvent('same-name-found');
+
+                return;
+            }
+        }
 
         $mobile = AccountLogin::normaliseMobile($this->phone);
         $phone = '0' . $mobile;

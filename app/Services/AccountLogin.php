@@ -52,8 +52,14 @@ class AccountLogin
         }
 
         $mobile = self::normaliseMobile($login);
+        if (!$mobile) {
+            return null;
+        }
 
-        return $mobile ? User::where('mobile', $mobile)->first() : null;
+        // The login number, else any other number on the person's profile.
+        return User::where('mobile', $mobile)->first()
+            ?? optional(\App\Models\Member::whereHas('phones', fn ($p) => $p->where('phone', '0' . $mobile))
+                ->whereNotNull('user_id')->first())->user;
     }
 
     public static function findUserByEmail(?string $email): ?User

@@ -23,26 +23,19 @@ class ChurchManagementController extends Controller
     {
         $member = Auth::user()->member;
 
-        if (!$member) {
+        if (!$member && Auth::user()->role !== 'ADMIN') {
             abort(403, 'No member record found for this user.');
         }
 
-        $userChurch = Church::with('church_designation')->find($member->church_id);
-
-        if (!$userChurch) {
+        if ($member && !Church::find($member->church_id) && Auth::user()->role !== 'ADMIN') {
             abort(403, 'No church found for this member.');
         }
 
         $query = Church::with('church_designation', 'church', 'current_head.member')->withCount('members');
 
-        if (is_null($userChurch->parent_church_id)) {
-            // Root church → sees all churches
-        } else {
-            // Not root → member's church + direct sub-churches only
-            $query->where(function ($q) use ($userChurch) {
-                $q->where('id', $userChurch->id)
-                  ->orWhere('parent_church_id', $userChurch->id);
-            });
+        // Own church; a pastor / head: their churches and all under them (App\Services\ChurchScope).
+        if (Auth::user()->role !== 'ADMIN') {
+            $query->whereIn('id', app(\App\Services\ChurchScope::class)->ids());
         }
 
         if ($request->filled('q')) {
@@ -76,12 +69,9 @@ class ChurchManagementController extends Controller
 
         $query = Member::with('church', 'member_roles.member_designation')->where('member_type', 'member');
 
-        if ($userChurch && !is_null($userChurch->parent_church_id)) {
-            $churchIds = Church::where('id', $userChurch->id)
-                ->orWhere('parent_church_id', $userChurch->id)
-                ->pluck('id');
-
-            $query->whereIn('church_id', $churchIds);
+        // Own church; a pastor / head: their churches and all under them (App\Services\ChurchScope).
+        if (Auth::user()->role !== 'ADMIN') {
+            $query->whereIn('church_id', app(\App\Services\ChurchScope::class)->ids());
         }
 
         return $query->orderBy('first_name')->get();
@@ -137,6 +127,10 @@ class ChurchManagementController extends Controller
             'parent_church_id'  => 'nullable|exists:churches,id',
             'head_of_unit'      => 'nullable|exists:members,id',
         ]);
+
+        // A new church goes under one of your churches (only a super admin adds a top-level church).
+        app(\App\Services\ChurchScope::class)->authorize($request->parent_church_id ? (int) $request->parent_church_id : null, 'Choose a parent church that is one of yours.');
+
 
         /* --------------------------------
          | GET DESIGNATION ORDER
@@ -196,6 +190,7 @@ class ChurchManagementController extends Controller
             ]);
         }
 
+        app(\App\Services\ChurchScope::class)->forgetAll(); // heads / tree changed
         return back()->with('success', 'Church registered successfully');
     }
 
@@ -211,6 +206,12 @@ class ChurchManagementController extends Controller
             'parent_church_id'  => 'nullable|exists:churches,id',
             'head_of_unit'      => 'nullable|exists:members,id',
         ]);
+
+        app(\App\Services\ChurchScope::class)->authorize((int) $id);
+        if ($request->parent_church_id) {
+            app(\App\Services\ChurchScope::class)->authorize((int) $request->parent_church_id, 'Choose a parent church that is one of yours.');
+        }
+
 
         $church = Church::with('current_head')->findOrFail($id);
 
@@ -251,6 +252,7 @@ class ChurchManagementController extends Controller
             ]);
         }
 
+        app(\App\Services\ChurchScope::class)->forgetAll(); // heads / tree changed
         return back()->with('success', 'Church updated successfully');
     }
 
@@ -259,6 +261,7 @@ class ChurchManagementController extends Controller
      */
     public function deactivate($id)
     {
+        app(\App\Services\ChurchScope::class)->authorize((int) $id);
         Church::findOrFail($id)->update(['status' => 'INACTIVE']);
         return back()->with('success', 'Church deactivated successfully');
     }
@@ -268,6 +271,7 @@ class ChurchManagementController extends Controller
      */
     public function activate($id)
     {
+        app(\App\Services\ChurchScope::class)->authorize((int) $id);
         Church::findOrFail($id)->update(['status' => 'ACTIVE']);
         return back()->with('success', 'Church activated successfully');
     }
@@ -281,6 +285,10 @@ class ChurchManagementController extends Controller
             'church_id'        => 'required|exists:churches,id',
             'parent_church_id' => 'required|exists:churches,id',
         ]);
+
+        app(\App\Services\ChurchScope::class)->authorize((int) $request->church_id);
+        app(\App\Services\ChurchScope::class)->authorize((int) $request->parent_church_id, 'Choose a parent church that is one of yours.');
+
 
         $church = Church::findOrFail($request->church_id);
         $newParent = Church::findOrFail($request->parent_church_id);
@@ -323,6 +331,7 @@ class ChurchManagementController extends Controller
             'parent_church_id' => $newParent->id
         ]);
 
+        app(\App\Services\ChurchScope::class)->forgetAll(); // heads / tree changed
         return back()->with('success', 'Church transferred successfully');
     }
     /**
@@ -331,6 +340,7 @@ class ChurchManagementController extends Controller
 public function getByDesignation($designationId)
 {
     $churches = Church::where('designation_id', $designationId)
+        ->whereIn('id', app(\App\Services\ChurchScope::class)->ids())
         ->where('status', 'ACTIVE')
         ->orderBy('name')
         ->get(['id', 'name']);
@@ -351,20 +361,17 @@ public function tree()
     $member = Auth::user()->member;
     $userChurch = $member ? Church::find($member->church_id) : null;
 
+    // Only the churches this user works with (App\Services\ChurchScope): the
+    // tree starts at each of them whose parent is outside that set.
+    $scopeIds = app(\App\Services\ChurchScope::class)->ids();
     $churches = Church::with(['church_designation', 'current_head.member'])
         ->withCount('members')
         ->where('status', 'ACTIVE')
+        ->whereIn('id', $scopeIds)
         ->get();
 
     $byParent = $churches->groupBy('parent_church_id');
-
-    if ($userChurch && !is_null($userChurch->parent_church_id)) {
-        // Non-root user → tree rooted at their own church only
-        $roots = $churches->where('id', $userChurch->id)->values();
-    } else {
-        // Root user → the full forest of top-level churches
-        $roots = $byParent->get(null, collect())->values();
-    }
+    $roots = $churches->filter(fn ($c) => is_null($c->parent_church_id) || !$churches->contains('id', $c->parent_church_id))->values();
 
     $palette = ['#2E5AAC', '#1FA971', '#D08C1D', '#C2418C', '#7C5CD1', '#0EA5A0'];
 
@@ -386,6 +393,7 @@ public function tree()
 
 public function transferHistory($churchId)
 {
+    app(\App\Services\ChurchScope::class)->authorize((int) $churchId);
     $church = Church::findOrFail($churchId);
 
     $history = ChurchHierarchy::with(['church'])

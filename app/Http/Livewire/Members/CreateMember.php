@@ -71,6 +71,7 @@ class CreateMember extends Component
     public function save()
     {
         $this->validate();
+        app(\App\Services\ChurchScope::class)->authorize((int) $this->church_id, 'Choose one of your churches.');
 
         // Same name already registered (e.g. the same person with another
         // phone)? Ask before creating a second record.
@@ -157,31 +158,15 @@ public function render()
     // Get logged-in member
     $member = Auth::user()->member;
 
-    if (!$member) {
+    if (!$member && Auth::user()->role !== 'ADMIN') {
         abort(403, 'No member record found for this user.');
     }
 
-    $userChurch = Church::find($member->church_id);
-
-    if (!$userChurch) {
-        abort(403, 'No church found for this member.');
-    }
-
-    // Determine which churches to show in dropdown
-    if (is_null($userChurch->parent_church_id)) {
-        // Root church → show all churches
-        $churches = Church::with('current_head.member')->orderBy('name')->get();
-    } else {
-        // Not root → show only member's church + direct sub-churches
-        $churchIds = Church::where('id', $userChurch->id)
-            ->orWhere('parent_church_id', $userChurch->id)
-            ->pluck('id');
-
-        $churches = Church::with('current_head.member')
-            ->whereIn('id', $churchIds)
-            ->orderBy('name')
-            ->get();
-    }
+    // Churches this user works with (App\Services\ChurchScope).
+    $churches = Church::with('current_head.member')
+        ->whereIn('id', app(\App\Services\ChurchScope::class)->ids())
+        ->orderBy('name')
+        ->get();
 
     return view('livewire.members.create-member', [
         'churches' => $churches,

@@ -42,21 +42,11 @@ class ProgramAttendanceController extends Controller
 
         // Global: everyone the current user can see under the standard
         // church-hierarchy visibility rule used across every other module.
-        $userMember = Auth::user()->member;
-        if (!$userMember) {
-            return $base; // ADMIN with no member record: unrestricted
-        }
-
-        $userChurch = \App\Models\Church::find($userMember->church_id);
-        if (!$userChurch || is_null($userChurch->parent_church_id)) {
+        if (Auth::user()->role === 'ADMIN') {
             return $base;
         }
 
-        $churchIds = \App\Models\Church::where('id', $userChurch->id)
-            ->orWhere('parent_church_id', $userChurch->id)
-            ->pluck('id');
-
-        return $base->whereIn('church_id', $churchIds);
+        return $base->whereIn('church_id', app(\App\Services\ChurchScope::class)->ids());
     }
 
     public function capture(Request $request, Program $program)

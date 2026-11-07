@@ -50,6 +50,9 @@ class AccessControlController extends Controller
             'myKeys' => $this->grantableBy($me),
             'iAmAdmin' => $this->access->isAdmin($me),
             'locked' => $selected ? $this->lockReason($selected) : null,
+            // Pastor / head of a church: gets config('menu_access.heads') automatically.
+            'headOf' => $selected ? \App\Models\Church::whereIn('id', app(\App\Services\ChurchScope::class)->headedChurchIds($selected))->orderBy('name')->pluck('name') : collect(),
+            'headKeys' => config('menu_access.heads', []),
         ]);
     }
 

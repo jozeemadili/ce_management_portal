@@ -15,6 +15,7 @@
     .ac-menu.ac-whole { border-color: #9fd3b4; }
     .ac-menu.ac-whole .ac-menu-head { background: #e6f7ee; }
     .ac-pill { font-size: .7rem; font-weight: 700; border-radius: 20px; padding: 2px 8px; background: #eef0f3; color: #6b7280; }
+    .ac-head { background: #fff4e5; color: #b45309; }
     .ac-app { background: #eaf1ff; color: #3563c9; cursor: help; }
     .ac-user-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f2f7; font-size: .88rem; }
     .ac-user-row:last-child { border-bottom: 0; }
@@ -58,6 +59,7 @@
         <p class="text-muted mt-2 mb-0" style="font-size:.82rem;">
             Search by name, phone or email. Users see only the menus ticked for them, and can't open the pages of other menus.
             The same menus apply in the <strong>mobile app</strong> (marked 📱 App).
+            The <strong>pastor / head</strong> of a church automatically gets the menus marked Pastor, for their churches.
             Everyone has <strong>Summary</strong> and <strong>Your Profile</strong>; <strong>super admins</strong> see everything and give menus to others.
         </p>
     </div>
@@ -127,6 +129,13 @@
             </form>
         @endif
 
+        @if($headOf->isNotEmpty() && !$locked)
+            <div class="alert alert-success py-2" style="font-size:.88rem;">
+                Pastor / head of <strong>{{ $headOf->implode(', ') }}</strong>: gets the menus marked <span class="ac-pill ac-head">Pastor</span>
+                automatically, for {{ $headOf->count() === 1 ? 'that church' : 'those churches' }} and every church under {{ $headOf->count() === 1 ? 'it' : 'them' }}.
+            </div>
+        @endif
+
         @if($locked)
             <div class="alert alert-info">{{ $locked }}</div>
         @else
@@ -146,7 +155,11 @@
 
                 @foreach($catalog as $mainKey => $menu)
                     @php
-                        $mainAlways = collect(array_keys($menu['children']))->every(fn ($k) => in_array($k, $always, true));
+                        $isHead = $headOf->isNotEmpty();
+                        $autoFor = fn ($k) => in_array($k, $always, true) ? 'Everyone'
+                            : (($isHead && (in_array($k, $headKeys, true) || in_array($mainKey, $headKeys, true))) ? 'Pastor' : null);
+                        $mainAlways = collect(array_keys($menu['children']))->every(fn ($k) => $autoFor($k) !== null);
+                        $mainAutoLabel = collect(array_keys($menu['children']))->every(fn ($k) => in_array($k, $always, true)) ? 'Everyone' : 'Pastor';
                         $whole = in_array($mainKey, $ticked, true);
                         $canMain = $iAmAdmin || in_array($mainKey, $myKeys, true);
                     @endphp
@@ -160,15 +173,15 @@
                                 @endif
                                 <span class="form-check-label">{{ $menu['label'] }}</span>
                             </label>
-                            <span class="ac-pill">{{ $mainAlways ? 'Everyone' : 'Whole menu = all sub-menus' }}</span>
+                            <span class="ac-pill {{ $mainAlways && $mainAutoLabel === 'Pastor' ? 'ac-head' : '' }}">{{ $mainAlways ? $mainAutoLabel : 'Whole menu = all sub-menus' }}</span>
                         </div>
                         <div class="ac-subs">
                             @foreach($menu['children'] as $key => $label)
-                                @php $isAlways = in_array($key, $always, true); $canSub = $iAmAdmin || in_array($key, $myKeys, true); @endphp
+                                @php $auto = $autoFor($key); $canSub = $iAmAdmin || in_array($key, $myKeys, true); @endphp
                                 <label class="form-check mb-0">
-                                    @if($isAlways)
+                                    @if($auto)
                                         <input class="form-check-input" type="checkbox" checked disabled>
-                                        <span class="form-check-label">{{ $label }} <span class="ac-pill">Everyone</span></span>
+                                        <span class="form-check-label">{{ $label }} <span class="ac-pill {{ $auto === 'Pastor' ? 'ac-head' : '' }}">{{ $auto }}</span></span>
                                     @else
                                         <input class="form-check-input ac-sub" type="checkbox" name="menus[]" value="{{ $key }}"
                                                data-own="{{ in_array($key, $ticked, true) ? 1 : 0 }}"

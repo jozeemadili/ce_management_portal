@@ -16,6 +16,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        // One church scope per request (who sees which churches).
+        $this->app->singleton(\App\Services\ChurchScope::class);
+
         //
     }
 

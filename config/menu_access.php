@@ -20,8 +20,26 @@
 
 return [
 
-    // Everyone with a login gets these.
-    'always' => ['summary.home', 'security.profile'],
+    // Everyone with a login gets these (their data is only their own, or
+    // read-only like the list of services).
+    'always' => [
+        'summary.home',
+        'security.profile',
+        'pledges.my_pledges',
+        'services.my_qr',
+        'services.services',
+        'programs.my_registrations',
+    ],
+
+    // The current pastor / head of a church gets these automatically, for
+    // that church and every church under it (App\Services\ChurchScope).
+    // A main menu key brings all its sub-menus.
+    'heads' => [
+        'church_setup',
+        'pledges.dashboard',
+        'pledges.campaigns',
+        'pledges.contributions',
+    ],
 
     'menus' => [
         'summary' => [
@@ -65,6 +83,7 @@ return [
                 'services.dashboard' => 'Services Dashboard',
                 'services.times' => 'Service Times',
                 'services.my_qr' => 'My Check-in QR',
+                'services.manage' => 'Manage services (quick setup, training, activate)',
             ],
         ],
         'programs' => [
@@ -132,8 +151,8 @@ return [
 
         // Church Services
         'services.index' => 'services.services',
-        'services.setup' => 'services.services',
-        'services.training.*' => 'services.services',
+        'services.setup' => 'services.manage',
+        'services.training.*' => 'services.manage',
         'services.times' => 'services.times',
         'services.times.save' => 'services.times',
         'services.checkin' => 'services.checkin',
@@ -153,7 +172,7 @@ return [
         'programs.export' => 'programs.programs',
         'programs.store' => 'programs.programs',
         'programs.update' => 'programs.programs',
-        'programs.status' => ['programs.programs', 'services.services'],
+        'programs.status' => ['programs.programs', 'services.manage'],
         'programs.show' => ['programs.programs', 'services.services'],
         'programs.checkin-poster' => ['programs.programs', 'services.services'],
         'program-attendance.*' => ['programs.programs', 'programs.attendance'],

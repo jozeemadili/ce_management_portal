@@ -405,7 +405,11 @@
             </div>
 
             <div class="modal-body">
+                @if(Auth::user()->member)
                 @livewire('cell-group.create-cell-group')
+                @else
+                <div class="alert alert-info mb-0">Your account is not linked to a church member, so it can't create one here. Ask the pastor or an admin of that church.</div>
+                @endif
             </div>
 
         </div>

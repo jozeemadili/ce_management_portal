@@ -19,24 +19,14 @@ class NewSoulController extends Controller
     /** Same hierarchy-scoping pattern used across every other module. */
     private function scopedChurchIds()
     {
-        $member = Auth::user()->member;
-
-        if (!$member) {
-            if (Auth::user()->role === 'ADMIN') {
-                return null;
-            }
-            abort(403, 'No member record found for this user.');
-        }
-
-        $userChurch = Church::find($member->church_id);
-
-        if ($userChurch && is_null($userChurch->parent_church_id)) {
+        // One rule everywhere (App\Services\ChurchScope): super admin = no limit;
+        // a pastor / head of a church = that church and all churches under it;
+        // anyone else = their own church only.
+        if (Auth::user()->role === 'ADMIN') {
             return null;
         }
 
-        return Church::where('id', $userChurch->id ?? 0)
-            ->orWhere('parent_church_id', $userChurch->id ?? 0)
-            ->pluck('id');
+        return collect(app(\App\Services\ChurchScope::class)->ids());
     }
 
     /**

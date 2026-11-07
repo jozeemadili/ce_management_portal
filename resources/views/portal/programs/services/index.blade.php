@@ -21,8 +21,12 @@
         <h3>Church Services</h3>
     @endslot
     @slot('breadcrumb_action_buttons')
+        @menuVisible('services.checkin')
         <li><a class="btn btn-primary" href="{{ route('services.checkin') }}"><i class="icofont icofont-qr-code"></i> Service Check-in</a></li>
+        @endmenuVisible
+        @menuVisible('programs.programs')
         <li><a class="btn btn-outline-primary" href="{{ route('programs.index', ['classification' => 'recurring']) }}"><i class="icofont icofont-plus-circle"></i> New / Edit Service</a></li>
+        @endmenuVisible
     @endslot
     <li class="breadcrumb-item">Church Services</li>
     <li class="breadcrumb-item active">Services</li>
@@ -64,7 +68,9 @@
                 </div>
                 <div class="d-flex gap-2">
                     <a class="btn btn-sm btn-light" href="{{ route('programs.show', $service->id) }}">Details</a>
+                    @menuVisible('services.times')
                     <a class="btn btn-sm btn-outline-secondary" href="{{ route('services.times') }}">Church times</a>
+                    @endmenuVisible
                     <a class="btn btn-sm btn-outline-primary" href="{{ route('programs.checkin-poster', $service->id) }}" target="_blank"><i class="icofont icofont-print"></i> QR poster</a>
                 </div>
             </div>
@@ -78,6 +84,7 @@
     </div>
 </div>
 
+@menuVisible('services.manage')
 <div class="col-lg-5 mb-3">
     @if($notRunning->isNotEmpty())
     <div class="card prog-card mb-3">
@@ -189,6 +196,7 @@
     </div>
     @endif
 </div>
+@endmenuVisible
 </div>
 
 </div>

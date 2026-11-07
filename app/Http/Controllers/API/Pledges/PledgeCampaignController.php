@@ -26,31 +26,14 @@ class PledgeCampaignController extends Controller
      */
     private function scopedChurchIds()
     {
-        $member = Auth::user()->member;
-
-        // An ADMIN account with no personal member record (e.g. a pure system
-        // admin) is treated the same as root - unrestricted - rather than
-        // being locked out of a module they administer.
-        if (!$member) {
-            if (Auth::user()->role === 'ADMIN') {
-                return null;
-            }
-            abort(403, 'No member record found for this user.');
+        // One rule everywhere (App\Services\ChurchScope): super admin = no limit;
+        // a pastor / head of a church = that church and all churches under it;
+        // anyone else = their own church only.
+        if (Auth::user()->role === 'ADMIN') {
+            return null;
         }
 
-        $userChurch = Church::find($member->church_id);
-
-        if (!$userChurch) {
-            abort(403, 'No church found for this member.');
-        }
-
-        if (is_null($userChurch->parent_church_id)) {
-            return null; // null = unrestricted (root)
-        }
-
-        return Church::where('id', $userChurch->id)
-            ->orWhere('parent_church_id', $userChurch->id)
-            ->pluck('id');
+        return collect(app(\App\Services\ChurchScope::class)->ids());
     }
 
     private function scopedCampaignsQuery(Request $request)
@@ -123,6 +106,7 @@ class PledgeCampaignController extends Controller
 
         $data['currency'] = $data['currency'] ?? 'TZS';
         $data['church_id'] = $data['scope'] === 'church' ? $data['church_id'] : null;
+        $this->authorizeCampaignChurch($data['scope'], $data['church_id']);
         $data['allow_anonymous'] = $request->boolean('allow_anonymous');
         $data['live_enabled'] = $request->boolean('live_enabled');
         $data['created_by'] = Auth::id();
@@ -141,6 +125,7 @@ class PledgeCampaignController extends Controller
 
     public function update(Request $request, PledgeCampaign $campaign)
     {
+        $this->authorizeCampaignChurch($campaign->scope ?? 'global', $campaign->church_id);
         $this->authorizePledge('PLEDGES_MANAGE_CAMPAIGNS');
 
         $data = $request->validate([
@@ -169,6 +154,7 @@ class PledgeCampaignController extends Controller
 
         $data['currency'] = $data['currency'] ?? 'TZS';
         $data['church_id'] = $data['scope'] === 'church' ? $data['church_id'] : null;
+        $this->authorizeCampaignChurch($data['scope'], $data['church_id']);
 
         foreach (['allow_anonymous', 'live_enabled', 'live_show_amount', 'live_show_pledgers', 'live_show_latest', 'live_show_graph', 'live_show_target', 'live_mask_names'] as $flag) {
             $data[$flag] = $request->boolean($flag);
@@ -191,6 +177,7 @@ class PledgeCampaignController extends Controller
 
     public function setStatus(Request $request, PledgeCampaign $campaign, string $status)
     {
+        $this->authorizeCampaignChurch($campaign->scope ?? 'global', $campaign->church_id);
         $this->authorizePledge('PLEDGES_MANAGE_CAMPAIGNS');
 
         abort_unless(in_array($status, ['draft', 'active', 'completed', 'closed']), 422, 'Invalid status.');
@@ -241,5 +228,20 @@ class PledgeCampaignController extends Controller
         $campaigns = $this->scopedCampaignsQuery($request)->get();
 
         return Excel::download(new PledgeCampaignsExport($campaigns), 'pledge-campaigns-' . now()->format('Y-m-d_His') . '.xlsx');
+    }
+
+    /**
+     * A campaign belongs to the churches of whoever runs it: a global campaign
+     * only to a super admin, a church campaign to that church's people
+     * (App\Services\ChurchScope).
+     */
+    private function authorizeCampaignChurch(string $scope, $churchId): void
+    {
+        if ($scope === 'global') {
+            abort_unless(Auth::user()->role === 'ADMIN', 403, 'Only a super admin can run a campaign for all churches. Choose one of your churches.');
+
+            return;
+        }
+        app(\App\Services\ChurchScope::class)->authorize((int) $churchId, 'Choose one of your churches for this campaign.');
     }
 }

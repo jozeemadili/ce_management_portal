@@ -32,10 +32,9 @@ class PledgeController extends Controller
      */
     private function scopedChurchIds(Member $member): array
     {
-        return Church::where('id', $member->church_id)
-            ->orWhere('parent_church_id', $member->church_id)
-            ->pluck('id')
-            ->toArray();
+        // Same rule as the portal (App\Services\ChurchScope): own church, or
+        // the churches a pastor / head of a church leads and all under them.
+        return app(\App\Services\ChurchScope::class)->ids();
     }
 
     /**

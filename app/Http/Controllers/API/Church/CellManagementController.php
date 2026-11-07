@@ -21,13 +21,13 @@ class CellManagementController extends Controller
     {
         $member = Auth::user()->member;
 
-        if (!$member) {
+        if (!$member && Auth::user()->role !== 'ADMIN') {
             abort(403, 'No member record found.');
         }
 
-        $userChurch = Church::find($member->church_id);
+        $userChurch = $member ? Church::find($member->church_id) : null;
 
-        if (!$userChurch) {
+        if (!$userChurch && Auth::user()->role !== 'ADMIN') {
             abort(403, 'Church not found.');
         }
 
@@ -37,12 +37,9 @@ class CellManagementController extends Controller
             'members.member_roles.member_designation',
         ])->withCount('members');
 
-        if (!is_null($userChurch->parent_church_id)) {
-            $churchIds = Church::where('id', $userChurch->id)
-                ->orWhere('parent_church_id', $userChurch->id)
-                ->pluck('id');
-
-            $query->whereIn('church_id', $churchIds);
+        // Own church; a pastor / head: their churches and all under them (App\Services\ChurchScope).
+        if (Auth::user()->role !== 'ADMIN') {
+            $query->whereIn('church_id', app(\App\Services\ChurchScope::class)->ids());
         }
 
         if ($request->filled('q')) {
@@ -63,14 +60,8 @@ class CellManagementController extends Controller
             ->withQueryString();
 
         $member = Auth::user()->member;
-        $userChurch = Church::find($member->church_id);
 
-        $churches = is_null($userChurch->parent_church_id)
-            ? Church::orderBy('name')->get()
-            : Church::where('id', $userChurch->id)
-                ->orWhere('parent_church_id', $userChurch->id)
-                ->orderBy('name')
-                ->get();
+        $churches = Church::whereIn('id', app(\App\Services\ChurchScope::class)->ids())->orderBy('name')->get();
 
         $allCells = $this->scopedCellGroupsQuery($request)->get();
 
@@ -95,6 +86,7 @@ class CellManagementController extends Controller
 
     public function update(Request $request, CellGroup $cell)
     {
+        app(\App\Services\ChurchScope::class)->authorize((int) $cell->church_id);
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -110,6 +102,7 @@ class CellManagementController extends Controller
 
     public function removeMember(CellGroup $cell, Member $member)
     {
+        app(\App\Services\ChurchScope::class)->authorize((int) $cell->church_id);
         $cell->members()->detach($member->id);
 
         return back()->with('success', 'Member removed from cell group.');

@@ -30,13 +30,13 @@ class MemberManagementController extends Controller
     {
         $member = Auth::user()->member;
 
-        if (!$member) {
+        if (!$member && Auth::user()->role !== 'ADMIN') {
             abort(403, 'No member record found for this user.');
         }
 
-        $userChurch = Church::find($member->church_id);
+        $userChurch = $member ? Church::find($member->church_id) : null;
 
-        if (!$userChurch) {
+        if (!$userChurch && Auth::user()->role !== 'ADMIN') {
             abort(403, 'No church found for this member.');
         }
 
@@ -56,12 +56,9 @@ class MemberManagementController extends Controller
             $query->where('member_type', $request->get('type') === 'new_soul' ? 'new_soul' : 'member');
         }
 
-        if (!is_null($userChurch->parent_church_id)) {
-            $churchIds = Church::where('id', $userChurch->id)
-                ->orWhere('parent_church_id', $userChurch->id)
-                ->pluck('id');
-
-            $query->whereIn('church_id', $churchIds);
+        // Own church; a pastor / head: their churches and all under them (App\Services\ChurchScope).
+        if (Auth::user()->role !== 'ADMIN') {
+            $query->whereIn('church_id', app(\App\Services\ChurchScope::class)->ids());
         }
 
         if ($request->filled('q')) {
@@ -96,7 +93,7 @@ class MemberManagementController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $churches = Church::with('current_head.member')->orderBy('name')->get();
+        $churches = Church::with('current_head.member')->whereIn('id', app(\App\Services\ChurchScope::class)->ids())->orderBy('name')->get();
         $designations = MemberDesignation::orderBy('name')->get();
         $cellGroups = CellGroup::all();
         $departments = Department::all();
@@ -134,6 +131,12 @@ class MemberManagementController extends Controller
 
     public function update(Request $request, Member $member)
     {
+        // Only people of your churches, and only moved to one of your churches.
+        app(\App\Services\ChurchScope::class)->authorize((int) $member->church_id, 'This person is not in one of your churches.');
+        if ($request->filled('church_id')) {
+            app(\App\Services\ChurchScope::class)->authorize((int) $request->church_id, 'Choose one of your churches.');
+        }
+
         $member->update($request->only([
             'first_name',
             'last_name',

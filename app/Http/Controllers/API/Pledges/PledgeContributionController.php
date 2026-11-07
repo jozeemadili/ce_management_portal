@@ -20,24 +20,14 @@ class PledgeContributionController extends Controller
 
     private function scopedChurchIds()
     {
-        $member = Auth::user()->member;
-
-        if (!$member) {
-            if (Auth::user()->role === 'ADMIN') {
-                return null;
-            }
-            abort(403, 'No member record found for this user.');
-        }
-
-        $userChurch = Church::find($member->church_id);
-
-        if ($userChurch && is_null($userChurch->parent_church_id)) {
+        // One rule everywhere (App\Services\ChurchScope): super admin = no limit;
+        // a pastor / head of a church = that church and all churches under it;
+        // anyone else = their own church only.
+        if (Auth::user()->role === 'ADMIN') {
             return null;
         }
 
-        return Church::where('id', $userChurch->id ?? 0)
-            ->orWhere('parent_church_id', $userChurch->id ?? 0)
-            ->pluck('id');
+        return collect(app(\App\Services\ChurchScope::class)->ids());
     }
 
     private function scopedContributionsQuery(Request $request)
@@ -133,6 +123,8 @@ class PledgeContributionController extends Controller
         $pledge = Pledge::findOrFail($data['pledge_id']);
 
         abort_unless($pledge->status !== 'cancelled', 422, 'This pledge has been cancelled and cannot receive contributions.');
+        // Only pledges of people in your churches (App\Services\ChurchScope).
+        app(\App\Services\ChurchScope::class)->authorize((int) optional($pledge->member)->church_id, 'This pledge is not from one of your churches.');
 
         $data['recorded_by'] = Auth::id();
 

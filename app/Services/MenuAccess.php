@@ -13,7 +13,9 @@ use Illuminate\Support\Str;
  * so a hidden link and a blocked page never disagree.
  *
  * - ADMIN users see everything.
- * - Everyone gets config('menu_access.always') (Summary, Your Profile).
+ * - Everyone gets config('menu_access.always') (Summary, Your Profile and
+ *   personal pages); the current pastor / head of a church also gets
+ *   config('menu_access.heads').
  * - A main menu given to a user brings all its sub-menus; a sub-menu on its
  *   own also brings its main menu header.
  */
@@ -56,6 +58,8 @@ class MenuAccess
 
         return Cache::remember("menu-access:{$user->id}", self::CACHE_SECONDS, fn () => $this->expand(array_merge(
             config('menu_access.always', []),
+            // The pastor / head of a church gets the pastor menus automatically.
+            app(ChurchScope::class)->isHead($user) ? config('menu_access.heads', []) : [],
             UserMenuGrant::where('user_id', $user->id)->pluck('menu_key')->all()
         )));
     }

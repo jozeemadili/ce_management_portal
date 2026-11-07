@@ -155,6 +155,9 @@ class AuthController extends Controller
             'mobile' => $user->mobile,
             'role' => $user->role,
             'must_change_password' => (bool) $user->must_change_password,
+            // Menus given under Security & Settings > Access Control (ADMIN: all).
+            // The app shows only the screens these cover; the API enforces them too.
+            'menus' => app(\App\Services\MenuAccess::class)->keys($user),
             'member' => $member ? [
                 'id' => $member->id,
                 'first_name' => $member->first_name,

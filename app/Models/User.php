@@ -102,6 +102,12 @@ public function member()
     return $this->hasOne(\App\Models\Member::class);
 }
 
+/** Menus given under Security & Settings > Access Control. */
+public function menuGrants()
+{
+    return $this->hasMany(\App\Models\UserMenuGrant::class);
+}
+
 
 
 }

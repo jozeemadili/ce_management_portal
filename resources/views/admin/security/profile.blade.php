@@ -140,7 +140,7 @@
                         <th>System Role</th>
                         <td>
                           <p class="mb-1 font-roboto">
-                            @forelse(Auth::user()->member?->member_roles as $role)
+                            @forelse(Auth::user()->member?->member_roles ?? [] as $role)
                                 <span class="badge bg-info me-1">
                                     {{ $role->member_designation->name }}
                                 </span>

@@ -32,6 +32,7 @@ use App\Http\Controllers\API\Church\DuplicateMemberController;
 use App\Http\Controllers\NewSoulFeedbackController;
 use App\Http\Controllers\SelfCheckInController;
 
+use App\Http\Controllers\API\Auth\AccessControlController;
 use App\Http\Controllers\API\Auth\PortalUsersController;
 use App\Http\Controllers\API\Auth\MemberPasswordController;
 use Illuminate\Support\Facades\Route;
@@ -83,7 +84,7 @@ Route::middleware('auth')->group(function () {
 });
 Route::get('/{id}',[InvoiceController::class, 'download'])->name('free-quotation-download');
 
-Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], function()
+Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed', 'menu.access']], function()
 {
     Route::get('logout',[PortalUsersController::class, 'logout'])->name('logout');
     Route::get('dashboard', [DashboardController::class, 'index'])->name('home');
@@ -288,6 +289,11 @@ Route::group(['prefix' => 'v1/','middleware' => ['auth', 'password.changed']], f
     
 
 
+
+    //Security - Access Control (menus per user)
+    Route::get('security/access-control', [AccessControlController::class, 'index'])->name('access-control.index');
+    Route::get('security/access-control/users', [AccessControlController::class, 'users'])->name('access-control.users');
+    Route::post('security/access-control/{user}', [AccessControlController::class, 'save'])->name('access-control.save');
 
     //Security
     Route::get('security/users', [PortalUsersController::class, 'get'])->name('portal-users');

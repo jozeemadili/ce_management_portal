@@ -26,6 +26,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // @menuVisible('pledges.campaigns') ... @endmenuVisible - shows a
+        // sidebar menu only to users given it (Security & Settings > Access Control).
+        \Illuminate\Support\Facades\Blade::if('menuVisible', fn (string $key) => app(\App\Services\MenuAccess::class)->can(\Illuminate\Support\Facades\Auth::user(), $key));
+
         // $this->app->bind('GuzzleHttp\Client', function () {
         //     $config['curl'] = [
         //         CURLOPT_SSL_VERIFYPEER => false,

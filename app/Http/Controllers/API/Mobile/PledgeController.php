@@ -146,8 +146,14 @@ class PledgeController extends Controller
         ]);
 
         $targetMember = $actingMember;
+        $access = app(\App\Services\MenuAccess::class);
+        $onBehalf = !empty($data['member_id']) && (int) $data['member_id'] !== $actingMember->id;
 
-        if (!empty($data['member_id']) && (int) $data['member_id'] !== $actingMember->id) {
+        // Same menus as the portal: own pledge = My Pledges, for someone else = Record / Manage Pledges.
+        abort_unless($access->can($request->user(), $onBehalf ? 'pledges.manage' : 'pledges.my_pledges'), 403,
+            $onBehalf ? 'You do not have access to pledge on behalf of others.' : 'You do not have access to make pledges.');
+
+        if ($onBehalf) {
             $targetMember = Member::findOrFail($data['member_id']);
 
             abort_unless(
